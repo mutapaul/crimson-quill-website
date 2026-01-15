@@ -16,17 +16,17 @@
   <header class="header">
     <div class="container">
       <div class="header-inner">
-        <a href="../index.html" class="logo">
+        <a href="/" class="logo">
           <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
         </a>
         <nav class="nav">
           <ul class="nav-links">
-            <li><a href="about.html" class="nav-link">About Us</a></li>
-            <li><a href="practice-areas.html" class="nav-link">Practice Areas</a></li>
-            <li><a href="team.html" class="nav-link">Our Team</a></li>
-            <li><a href="insights.html" class="nav-link">Insights</a></li>
-            <li><a href="careers.html" class="nav-link">Careers</a></li>
-            <li><a href="contact.html" class="btn btn-primary">Contact Us</a></li>
+            <li><a href="/about" class="nav-link">About Us</a></li>
+            <li><a href="/practice-areas" class="nav-link">Practice Areas</a></li>
+            <li><a href="/team" class="nav-link">Our Team</a></li>
+            <li><a href="/insights" class="nav-link">Insights</a></li>
+            <li><a href="/careers" class="nav-link">Careers</a></li>
+            <li><a href="/contact" class="btn btn-primary">Contact Us</a></li>
           </ul>
           <button class="menu-toggle" aria-label="Toggle menu">
             <span></span><span></span><span></span>
@@ -45,6 +45,45 @@
     </div>
   </section>
 
+  <!-- Schedule Consultation Section -->
+  <section class="section bg-light">
+    <div class="container">
+      <div class="section-header text-center" data-animate>
+        <p class="label">SCHEDULE A MEETING</p>
+        <h2>Book a Consultation</h2>
+        <p>Select a convenient time to speak with one of our legal professionals.</p>
+      </div>
+      <div style="max-width: 800px; margin: 0 auto;" data-animate>
+        <!-- Microsoft Bookings Embed -->
+        <div id="booking-container" style="background: white; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); overflow: hidden; min-height: 600px;">
+          <!--
+            To embed Microsoft Bookings:
+            1. Go to Microsoft 365 Admin Center > Bookings
+            2. Set up your booking page for info@cqadvocates.com
+            3. Get the embed code from Bookings settings
+            4. Replace this placeholder with your embed iframe
+
+            Example embed code:
+            <iframe src="https://outlook.office365.com/owa/calendar/CrimsonQuillAdvocates@cqadvocates.com/bookings/"
+                    width="100%"
+                    height="600"
+                    scrolling="yes"
+                    style="border:0">
+            </iframe>
+          -->
+          <div style="padding: var(--space-3xl); text-align: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.5" style="margin-bottom: var(--space-md);">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 style="margin-bottom: var(--space-sm);">Online Booking Coming Soon</h3>
+            <p class="text-gray" style="max-width: 400px; margin: 0 auto var(--space-lg);">Our online scheduling system is being configured. In the meantime, please call us or send a message below.</p>
+            <a href="tel:+256778171215" class="btn btn-primary">Call +256 778 171 215</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Contact Section -->
   <section class="section">
     <div class="container">
@@ -52,61 +91,91 @@
         <!-- Contact Form -->
         <div data-animate>
           <h2 class="mb-lg">Send Us a Message</h2>
-          <form id="contact-form">
-            <div class="grid grid-2">
-              <div class="form-group">
-                <label class="form-label" for="firstName">First Name *</label>
-                <input type="text" id="firstName" name="firstName" class="form-input" required>
+          <p class="text-gray mb-xl">Complete the form below and we will respond within 1-2 business days.</p>
+          <!--
+            Microsoft Forms Integration:
+            Option 1: Embed Microsoft Forms directly
+            - Create a form at forms.office.com using info@cqadvocates.com
+            - Get the embed code and replace the form below
+
+            Option 2: Use form action to send to Microsoft
+            - The current form can submit to a Power Automate flow
+            - Or use Microsoft Forms embed iframe
+          -->
+          <div id="contact-form-container">
+            <!--
+              To embed Microsoft Forms:
+              1. Go to forms.office.com and sign in with info@cqadvocates.com
+              2. Create a new form with the fields you need
+              3. Click "Collect responses" > "Embed"
+              4. Copy the iframe code and paste it here
+
+              Example:
+              <iframe width="100%" height="800"
+                      src="https://forms.office.com/Pages/ResponsePage.aspx?id=YOUR_FORM_ID"
+                      frameborder="0"
+                      marginwidth="0"
+                      marginheight="0"
+                      style="border: none; max-width:100%; max-height:100vh"
+                      allowfullscreen webkitallowfullscreen mozallowfullscreen msallowfullscreen>
+              </iframe>
+            -->
+            <form id="contact-form" action="mailto:info@cqadvocates.com" method="post" enctype="text/plain">
+              <div class="grid grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="firstName">First Name *</label>
+                  <input type="text" id="firstName" name="firstName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="lastName">Last Name *</label>
+                  <input type="text" id="lastName" name="lastName" class="form-input" required>
+                </div>
               </div>
               <div class="form-group">
-                <label class="form-label" for="lastName">Last Name *</label>
-                <input type="text" id="lastName" name="lastName" class="form-input" required>
+                <label class="form-label" for="email">Email Address *</label>
+                <input type="email" id="email" name="email" class="form-input" required>
               </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="email">Email Address *</label>
-              <input type="email" id="email" name="email" class="form-input" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="phone">Phone Number</label>
-              <input type="tel" id="phone" name="phone" class="form-input">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="company">Company / Organization</label>
-              <input type="text" id="company" name="company" class="form-input">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="subject">Subject *</label>
-              <select id="subject" name="subject" class="form-select" required>
-                <option value="">Select a subject...</option>
-                <option value="general">General Inquiry</option>
-                <option value="corporate">Corporate & Commercial Matter</option>
-                <option value="banking">Banking & Finance Matter</option>
-                <option value="dispute">Dispute Resolution</option>
-                <option value="regulatory">Regulatory & Compliance</option>
-                <option value="ip">Intellectual Property</option>
-                <option value="employment">Employment Law</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="message">How can we help you? *</label>
-              <textarea id="message" name="message" class="form-textarea" required placeholder="Please describe your legal matter or inquiry..."></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="source">How did you hear about us?</label>
-              <select id="source" name="source" class="form-select">
-                <option value="">Select an option...</option>
-                <option value="referral">Referral</option>
-                <option value="search">Search Engine</option>
-                <option value="social">Social Media</option>
-                <option value="event">Event / Conference</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
-            <p class="small text-gray mt-md">Your information will be handled in accordance with our Privacy Policy. We will respond within 1-2 business days.</p>
-          </form>
+              <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="company">Company / Organization</label>
+                <input type="text" id="company" name="company" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="subject">Subject *</label>
+                <select id="subject" name="subject" class="form-select" required>
+                  <option value="">Select a subject...</option>
+                  <option value="general">General Inquiry</option>
+                  <option value="corporate">Corporate & Commercial Matter</option>
+                  <option value="banking">Banking & Finance Matter</option>
+                  <option value="dispute">Dispute Resolution</option>
+                  <option value="regulatory">Regulatory & Compliance</option>
+                  <option value="ip">Intellectual Property</option>
+                  <option value="employment">Employment Law</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="message">How can we help you? *</label>
+                <textarea id="message" name="message" class="form-textarea" required placeholder="Please describe your legal matter or inquiry..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="source">How did you hear about us?</label>
+                <select id="source" name="source" class="form-select">
+                  <option value="">Select an option...</option>
+                  <option value="referral">Referral</option>
+                  <option value="search">Search Engine</option>
+                  <option value="social">Social Media</option>
+                  <option value="event">Event / Conference</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+              <p class="small text-gray mt-md">Your information will be handled in accordance with our <a href="/privacy">Privacy Policy</a>.</p>
+            </form>
+          </div>
         </div>
 
         <!-- Contact Info -->
@@ -172,7 +241,7 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <a href="../index.html" class="logo">
+          <a href="/" class="logo">
             <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
           </a>
           <p>Exceptional legal service for Uganda's most complex challenges.</p>
@@ -180,19 +249,19 @@
         <div class="footer-col">
           <h4>Practice Areas</h4>
           <ul class="footer-links">
-            <li><a href="practice-areas.html#corporate">Corporate & Commercial</a></li>
-            <li><a href="practice-areas.html#banking">Banking & Finance</a></li>
-            <li><a href="practice-areas.html#regulatory">Regulatory & Compliance</a></li>
-            <li><a href="practice-areas.html#dispute">Dispute Resolution</a></li>
+            <li><a href="/practice-areas#corporate">Corporate & Commercial</a></li>
+            <li><a href="/practice-areas#banking">Banking & Finance</a></li>
+            <li><a href="/practice-areas#regulatory">Regulatory & Compliance</a></li>
+            <li><a href="/practice-areas#dispute">Dispute Resolution</a></li>
           </ul>
         </div>
         <div class="footer-col">
           <h4>Quick Links</h4>
           <ul class="footer-links">
-            <li><a href="about.html">About Us</a></li>
-            <li><a href="team.html">Our Team</a></li>
-            <li><a href="insights.html">Insights</a></li>
-            <li><a href="contact.html">Contact Us</a></li>
+            <li><a href="/about">About Us</a></li>
+            <li><a href="/team">Our Team</a></li>
+            <li><a href="/insights">Insights</a></li>
+            <li><a href="/contact">Contact Us</a></li>
           </ul>
         </div>
         <div class="footer-col footer-contact">
@@ -205,8 +274,8 @@
       <div class="footer-bottom">
         <p>© 2026 Crimson & Quill Advocates. All rights reserved.</p>
         <div class="footer-legal">
-          <a href="privacy.html">Privacy Policy</a>
-          <a href="terms.html">Terms of Service</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
         </div>
       </div>
     </div>
