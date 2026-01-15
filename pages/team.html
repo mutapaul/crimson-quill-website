@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/styles.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%238B1538' width='100' height='100' rx='8'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white' font-family='Georgia'>C%26Q</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
 </head>
 <body>
   <!-- Header -->
@@ -17,11 +17,7 @@
     <div class="container">
       <div class="header-inner">
         <a href="../index.html" class="logo">
-          <div class="logo-mark">C&Q</div>
-          <div class="logo-text">
-            <span class="logo-name">Crimson & Quill</span>
-            <span class="logo-tagline">Advocates & Legal Consultants</span>
-          </div>
+          <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
         </a>
         <nav class="nav">
           <ul class="nav-links">
@@ -56,119 +52,98 @@
     </div>
   </section>
 
-  <!-- Leadership -->
-  <section class="section bg-light pt-0">
+  <!-- Team Search -->
+  <section class="section bg-light">
     <div class="container">
-      <h2 class="text-center mb-2xl">Leadership</h2>
-      <div class="team-grid">
-        <!-- Team Member 1 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
+      <div class="section-header text-center">
+        <h2>Find a Professional</h2>
+        <p>Search for team members by name, practice area, or expertise.</p>
+      </div>
+
+      <!-- Search Interface -->
+      <div class="team-search-container" style="max-width: 800px; margin: 0 auto;">
+        <div class="card" style="padding: var(--space-2xl);">
+          <form id="team-search-form">
+            <div class="form-group">
+              <label class="form-label" for="team-search">Search by name or keyword</label>
+              <div class="search-input-wrapper" style="position: relative;">
+                <input type="text" id="team-search" name="search" class="form-input" placeholder="Enter name, practice area, or expertise..." style="padding-left: 48px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-light);">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
             </div>
-          </div>
-          <h4>[Partner Name]</h4>
-          <p class="title">Managing Partner</p>
-          <p>Specializes in corporate transactions, M&A, and private equity with over [X] years of experience advising clients on complex commercial matters.</p>
-          <a href="mailto:partner@cqadvocates.com" class="card-link">
-            Contact
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-            </svg>
-          </a>
+
+            <div class="form-group">
+              <label class="form-label">Filter by Practice Area</label>
+              <div class="filter-chips" style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
+                <button type="button" class="filter-chip active" data-filter="all">All</button>
+                <button type="button" class="filter-chip" data-filter="corporate">Corporate & Commercial</button>
+                <button type="button" class="filter-chip" data-filter="banking">Banking & Finance</button>
+                <button type="button" class="filter-chip" data-filter="dispute">Dispute Resolution</button>
+                <button type="button" class="filter-chip" data-filter="regulatory">Regulatory & Compliance</button>
+                <button type="button" class="filter-chip" data-filter="ip">Intellectual Property</button>
+                <button type="button" class="filter-chip" data-filter="employment">Employment</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: var(--space-lg);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="margin-right: var(--space-sm);">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              Search Team
+            </button>
+          </form>
         </div>
 
-        <!-- Team Member 2 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
-          </div>
-          <h4>[Partner Name]</h4>
-          <p class="title">Senior Partner</p>
-          <p>Leads the firm's dispute resolution practice with extensive experience in international arbitration and commercial litigation.</p>
-          <a href="mailto:partner@cqadvocates.com" class="card-link">
-            Contact
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        <!-- Search Results Placeholder -->
+        <div id="team-search-results" class="team-search-results" style="margin-top: var(--space-2xl);">
+          <div class="text-center text-gray" style="padding: var(--space-3xl) 0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1" style="margin: 0 auto var(--space-md); opacity: 0.5;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
             </svg>
-          </a>
-        </div>
-
-        <!-- Team Member 3 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
+            <p>Use the search above to find team members.</p>
+            <p class="small">Search by name, practice area, or area of expertise.</p>
           </div>
-          <h4>[Partner Name]</h4>
-          <p class="title">Partner, Banking & Finance</p>
-          <p>Advises lenders and borrowers on complex financing transactions, project finance, and restructuring matters.</p>
-          <a href="mailto:partner@cqadvocates.com" class="card-link">
-            Contact
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-            </svg>
-          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Associates -->
+  <!-- Team Overview -->
   <section class="section">
     <div class="container">
-      <h2 class="text-center mb-2xl">Associates</h2>
-      <div class="team-grid">
-        <!-- Associate 1 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
+      <div class="section-header text-center">
+        <h2>Our Practice Groups</h2>
+        <p>Our team is organized across practice areas to deliver specialized expertise.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card text-center" data-animate>
+          <div class="card-icon" style="margin: 0 auto var(--space-md);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
           </div>
-          <h4>[Associate Name]</h4>
-          <p class="title">Associate</p>
-          <p>Focuses on corporate and commercial matters, including M&A transactions and corporate governance.</p>
+          <h4>Corporate & Commercial</h4>
+          <p class="small text-gray">M&A, private equity, joint ventures, and corporate governance.</p>
         </div>
-
-        <!-- Associate 2 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
+        <div class="card text-center" data-animate>
+          <div class="card-icon" style="margin: 0 auto var(--space-md); background: #FFF8E7; color: var(--gold);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
           </div>
-          <h4>[Associate Name]</h4>
-          <p class="title">Associate</p>
-          <p>Advises on regulatory compliance, data protection, and technology transactions.</p>
+          <h4>Banking & Finance</h4>
+          <p class="small text-gray">Debt finance, project finance, and financial restructuring.</p>
         </div>
-
-        <!-- Associate 3 -->
-        <div class="card team-card" data-animate>
-          <div class="team-photo">
-            <div class="team-photo-placeholder">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-            </div>
+        <div class="card text-center" data-animate>
+          <div class="card-icon" style="margin: 0 auto var(--space-md); background: #F0F0F0; color: var(--dark);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+            </svg>
           </div>
-          <h4>[Associate Name]</h4>
-          <p class="title">Associate</p>
-          <p>Focuses on dispute resolution, representing clients in arbitration and litigation proceedings.</p>
+          <h4>Dispute Resolution</h4>
+          <p class="small text-gray">Arbitration, litigation, and alternative dispute resolution.</p>
         </div>
       </div>
     </div>
@@ -189,11 +164,7 @@
       <div class="footer-grid">
         <div class="footer-brand">
           <a href="../index.html" class="logo">
-            <div class="logo-mark">C&Q</div>
-            <div class="logo-text">
-              <span class="logo-name">Crimson & Quill</span>
-              <span class="logo-tagline">Advocates & Legal Consultants</span>
-            </div>
+            <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
           </a>
           <p>Exceptional legal service for Uganda's most complex challenges.</p>
         </div>

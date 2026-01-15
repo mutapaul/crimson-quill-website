@@ -7,24 +7,30 @@
    CSS VARIABLES / DESIGN TOKENS
    ============================================ */
 :root {
-  /* Brand Colors */
-  --crimson: #8B1538;
-  --crimson-dark: #5C0E25;
-  --crimson-light: #FDF6F7;
+  /* Brand Colors - Black & Gold */
+  --primary: #000000;
+  --primary-dark: #000000;
+  --primary-light: #F5F5F5;
   --gold: #B8860B;
   --gold-light: #D4A84B;
+  --gold-dark: #8B6914;
+
+  /* Legacy color aliases for compatibility */
+  --crimson: #000000;
+  --crimson-dark: #000000;
+  --crimson-light: #F5F5F5;
 
   /* Neutral Colors */
-  --dark: #2D3436;
-  --gray: #636E72;
-  --gray-light: #B2BEC3;
-  --silver: #DFE6E9;
-  --off-white: #F8F9FA;
+  --dark: #000000;
+  --gray: #4A4A4A;
+  --gray-light: #888888;
+  --silver: #E0E0E0;
+  --off-white: #FAFAFA;
   --white: #FFFFFF;
 
-  /* Typography */
-  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Typography - Helvetica Neue alternatives */
+  --font-serif: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -238,20 +244,30 @@ p {
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  text-decoration: none;
 }
 
+.logo-name {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--dark);
+  line-height: 1;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.logo-amp {
+  color: var(--gold);
+  font-weight: 400;
+  font-style: italic;
+  font-family: 'Times New Roman', Georgia, serif;
+  margin: 0 0.1em;
+}
+
+/* Legacy styles - kept for compatibility */
 .logo-mark {
-  width: 48px;
-  height: 48px;
-  background: var(--crimson);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 1.125rem;
+  display: none;
 }
 
 .logo-text {
@@ -259,18 +275,8 @@ p {
   flex-direction: column;
 }
 
-.logo-name {
-  font-family: var(--font-serif);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--dark);
-  line-height: 1.2;
-}
-
 .logo-tagline {
-  font-size: 0.75rem;
-  color: var(--gray);
-  letter-spacing: 0.02em;
+  display: none;
 }
 
 .nav {
@@ -655,6 +661,32 @@ p {
 
 .practice-card:hover {
   border-color: var(--crimson);
+}
+
+/* Filter Chips */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--off-white);
+  border: 1px solid var(--silver);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gray);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-chip:hover {
+  border-color: var(--gold);
+  color: var(--dark);
+}
+
+.filter-chip.active {
+  background: var(--dark);
+  border-color: var(--dark);
+  color: var(--white);
 }
 
 /* ============================================
