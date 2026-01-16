@@ -1,25 +1,25 @@
 {
-  "cleanUrls": true,
-  "trailingSlash": false,
-  "rewrites": [
-    { "source": "/about", "destination": "/pages/about.html" },
-    { "source": "/contact", "destination": "/pages/contact.html" },
-    { "source": "/team", "destination": "/pages/team.html" },
-    { "source": "/careers", "destination": "/pages/careers.html" },
-    { "source": "/insights", "destination": "/pages/insights.html" },
-    { "source": "/practice-areas", "destination": "/pages/practice-areas.html" },
-    { "source": "/privacy", "destination": "/pages/privacy.html" },
-    { "source": "/terms", "destination": "/pages/terms.html" }
-  ],
-  "redirects": [
-    { "source": "/index.html", "destination": "/", "permanent": true },
-    { "source": "/pages/about.html", "destination": "/about", "permanent": true },
-    { "source": "/pages/contact.html", "destination": "/contact", "permanent": true },
-    { "source": "/pages/team.html", "destination": "/team", "permanent": true },
-    { "source": "/pages/careers.html", "destination": "/careers", "permanent": true },
-    { "source": "/pages/insights.html", "destination": "/insights", "permanent": true },
-    { "source": "/pages/practice-areas.html", "destination": "/practice-areas", "permanent": true },
-    { "source": "/pages/privacy.html", "destination": "/privacy", "permanent": true },
-    { "source": "/pages/terms.html", "destination": "/terms", "permanent": true }
-  ]
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "rewrites": [
+          { "source": "/about", "destination": "/pages/about" },
+          { "source": "/contact", "destination": "/pages/contact" },
+          { "source": "/team", "destination": "/pages/team" },
+          { "source": "/careers", "destination": "/pages/careers" },
+          { "source": "/insights", "destination": "/pages/insights" },
+          { "source": "/practice-areas", "destination": "/pages/practice-areas" },
+          { "source": "/privacy", "destination": "/pages/privacy" },
+          { "source": "/terms", "destination": "/pages/terms" }
+    ],
+    "redirects": [
+          { "source": "/index.html", "destination": "/", "permanent": true },
+          { "source": "/pages/about.html", "destination": "/about", "permanent": true },
+          { "source": "/pages/contact.html", "destination": "/contact", "permanent": true },
+          { "source": "/pages/team.html", "destination": "/team", "permanent": true },
+          { "source": "/pages/careers.html", "destination": "/careers", "permanent": true },
+          { "source": "/pages/insights.html", "destination": "/insights", "permanent": true },
+          { "source": "/pages/practice-areas.html", "destination": "/practice-areas", "permanent": true },
+          { "source": "/pages/privacy.html", "destination": "/privacy", "permanent": true },
+          { "source": "/pages/terms.html", "destination": "/terms", "permanent": true }
+    ]
 }
