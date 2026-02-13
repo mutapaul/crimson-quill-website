@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Code | Crimson & Quill Advocates</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #B8860B;
+      --gold-light: #D4A84B;
+      --gold-dark: #8B6914;
+      --black: #000000;
+      --white: #FFFFFF;
+      --gray: #4A4A4A;
+      --gray-light: #888888;
+      --silver: #E0E0E0;
+      --off-white: #FAFAFA;
+      --error: #C53030;
+      --error-bg: #FFF5F5;
+      --success: #276749;
+      --success-bg: #F0FFF4;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--off-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: var(--black);
+    }
+    .verify-card {
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+      max-width: 440px;
+      width: 100%;
+      padding: 48px 40px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo-name {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--black);
+    }
+    .logo-amp { color: var(--gold); font-style: italic; }
+    .logo-sub {
+      display: block;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--gray-light);
+      margin-top: 2px;
+    }
+    .email-icon {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .email-icon svg {
+      width: 48px;
+      height: 48px;
+      color: var(--gold);
+    }
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      color: var(--gray-light);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    .subtitle strong {
+      color: var(--gray);
+      font-weight: 600;
+    }
+    .otp-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .otp-inputs input {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      font-family: 'Inter', monospace;
+      border: 1.5px solid var(--silver);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--black);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+    .otp-inputs input::-webkit-outer-spin-button,
+    .otp-inputs input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .otp-inputs input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+    }
+    .otp-inputs input.filled {
+      border-color: var(--gold-light);
+      background: #FFFDF5;
+    }
+    .btn-verify {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      color: var(--white);
+      background: var(--gold);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      position: relative;
+    }
+    .btn-verify:hover { background: var(--gold-dark); }
+    .btn-verify:active { transform: scale(0.99); }
+    .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-verify .spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto;
+    }
+    .btn-verify.loading .btn-text { visibility: hidden; }
+    .btn-verify.loading .spinner { display: block; position: absolute; top: 50%; left: 50%; margin-top: -9px; margin-left: -9px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-message {
+      display: none;
+      background: var(--error-bg);
+      color: var(--error);
+      font-size: 13px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      line-height: 1.4;
+      border: 1px solid #FED7D7;
+    }
+    .error-message.visible { display: block; }
+    .success-message {
+      display: none;
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 13px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      line-height: 1.4;
+      border: 1px solid #C6F6D5;
+    }
+    .success-message.visible { display: block; }
+    .resend-row {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--gray-light);
+    }
+    .resend-link {
+      color: var(--gold-dark);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .resend-link:hover { text-decoration: underline; }
+    .resend-link.disabled {
+      color: var(--silver);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .resend-timer {
+      font-size: 12px;
+      color: var(--gray-light);
+    }
+    .change-email {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--gray-light);
+      text-decoration: none;
+    }
+    .change-email:hover { color: var(--black); }
+    .footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 11px;
+      color: #CCCCCC;
+    }
+    @media (max-width: 480px) {
+      .verify-card { padding: 36px 24px; }
+      h1 { font-size: 20px; }
+      .otp-inputs input { width: 42px; height: 50px; font-size: 20px; }
+      .otp-inputs { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="verify-card">
+    <div class="logo">
+      <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
+      <span class="logo-sub">ADVOCATES</span>
+    </div>
+
+    <div class="email-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+      </svg>
+    </div>
+
+    <h1>Check Your Email</h1>
+    <p class="subtitle">We sent a 6-digit code to <strong id="emailDisplay">your email</strong></p>
+
+    <div class="error-message" id="errorMsg"></div>
+    <div class="success-message" id="successMsg"></div>
+
+    <form id="otpForm" autocomplete="off">
+      <div class="otp-inputs" id="otpInputs">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 1" autofocus>
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 2">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 3">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 4">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 5">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 6">
+      </div>
+      <button type="submit" class="btn-verify" id="verifyBtn" disabled>
+        <span class="btn-text">Verify & Continue</span>
+        <span class="spinner"></span>
+      </button>
+    </form>
+
+    <div class="resend-row">
+      <span>Didn't receive a code? </span>
+      <a class="resend-link disabled" id="resendLink">Resend Code</a>
+      <span class="resend-timer" id="resendTimer"> (60s)</span>
+    </div>
+
+    <a class="change-email" id="changeEmail" href="/login">&larr; Use a different email</a>
+  </div>
+
+  <div class="footer">
+    &copy; 2026 Crimson & Quill Advocates. All rights reserved.
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      CQAuth.initVerify();
+    });
+  </script>
+</body>
+</html>
