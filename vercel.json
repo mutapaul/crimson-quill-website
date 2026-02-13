@@ -9,7 +9,9 @@
           { "source": "/insights", "destination": "/pages/insights" },
           { "source": "/practice-areas", "destination": "/pages/practice-areas" },
           { "source": "/privacy", "destination": "/pages/privacy" },
-          { "source": "/terms", "destination": "/pages/terms" }
+          { "source": "/terms", "destination": "/pages/terms" },
+          { "source": "/login", "destination": "/pages/login.html" },
+          { "source": "/verify-otp", "destination": "/pages/verify-otp.html" }
     ],
     "redirects": [
           { "source": "/index.html", "destination": "/", "permanent": true },
