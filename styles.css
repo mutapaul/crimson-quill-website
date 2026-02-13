@@ -478,6 +478,17 @@ p {
   color: var(--white);
 }
 
+.btn-staff {
+  background: transparent;
+  color: var(--crimson);
+  border: 1.5px solid var(--crimson);
+}
+
+.btn-staff:hover {
+  background: var(--crimson);
+  color: var(--white);
+}
+
 .btn-lg {
   padding: 1rem 2rem;
   font-size: 1rem;
