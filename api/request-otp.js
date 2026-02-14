@@ -97,7 +97,6 @@ module.exports = async function handler(req, res) {
             <span style="font-family: Georgia, serif; font-size: 22px; font-weight: 600; color: #000000;">
               Crimson <span style="color: #B8860B; font-style: italic;">&</span> Quill
             </span>
-            <div style="font-size: 11px; letter-spacing: 2px; color: #888888; margin-top: 4px;">ADVOCATES</div>
           </div>
 
           <div style="border-top: 2px solid #B8860B; padding-top: 24px;">
@@ -118,7 +117,7 @@ module.exports = async function handler(req, res) {
 
           <div style="border-top: 1px solid #E0E0E0; margin-top: 32px; padding-top: 16px; text-align: center;">
             <p style="font-size: 11px; color: #AAAAAA; margin: 0;">
-              Crimson & Quill Advocates &bull; Kampala, Uganda
+              Crimson & Quill &bull; Kampala, Uganda
             </p>
           </div>
         </div>
