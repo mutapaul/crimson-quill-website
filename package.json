@@ -1,8 +1,8 @@
 {
-  "name": "cq-advocates-website",
+  "name": "cq-website",
   "version": "1.0.0",
   "private": true,
-  "description": "Crimson & Quill Advocates website with OTP authentication",
+  "description": "Crimson & Quill website with OTP authentication",
   "dependencies": {
     "resend": "^3.2.0",
     "@vercel/kv": "^1.0.1",
