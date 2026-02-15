@@ -1025,9 +1025,9 @@
                         site: 'client',
                         list: 'Messages',
                         fields: {
-                            Subject: subject,
-                            MessageBody: body,
-                            IsRead: false
+                            Title: subject,
+                            Message_x0020_Body: body,
+                            Read: false
                         }
                     })
                 });
@@ -1101,9 +1101,9 @@
                 const messagesItems = messages.items || [];
                 const eventsItems = events.items || [];
 
-                const activeMatters = mattersItems.filter(m => m.Status === 'Active').length;
+                const activeMatters = mattersItems.filter(m => m.Matter_x0020_Status === 'Active').length;
                 const totalMatters = mattersItems.length;
-                const unreadMessages = messagesItems.filter(m => !m.IsRead).length;
+                const unreadMessages = messagesItems.filter(m => !m.Read).length;
                 const upcomingEvents = eventsItems.length;
 
                 let html = `
@@ -1167,37 +1167,37 @@
                 html += '<thead><tr><th>Matter ID</th><th>Title</th><th>Status</th><th>Priority</th><th>Lead Lawyer</th><th>Practice Area</th></tr></thead><tbody>';
 
                 matters.forEach((matter, index) => {
-                    const status = matter.Status || 'Active';
+                    const status = matter.Matter_x0020_Status || 'Active';
                     const statusBadgeClass = `badge-${status.toLowerCase().replace(' ', '')}`;
                     const priority = matter.Priority || 'Normal';
                     const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
 
                     html += `
                         <tr onclick="toggleMatterDetails(this, ${index})" style="cursor: pointer;">
-                            <td>${matter.MatterId || 'N/A'}</td>
+                            <td>${matter.Matter_x0020_ID || 'N/A'}</td>
                             <td><strong>${matter.Title || 'Untitled'}</strong></td>
                             <td><span class="badge ${statusBadgeClass}">${status}</span></td>
                             <td><span class="badge ${priorityBadgeClass}">${priority}</span></td>
-                            <td>${matter.LeadLawyer || 'N/A'}</td>
-                            <td>${matter.PracticeArea || 'N/A'}</td>
+                            <td>${matter.Client_x0020_Name || 'N/A'}</td>
+                            <td>${matter.Practice_x0020_Area || 'N/A'}</td>
                         </tr>
                         <tr class="matter-details-row" style="display: none;">
                             <td colspan="6">
                                 <div class="detail-row">
                                     <span class="detail-label">Description:</span>
-                                    <span class="detail-value">${matter.Description || 'N/A'}</span>
+                                    <span class="detail-value">${matter.Matter_x0020_Description || 'N/A'}</span>
                                 </div>
                                 <div class="detail-row">
-                                    <span class="detail-label">Opposing Party:</span>
-                                    <span class="detail-value">${matter.OpposingParty || 'N/A'}</span>
+                                    <span class="detail-label">Fee Arrangement:</span>
+                                    <span class="detail-value">${matter.Fee_x0020_Arrangement || 'N/A'}</span>
                                 </div>
                                 <div class="detail-row">
-                                    <span class="detail-label">Court:</span>
-                                    <span class="detail-value">${matter.Court || 'N/A'}</span>
+                                    <span class="detail-label">Open Date:</span>
+                                    <span class="detail-value">${formatDate(matter.Open_x0020_Date) || 'N/A'}</span>
                                 </div>
                                 <div class="detail-row">
-                                    <span class="detail-label">Case Number:</span>
-                                    <span class="detail-value">${matter.CaseNumber || 'N/A'}</span>
+                                    <span class="detail-label">Target Close Date:</span>
+                                    <span class="detail-value">${formatDate(matter.Target_x0020_Close_x0020_Date) || 'N/A'}</span>
                                 </div>
                                 <div class="detail-row">
                                     <span class="detail-label">Last Updated:</span>
@@ -1318,22 +1318,22 @@
                     messages.forEach((message, index) => {
                         const priority = message.Priority || 'Normal';
                         const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-                        const isRead = message.IsRead ? '' : ' style="background: rgba(184, 134, 11, 0.05);"';
+                        const isRead = message.Read ? '' : ' style="background: rgba(184, 134, 11, 0.05);"';
 
                         html += `
                             <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
                                     <div>
-                                        <div class="list-item-title">${message.Subject || message.Title || 'No Subject'}</div>
-                                        <div class="list-item-meta">From: ${message.SenderName || 'Unknown'} • ${formatDate(message.Created)}</div>
+                                        <div class="list-item-title">${message.Title || 'No Subject'}</div>
+                                        <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • ${formatDate(message.Created)}</div>
                                     </div>
                                     <span class="badge ${priorityBadgeClass}">${priority}</span>
                                 </div>
                                 <div class="list-item-details" id="msg-details-${index}">
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
-                                        <div style="color: var(--gray); line-height: 1.6;">${message.MessageBody || message.Description || 'No content'}</div>
+                                        <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
                                         <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
-                                            ${!message.IsRead ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                            ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
                                             Received: ${formatDate(message.Created)}
                                         </div>
                                     </div>

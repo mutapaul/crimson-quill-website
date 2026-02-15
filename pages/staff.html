@@ -922,7 +922,6 @@
                                     <th>Practice Area</th>
                                     <th>Status</th>
                                     <th>Priority</th>
-                                    <th>Lead Lawyer</th>
                                     <th>Open Date</th>
                                     <th>Actions</th>
                                 </tr>
@@ -1138,10 +1137,6 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Lead Lawyer</label>
-                        <input type="text" name="leadLawyer" class="form-input">
-                    </div>
-                    <div class="form-group">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-textarea"></textarea>
                     </div>
@@ -1178,8 +1173,11 @@
                         <input type="tel" name="phone" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Company</label>
-                        <input type="text" name="company" class="form-input">
+                        <label class="form-label">Client Type</label>
+                        <select name="clientType" class="form-select">
+                            <option value="Individual">Individual</option>
+                            <option value="Corporate">Corporate</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Address</label>
@@ -1386,7 +1384,10 @@
         // ===== RENDER FUNCTIONS =====
         function renderDashboard() {
             document.getElementById('statTotalMatters').textContent = portalData.matters.length;
-            const activeMatters = portalData.matters.filter(m => m.Status && m.Status.toLowerCase() === 'active').length;
+            const activeMatters = portalData.matters.filter(m => {
+                const status = m.Matter_x0020_Status || m.Status || '';
+                return status.toLowerCase() === 'active';
+            }).length;
             document.getElementById('statActiveMatters').textContent = activeMatters;
             document.getElementById('statTotalClients').textContent = portalData.clients.length;
             const pendingBilling = portalData.matters.filter(m => !m['Billing Status'] || m['Billing Status'].toLowerCase() !== 'paid').length;
@@ -1399,7 +1400,7 @@
 
             if (mattersFilter !== 'all') {
                 filtered = portalData.matters.filter(m => {
-                    const status = (m.Status || '').toLowerCase();
+                    const status = (m.Matter_x0020_Status || '').toLowerCase();
                     if (mattersFilter === 'active') return status === 'active';
                     if (mattersFilter === 'pending') return status === 'pending';
                     if (mattersFilter === 'on-hold') return status === 'on hold' || status === 'on-hold';
@@ -1409,23 +1410,22 @@
             }
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #888;">No matters found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">No matters found</td></tr>';
                 return;
             }
 
             tbody.innerHTML = filtered.map(matter => {
-                const statusClass = getStatusBadgeClass(matter.Status);
+                const statusClass = getStatusBadgeClass(matter.Matter_x0020_Status);
                 const priorityClass = getPriorityBadgeClass(matter.Priority);
                 return `
                     <tr>
-                        <td>${escapeHtml(matter['Matter ID'] || '—')}</td>
+                        <td>${escapeHtml(matter.Matter_x0020_ID || '—')}</td>
                         <td><strong>${escapeHtml(matter.Title || '—')}</strong></td>
-                        <td>${escapeHtml(matter['Client Name'] || '—')}</td>
-                        <td>${escapeHtml(matter['Practice Area'] || '—')}</td>
-                        <td><span class="badge ${statusClass}">${escapeHtml(matter.Status || 'Unknown')}</span></td>
+                        <td>${escapeHtml(matter.Client_x0020_Name || '—')}</td>
+                        <td>${escapeHtml(matter.Practice_x0020_Area || '—')}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(matter.Matter_x0020_Status || 'Unknown')}</span></td>
                         <td><span class="badge ${priorityClass}">${escapeHtml(matter.Priority || 'Medium')}</span></td>
-                        <td>${escapeHtml(matter['Lead Lawyer'] || '—')}</td>
-                        <td>${formatDate(matter['Open Date'])}</td>
+                        <td>${formatDate(matter.Open_x0020_Date)}</td>
                         <td>
                             <button class="btn btn-sm btn-secondary" onclick="editMatter(${matter.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteMatter(${matter.id})">Delete</button>
@@ -1451,7 +1451,7 @@
 
             const matterCounts = {};
             portalData.matters.forEach(m => {
-                const clientName = m['Client Name'] || 'Unknown';
+                const clientName = m.Client_x0020_Name || 'Unknown';
                 matterCounts[clientName] = (matterCounts[clientName] || 0) + 1;
             });
 
@@ -1459,9 +1459,9 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                         <div>
-                            <div class="card-title">${escapeHtml(client.Name || 'Unnamed Client')}</div>
+                            <div class="card-title">${escapeHtml(client.Title || 'Unnamed Client')}</div>
                             <div style="color: #888; font-size: 12px; margin-top: 3px;">
-                                ${matterCounts[client.Name] || 0} matter${(matterCounts[client.Name] || 0) !== 1 ? 's' : ''}
+                                ${matterCounts[client.Title] || 0} matter${(matterCounts[client.Title] || 0) !== 1 ? 's' : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
@@ -1479,15 +1479,15 @@
                             <div style="font-size: 13px;">${escapeHtml(client.Phone || '—')}</div>
                         </div>
                         <div>
-                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Company</div>
-                            <div style="font-size: 13px;">${escapeHtml(client.Company || '—')}</div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Type</div>
+                            <div style="font-size: 13px;">${escapeHtml(client.Client_x0020_Type || '—')}</div>
                         </div>
                         <div>
                             <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Status</div>
                             <div style="font-size: 13px;">${escapeHtml(client.Status || 'Active')}</div>
                         </div>
                     </div>
-                    ${client.Address ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--silver); font-size: 13px; color: #666;">${escapeHtml(client.Address)}</div>` : ''}
+                    ${client.Physical_x0020_Address ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--silver); font-size: 13px; color: #666;">${escapeHtml(client.Physical_x0020_Address)}</div>` : ''}
                 </div>
             `).join('');
         }
@@ -1523,7 +1523,7 @@
                 return;
             }
 
-            const sorted = [...portalData.events].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+            const sorted = [...portalData.events].sort((a, b) => new Date(a.EventDate) - new Date(b.EventDate));
 
             container.innerHTML = sorted.map((event, idx) => `
                 <div class="card">
@@ -1533,7 +1533,7 @@
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
                                 <div>
                                     <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Date & Time</div>
-                                    <div style="font-size: 13px;">${formatDatetime(event.Date)}</div>
+                                    <div style="font-size: 13px;">${formatDatetime(event.EventDate)}</div>
                                 </div>
                                 <div>
                                     <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Location</div>
@@ -1567,10 +1567,9 @@
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; color: var(--primary); margin-bottom: 6px;">From: ${escapeHtml(msg.From || 'Unknown')}</div>
-                            <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">${escapeHtml(msg.Subject || '(No subject)')}</div>
-                            <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Body || '').substring(0, 150))}${(msg.Body || '').length > 150 ? '...' : ''}</div>
-                            <div style="color: #888; font-size: 12px;">${formatDatetime(msg.Received)}</div>
+                            <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">${escapeHtml(msg.Title || '(No subject)')}</div>
+                            <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
+                            <div style="color: #888; font-size: 12px;">${formatDatetime(msg.Created)}</div>
                         </div>
                     </div>
                 </div>
@@ -1581,7 +1580,7 @@
             // Matters by status
             const statusCounts = {};
             portalData.matters.forEach(m => {
-                const status = m.Status || 'Unknown';
+                const status = m.Matter_x0020_Status || 'Unknown';
                 statusCounts[status] = (statusCounts[status] || 0) + 1;
             });
             document.getElementById('reportMattersByStatus').innerHTML = Object.entries(statusCounts)
@@ -1595,7 +1594,7 @@
             // Matters by practice area
             const areaCounts = {};
             portalData.matters.forEach(m => {
-                const area = m['Practice Area'] || 'Unassigned';
+                const area = m.Practice_x0020_Area || 'Unassigned';
                 areaCounts[area] = (areaCounts[area] || 0) + 1;
             });
             document.getElementById('reportMattersByArea').innerHTML = Object.entries(areaCounts)
@@ -1606,45 +1605,15 @@
                     </div>
                 `).join('') || '<div style="text-align: center; color: #888; padding: 20px;">No data</div>';
 
-            // Billing summary
-            const totalBilling = portalData.matters.reduce((sum, m) => sum + (parseFloat(m['Total Billing'] || 0) || 0), 0);
-            const paidBilling = portalData.matters.reduce((sum, m) => {
-                if (m['Billing Status'] && m['Billing Status'].toLowerCase() === 'paid') {
-                    return sum + (parseFloat(m['Total Billing'] || 0) || 0);
-                }
-                return sum;
-            }, 0);
-            const outstandingBilling = totalBilling - paidBilling;
-
+            // Billing summary (placeholder since these fields don't exist)
             document.getElementById('reportBilling').innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--silver);">
-                    <span style="color: #888; font-size: 13px;">Total Billing</span>
-                    <span style="color: var(--gold); font-weight: 600; font-size: 13px;">${formatCurrency(totalBilling)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--silver);">
-                    <span style="color: #888; font-size: 13px;">Paid</span>
-                    <span style="color: #2e7d32; font-weight: 600; font-size: 13px;">${formatCurrency(paidBilling)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
-                    <span style="color: #888; font-size: 13px;">Outstanding</span>
-                    <span style="color: #e65100; font-weight: 600; font-size: 13px;">${formatCurrency(outstandingBilling)}</span>
-                </div>
+                <div style="text-align: center; color: #888; padding: 20px;">Billing data not available in current fields</div>
             `;
 
-            // Team workload
-            const lawyerMatters = {};
-            portalData.matters.forEach(m => {
-                const lawyer = m['Lead Lawyer'] || 'Unassigned';
-                lawyerMatters[lawyer] = (lawyerMatters[lawyer] || 0) + 1;
-            });
-            document.getElementById('reportWorkload').innerHTML = Object.entries(lawyerMatters)
-                .sort((a, b) => b[1] - a[1])
-                .map(([lawyer, count]) => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--silver);">
-                        <span style="color: #888; font-size: 13px;">${escapeHtml(lawyer)}</span>
-                        <span style="color: var(--gold); font-weight: 600; font-size: 13px;">${count}</span>
-                    </div>
-                `).join('') || '<div style="text-align: center; color: #888; padding: 20px;">No data</div>';
+            // Team workload (placeholder since Lead Lawyer field doesn't exist)
+            document.getElementById('reportWorkload').innerHTML = `
+                <div style="text-align: center; color: #888; padding: 20px;">Workload data not available in current fields</div>
+            `;
         }
 
         function renderSettings() {
@@ -1710,7 +1679,7 @@
         function populateClientSelect() {
             const select = document.getElementById('matterClientSelect');
             select.innerHTML = '<option value="">Select a client...</option>' +
-                portalData.clients.map(c => `<option value="${escapeHtml(c.Name || '')}">${escapeHtml(c.Name || '')}</option>`).join('');
+                portalData.clients.map(c => `<option value="${escapeHtml(c.Title || '')}">${escapeHtml(c.Title || '')}</option>`).join('');
         }
 
         function editMatter(matterId) {
@@ -1724,12 +1693,11 @@
             document.getElementById('matterFormMessages').innerHTML = '';
 
             document.querySelector('#matterForm input[name="title"]').value = matter.Title || '';
-            document.querySelector('#matterForm select[name="clientName"]').value = matter['Client Name'] || '';
-            document.querySelector('#matterForm input[name="practiceArea"]').value = matter['Practice Area'] || '';
-            document.querySelector('#matterForm select[name="status"]').value = matter.Status || 'Active';
+            document.querySelector('#matterForm select[name="clientName"]').value = matter.Client_x0020_Name || '';
+            document.querySelector('#matterForm input[name="practiceArea"]').value = matter.Practice_x0020_Area || '';
+            document.querySelector('#matterForm select[name="status"]').value = matter.Matter_x0020_Status || 'Active';
             document.querySelector('#matterForm select[name="priority"]').value = matter.Priority || 'Medium';
-            document.querySelector('#matterForm input[name="leadLawyer"]').value = matter['Lead Lawyer'] || '';
-            document.querySelector('#matterForm textarea[name="description"]').value = matter.Description || '';
+            document.querySelector('#matterForm textarea[name="description"]').value = matter.Matter_x0020_Description || '';
 
             document.getElementById('matterModal').classList.add('active');
         }
@@ -1744,11 +1712,11 @@
             document.getElementById('clientIdField').value = clientId;
             document.getElementById('clientFormMessages').innerHTML = '';
 
-            document.querySelector('#clientForm input[name="name"]').value = client.Name || '';
+            document.querySelector('#clientForm input[name="name"]').value = client.Title || '';
             document.querySelector('#clientForm input[name="email"]').value = client.Email || '';
             document.querySelector('#clientForm input[name="phone"]').value = client.Phone || '';
-            document.querySelector('#clientForm input[name="company"]').value = client.Company || '';
-            document.querySelector('#clientForm textarea[name="address"]').value = client.Address || '';
+            document.querySelector('#clientForm select[name="clientType"]').value = client.Client_x0020_Type || 'Individual';
+            document.querySelector('#clientForm textarea[name="address"]').value = client.Physical_x0020_Address || '';
             document.querySelector('#clientForm textarea[name="notes"]').value = client.Notes || '';
 
             document.getElementById('clientModal').classList.add('active');
@@ -1765,7 +1733,7 @@
             document.getElementById('eventFormMessages').innerHTML = '';
 
             document.querySelector('#eventForm input[name="title"]').value = event.Title || '';
-            document.querySelector('#eventForm input[name="date"]').value = event.Date ? event.Date.slice(0, 16) : '';
+            document.querySelector('#eventForm input[name="date"]').value = event.EventDate ? event.EventDate.slice(0, 16) : '';
             document.querySelector('#eventForm input[name="location"]').value = event.Location || '';
             document.querySelector('#eventForm input[name="category"]').value = event.Category || '';
             document.querySelector('#eventForm textarea[name="description"]').value = event.Description || '';
@@ -1782,12 +1750,11 @@
 
             const payload = {
                 Title: formData.get('title'),
-                'Client Name': formData.get('clientName'),
-                'Practice Area': formData.get('practiceArea'),
-                Status: formData.get('status'),
+                Client_x0020_Name: formData.get('clientName'),
+                Practice_x0020_Area: formData.get('practiceArea'),
+                Matter_x0020_Status: formData.get('status'),
                 Priority: formData.get('priority'),
-                'Lead Lawyer': formData.get('leadLawyer'),
-                Description: formData.get('description')
+                Matter_x0020_Description: formData.get('description')
             };
 
             try {
@@ -1829,12 +1796,13 @@
             const clientId = document.getElementById('clientIdField').value;
 
             const payload = {
-                Name: formData.get('name'),
+                Title: formData.get('name'),
                 Email: formData.get('email'),
                 Phone: formData.get('phone'),
-                Company: formData.get('company'),
-                Address: formData.get('address'),
-                Notes: formData.get('notes')
+                Client_x0020_Type: formData.get('clientType') || 'Individual',
+                Physical_x0020_Address: formData.get('address'),
+                Notes: formData.get('notes'),
+                Status: 'Active'
             };
 
             try {
@@ -1877,7 +1845,7 @@
 
             const payload = {
                 Title: formData.get('title'),
-                Date: formData.get('date'),
+                EventDate: formData.get('date'),
                 Location: formData.get('location'),
                 Category: formData.get('category'),
                 Description: formData.get('description')
