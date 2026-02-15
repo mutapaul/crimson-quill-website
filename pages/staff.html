@@ -1586,9 +1586,10 @@
 
         function submitPromptModal() {
             const value = document.getElementById('promptModalInput').value;
+            const callback = promptModalCallback;
             closePromptModal();
-            if (promptModalCallback && value && value.trim()) {
-                promptModalCallback(value.trim());
+            if (callback && value && value.trim()) {
+                callback(value.trim());
             }
         }
 
