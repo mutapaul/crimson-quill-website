@@ -90,7 +90,7 @@ module.exports = async function handler(req, res) {
     const { error: sendError } = await resend.emails.send({
       from: 'Crimson & Quill Portal <portal@cqadvocates.com>',
       to: [normalizedEmail],
-      subject: `${otp} â Your Crimson & Quill Verification Code`,
+      subject: `${otp} - Your Crimson & Quill Verification Code`,
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #FAFAFA;">
           <div style="text-align: center; margin-bottom: 32px;">
