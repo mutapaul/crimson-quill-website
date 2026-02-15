@@ -1500,6 +1500,27 @@
         </div>
     </div>
 
+    <!-- Prompt Input Modal -->
+    <div class="modal-overlay" id="promptModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="promptModalTitle">Enter Value</h2>
+                <button class="modal-close" onclick="closePromptModal()">&times;</button>
+            </div>
+            <div style="padding: 20px 0;">
+                <p id="promptModalMessage" style="font-size: 1rem; color: #333; margin-bottom: 12px;">Enter a value:</p>
+                <input type="text" id="promptModalInput" class="form-input" style="width: 100%;" placeholder="Type here..." />
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px;">
+                <button class="btn btn-secondary" onclick="closePromptModal()">Cancel</button>
+                <button class="btn btn-gold" id="promptModalOk" onclick="submitPromptModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px;"></div>
+
     <script>
         // ===== STATE & CONFIG =====
         let currentTab = 'dashboard';
@@ -1507,6 +1528,7 @@
         let editingMatterId = null;
         let editingClientId = null;
         let editingEventId = null;
+        let promptModalCallback = null;
 
         let portalData = {
             matters: [],
@@ -1548,6 +1570,42 @@
         function closeConfirmModal() {
             document.getElementById('confirmDeleteModal').classList.remove('active');
             pendingDeleteCallback = null;
+        }
+
+        function showPromptModal(title, message, callback) {
+            document.getElementById('promptModalTitle').textContent = title;
+            document.getElementById('promptModalMessage').textContent = message;
+            document.getElementById('promptModalInput').value = '';
+            promptModalCallback = callback;
+            document.getElementById('promptModal').classList.add('active');
+            setTimeout(() => document.getElementById('promptModalInput').focus(), 100);
+            document.getElementById('promptModalInput').onkeydown = function(e) {
+                if (e.key === 'Enter') submitPromptModal();
+            };
+        }
+
+        function submitPromptModal() {
+            const value = document.getElementById('promptModalInput').value;
+            closePromptModal();
+            if (promptModalCallback && value && value.trim()) {
+                promptModalCallback(value.trim());
+            }
+        }
+
+        function closePromptModal() {
+            document.getElementById('promptModal').classList.remove('active');
+            promptModalCallback = null;
+        }
+
+        function showToast(message, type) {
+            type = type || 'info';
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const bgColors = { success: '#27ae60', error: '#c0392b', warning: '#f39c12', info: '#2980b9' };
+            toast.style.cssText = 'padding: 12px 20px; border-radius: 6px; color: white; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 350px; animation: fadeIn 0.3s ease; background:' + (bgColors[type] || bgColors.info);
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
         // ===== AUTHENTICATION =====
@@ -1761,7 +1819,7 @@
 
         function viewMatterDetail(matterId) {
             const matter = portalData.matters.find(m => String(m.id) === String(matterId));
-            if (!matter) { alert('Matter not found'); return; }
+            if (!matter) { showToast('Matter not found', 'error'); return; }
 
             document.getElementById('mattersListView').style.display = 'none';
             document.querySelector('#matters-tab .table-controls').style.display = 'none';
@@ -1950,7 +2008,7 @@
         function assignStaffToMatter(matterId) {
             const staffName = document.getElementById('matterStaffSelect').value;
             const role = document.getElementById('matterRoleSelect').value;
-            if (!staffName) { alert('Please select a staff member'); return; }
+            if (!staffName) { showToast('Please select a staff member', 'warning'); return; }
 
             const assignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
             const key = String(matterId);
@@ -1958,7 +2016,7 @@
 
             // Check for duplicates
             if (assignments[key].some(m => m.name === staffName)) {
-                alert(staffName + ' is already assigned to this matter');
+                showToast(staffName + ' is already assigned to this matter', 'warning');
                 return;
             }
 
@@ -2084,16 +2142,17 @@
         }
 
         function createMatterFolder(matterId) {
-            const folderName = prompt('Enter folder name:');
-            if (!folderName || !folderName.trim()) return;
-            const store = getMatterFileStore(matterId);
-            if (store.folders.some(f => f.name === folderName.trim())) {
-                alert('A folder with this name already exists');
-                return;
-            }
-            store.folders.push({ name: folderName.trim(), created: new Date().toISOString() });
-            saveMatterFileStore(matterId, store);
-            viewMatterDetail(matterId); // Refresh
+            showPromptModal('New Folder', 'Enter folder name:', function(folderName) {
+                const store = getMatterFileStore(matterId);
+                if (store.folders.some(f => f.name === folderName)) {
+                    showToast('A folder with this name already exists', 'warning');
+                    return;
+                }
+                store.folders.push({ name: folderName, created: new Date().toISOString() });
+                saveMatterFileStore(matterId, store);
+                showToast('Folder "' + folderName + '" created', 'success');
+                viewMatterDetail(matterId);
+            });
         }
 
         function deleteMatterFolder(matterId, folderIdx) {
@@ -2830,10 +2889,10 @@
                     if (resp.ok) {
                         loadAllData();
                     } else {
-                        alert('Failed to delete matter');
+                        showToast('Failed to delete matter', 'error');
                     }
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    showToast('Error: ' + error.message, 'error');
                 }
             });
         }
@@ -2855,10 +2914,10 @@
                     if (resp.ok) {
                         loadAllData();
                     } else {
-                        alert('Failed to delete client');
+                        showToast('Failed to delete client', 'error');
                     }
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    showToast('Error: ' + error.message, 'error');
                 }
             });
         }
@@ -2880,10 +2939,10 @@
                     if (resp.ok) {
                         loadAllData();
                     } else {
-                        alert('Failed to delete event');
+                        showToast('Failed to delete event', 'error');
                     }
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    showToast('Error: ' + error.message, 'error');
                 }
             });
         }
@@ -3055,10 +3114,10 @@
                     if (resp.ok) {
                         loadAllData();
                     } else {
-                        alert('Failed to delete invoice');
+                        showToast('Failed to delete invoice', 'error');
                     }
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    showToast('Error: ' + error.message, 'error');
                 }
             });
         }
