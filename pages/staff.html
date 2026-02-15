@@ -818,9 +818,11 @@
                 <div class="nav-item active" data-tab="dashboard">Dashboard</div>
                 <div class="nav-item" data-tab="matters">Matters</div>
                 <div class="nav-item" data-tab="clients">Clients</div>
+                <div class="nav-item" data-tab="staff">Staff Management</div>
                 <div class="nav-item" data-tab="documents">Documents</div>
                 <div class="nav-item" data-tab="calendar">Calendar</div>
                 <div class="nav-item" data-tab="messages">Messages</div>
+                <div class="nav-item" data-tab="billing">Billing & Invoices</div>
                 <div class="nav-item" data-tab="reports">Reports</div>
                 <div class="nav-item" data-tab="settings">Settings</div>
             </div>
@@ -952,6 +954,36 @@
                     </div>
                 </div>
 
+                <!-- STAFF MANAGEMENT TAB -->
+                <div class="tab-content" id="staff-tab">
+                    <div class="page-header">
+                        <h1>Staff Management</h1>
+                        <p>Manage firm staff members and assignments</p>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                        <button class="btn btn-gold" onclick="openNewStaffModal()">+ Add Staff Member</button>
+                    </div>
+
+                    <div class="card">
+                        <table class="data-table" id="staffTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Assigned Matters</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staffTableBody">
+                                <tr><td colspan="6" style="text-align: center; padding: 40px; color: #888;">Loading staff...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- DOCUMENTS TAB -->
                 <div class="tab-content" id="documents-tab">
                     <div class="page-header">
@@ -1010,11 +1042,46 @@
                         <p>Internal messages and communications</p>
                     </div>
 
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                        <button class="btn btn-gold" onclick="openNewMessageModal()">+ New Message</button>
+                    </div>
+
                     <div id="messagesContainer">
                         <div class="empty-state">
                             <div class="empty-state-icon">💌</div>
                             <div class="empty-state-title">No messages</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- BILLING & INVOICES TAB -->
+                <div class="tab-content" id="billing-tab">
+                    <div class="page-header">
+                        <h1>Billing & Invoices</h1>
+                        <p>Manage invoices and billing records in Uganda Shillings (UGX)</p>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                        <button class="btn btn-gold" onclick="openNewInvoiceModal()">+ New Invoice</button>
+                    </div>
+
+                    <div class="card">
+                        <table class="data-table" id="invoicesTable">
+                            <thead>
+                                <tr>
+                                    <th>Invoice No</th>
+                                    <th>Matter</th>
+                                    <th>Client</th>
+                                    <th>Date</th>
+                                    <th>Amount (UGX)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTableBody">
+                                <tr><td colspan="7" style="text-align: center; padding: 40px; color: #888;">No invoices found</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -1237,6 +1304,175 @@
         </div>
     </div>
 
+    <!-- New Message Modal -->
+    <div class="modal-overlay" id="messageModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">New Message</div>
+                <button class="modal-close" onclick="closeMessageModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="messageFormMessages"></div>
+                <form id="messageForm" onsubmit="saveMessage(event)">
+                    <div class="form-group">
+                        <label class="form-label">Subject *</label>
+                        <input type="text" name="subject" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Matter</label>
+                        <select name="matter" class="form-select" id="messageMattersSelect">
+                            <option value="">Select a matter...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message *</label>
+                        <textarea name="body" class="form-textarea" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select">
+                            <option value="Normal">Normal</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="messageId" id="messageIdField">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeMessageModal()">Cancel</button>
+                <button class="btn btn-gold" onclick="document.getElementById('messageForm').dispatchEvent(new Event('submit'))">Send Message</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New/Edit Staff Modal -->
+    <div class="modal-overlay" id="staffModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Staff Member</div>
+                <button class="modal-close" onclick="closeStaffModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="staffFormMessages"></div>
+                <form id="staffForm" onsubmit="saveStaff(event)">
+                    <div class="form-group">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role *</label>
+                        <select name="role" class="form-select" required>
+                            <option value="">Select a role...</option>
+                            <option value="Managing Partner">Managing Partner</option>
+                            <option value="Senior Associate">Senior Associate</option>
+                            <option value="Associate">Associate</option>
+                            <option value="Paralegal">Paralegal</option>
+                            <option value="Legal Assistant">Legal Assistant</option>
+                            <option value="Office Manager">Office Manager</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-input">
+                    </div>
+                    <input type="hidden" name="staffId" id="staffIdField">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeStaffModal()">Cancel</button>
+                <button class="btn btn-gold" onclick="document.getElementById('staffForm').dispatchEvent(new Event('submit'))">Save Staff Member</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New/Edit Invoice Modal -->
+    <div class="modal-overlay" id="invoiceModal">
+        <div class="modal" style="max-width: 650px;">
+            <div class="modal-header">
+                <div class="modal-title">New Invoice</div>
+                <button class="modal-close" onclick="closeInvoiceModal()">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 600px; overflow-y: auto;">
+                <div id="invoiceFormMessages"></div>
+                <form id="invoiceForm" onsubmit="saveInvoice(event)">
+                    <div class="form-group">
+                        <label class="form-label">Invoice Number</label>
+                        <input type="text" name="invoiceNumber" class="form-input" readonly id="invoiceNumberField">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Client *</label>
+                        <select name="client" class="form-select" required id="invoiceClientSelect">
+                            <option value="">Select a client...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Matter *</label>
+                        <select name="matter" class="form-select" required id="invoiceMatterSelect">
+                            <option value="">Select a matter...</option>
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label class="form-label">Invoice Date *</label>
+                            <input type="date" name="invoiceDate" class="form-input" required id="invoiceDateField">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Due Date *</label>
+                            <input type="date" name="dueDate" class="form-input" required id="invoiceDueDateField">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Professional Fees (UGX) *</label>
+                        <input type="number" name="professionalFees" class="form-input" required id="invoiceFeesField" onchange="updateInvoiceTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Disbursements (UGX)</label>
+                        <input type="number" name="disbursements" class="form-input" id="invoiceDisbursementsField" onchange="updateInvoiceTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">VAT Amount (18%, Auto-calculated) (UGX)</label>
+                        <input type="number" name="vatAmount" class="form-input" readonly id="invoiceVatField">
+                    </div>
+                    <div style="background-color: var(--off-white); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600;">
+                            <span>Total Amount (UGX)</span>
+                            <span id="invoiceTotalField">UGX 0</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount Paid (UGX)</label>
+                        <input type="number" name="amountPaid" class="form-input" id="invoiceAmountPaidField" onchange="updateInvoiceTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Draft">Draft</option>
+                            <option value="Sent">Sent</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Overdue">Overdue</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-textarea"></textarea>
+                    </div>
+                    <input type="hidden" name="invoiceId" id="invoiceIdField">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button>
+                <button class="btn btn-gold" onclick="document.getElementById('invoiceForm').dispatchEvent(new Event('submit'))">Save Invoice</button>
+                <button class="btn btn-primary" onclick="generateInvoicePDF()" id="generatePdfBtn" style="display: none;">Generate PDF</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Delete Modal -->
     <div class="modal-overlay" id="confirmDeleteModal">
         <div class="modal-content" style="max-width: 450px;">
@@ -1266,8 +1502,23 @@
             documents: [],
             events: [],
             messages: [],
+            staff: [],
+            invoices: [],
             activityLog: []
         };
+
+        // Default staff members
+        const defaultStaff = [
+            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul@crimson-quill.com', phone: '+256 701 000 001' },
+            { id: 2, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
+            { id: 3, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
+            { id: 4, name: 'Grace Amara', role: 'Paralegal', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
+            { id: 5, name: 'James Kato', role: 'Legal Assistant', email: 'james@crimson-quill.com', phone: '+256 701 000 005' }
+        ];
+
+        let editingStaffId = null;
+        let editingInvoiceId = null;
+        let editingMessageId = null;
 
         // ===== CONFIRM DELETE MODAL =====
         let pendingDeleteCallback = null;
@@ -1335,12 +1586,13 @@
 
         async function loadAllData() {
             try {
-                const [matters, clients, documents, events, messages] = await Promise.all([
+                const [matters, clients, documents, events, messages, invoices] = await Promise.all([
                     fetchList('Matters'),
                     fetchList('Clients'),
                     fetchList('Client Documents'),
                     fetchList('Events'),
-                    fetchList('Messages')
+                    fetchList('Messages'),
+                    fetchList('Billing')
                 ]);
 
                 portalData.matters = matters || [];
@@ -1348,15 +1600,33 @@
                 portalData.documents = documents || [];
                 portalData.events = events || [];
                 portalData.messages = messages || [];
+                portalData.invoices = invoices || [];
+
+                // Initialize staff from localStorage or use defaults
+                const storedStaff = localStorage.getItem('cq_staff');
+                if (storedStaff) {
+                    try {
+                        portalData.staff = JSON.parse(storedStaff);
+                    } catch {
+                        portalData.staff = [...defaultStaff];
+                        localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                    }
+                } else {
+                    portalData.staff = [...defaultStaff];
+                    localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                }
 
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 renderDashboard();
                 populateClientSelect();
+                populateMatterSelects();
                 renderMatters();
                 renderClients();
                 renderDocuments();
                 renderCalendar();
                 renderMessages();
+                renderStaff();
+                renderInvoices();
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -1614,6 +1884,88 @@
             `).join('');
         }
 
+        function renderStaff() {
+            const tbody = document.getElementById('staffTableBody');
+
+            if (portalData.staff.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #888;">No staff members</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = portalData.staff.map(staff => {
+                const matterCount = portalData.matters.filter(m => {
+                    const leadLawyer = m['Lead_x0020_Lawyer'] || '';
+                    return leadLawyer.toLowerCase() === staff.name.toLowerCase();
+                }).length;
+
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(staff.name || '—')}</strong></td>
+                        <td>${escapeHtml(staff.role || '—')}</td>
+                        <td>${escapeHtml(staff.email || '—')}</td>
+                        <td>${escapeHtml(staff.phone || '—')}</td>
+                        <td>${matterCount}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editStaff(${staff.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStaff(${staff.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderInvoices() {
+            const tbody = document.getElementById('invoicesTableBody');
+
+            if (portalData.invoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #888;">No invoices found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = portalData.invoices.map(invoice => {
+                const statusClass = invoice.Status ? 'badge-' + invoice.Status.toLowerCase().replace(' ', '-') : 'badge-pending';
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(invoice.Invoice_x0020_Number || '—')}</strong></td>
+                        <td>${escapeHtml(invoice.Matter_x0020_ID || '—')}</td>
+                        <td>${escapeHtml(invoice.Client_x0020_Name || '—')}</td>
+                        <td>${formatDate(invoice.Invoice_x0020_Date)}</td>
+                        <td style="text-align: right; font-weight: 600;">UGX ${parseInt(invoice.Total_x0020_Amount || 0).toLocaleString()}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(invoice.Status || 'Draft')}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="editInvoice(${invoice.id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function formatCurrencyUGX(amount) {
+            if (!amount) return 'UGX 0';
+            try {
+                return 'UGX ' + parseInt(amount).toLocaleString('en-US');
+            } catch {
+                return amount;
+            }
+        }
+
+        function updateInvoiceTotal() {
+            const fees = parseFloat(document.getElementById('invoiceFeesField').value) || 0;
+            const disbursements = parseFloat(document.getElementById('invoiceDisbursementsField').value) || 0;
+            const vat = fees * 0.18; // 18% VAT only on professional fees
+            const total = fees + disbursements + vat;
+
+            document.getElementById('invoiceVatField').value = Math.round(vat);
+            document.getElementById('invoiceTotalField').textContent = formatCurrencyUGX(Math.round(total));
+        }
+
+        function generateNextInvoiceNumber() {
+            const timestamp = Date.now();
+            const random = Math.floor(Math.random() * 10000);
+            return `CQ-INV-${timestamp.toString().slice(-6)}-${random.toString().padStart(4, '0')}`;
+        }
+
         function renderReports() {
             // Matters by status
             const statusCounts = {};
@@ -1714,10 +2066,78 @@
             document.getElementById('eventModal').classList.remove('active');
         }
 
+        function openNewStaffModal() {
+            editingStaffId = null;
+            document.getElementById('staffForm').reset();
+            document.getElementById('staffIdField').value = '';
+            document.querySelector('#staffModal .modal-title').textContent = 'Add Staff Member';
+            document.getElementById('staffFormMessages').innerHTML = '';
+            document.getElementById('staffModal').classList.add('active');
+        }
+
+        function closeStaffModal() {
+            document.getElementById('staffModal').classList.remove('active');
+        }
+
+        function openNewInvoiceModal() {
+            editingInvoiceId = null;
+            document.getElementById('invoiceForm').reset();
+            document.getElementById('invoiceIdField').value = '';
+            document.getElementById('invoiceNumberField').value = generateNextInvoiceNumber();
+            document.querySelector('#invoiceModal .modal-title').textContent = 'New Invoice';
+            document.getElementById('invoiceFormMessages').innerHTML = '';
+            document.getElementById('generatePdfBtn').style.display = 'none';
+            document.getElementById('invoiceDateField').value = new Date().toISOString().split('T')[0];
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 30);
+            document.getElementById('invoiceDueDateField').value = dueDate.toISOString().split('T')[0];
+            document.getElementById('invoiceModal').classList.add('active');
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').classList.remove('active');
+        }
+
+        function openNewMessageModal() {
+            editingMessageId = null;
+            document.getElementById('messageForm').reset();
+            document.getElementById('messageIdField').value = '';
+            document.querySelector('#messageModal .modal-title').textContent = 'New Message';
+            document.getElementById('messageFormMessages').innerHTML = '';
+            document.getElementById('messageModal').classList.add('active');
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').classList.remove('active');
+        }
+
         function populateClientSelect() {
             const select = document.getElementById('matterClientSelect');
             select.innerHTML = '<option value="">Select a client...</option>' +
                 portalData.clients.map(c => `<option value="${escapeHtml(c.Title || '')}">${escapeHtml(c.Title || '')}</option>`).join('');
+        }
+
+        function populateMatterSelects() {
+            // For invoice modal
+            const invoiceMattersSelect = document.getElementById('invoiceMatterSelect');
+            if (invoiceMattersSelect) {
+                invoiceMattersSelect.innerHTML = '<option value="">Select a matter...</option>' +
+                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || '')}">${escapeHtml(m.Title || '')}</option>`).join('');
+            }
+
+            // For message modal
+            const messageMattersSelect = document.getElementById('messageMattersSelect');
+            if (messageMattersSelect) {
+                messageMattersSelect.innerHTML = '<option value="">Select a matter...</option>' +
+                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || '')}">${escapeHtml(m.Title || '')}</option>`).join('');
+            }
+
+            // For invoice client select
+            const invoiceClientSelect = document.getElementById('invoiceClientSelect');
+            if (invoiceClientSelect) {
+                invoiceClientSelect.innerHTML = '<option value="">Select a client...</option>' +
+                    portalData.clients.map(c => `<option value="${escapeHtml(c.Title || '')}">${escapeHtml(c.Title || '')}</option>`).join('');
+            }
         }
 
         function editMatter(matterId) {
@@ -1996,6 +2416,320 @@
             });
         }
 
+        function editStaff(staffId) {
+            const staff = portalData.staff.find(s => s.id === staffId);
+            if (!staff) return;
+
+            editingStaffId = staffId;
+            document.getElementById('staffForm').reset();
+            document.querySelector('#staffModal .modal-title').textContent = 'Edit Staff Member';
+            document.getElementById('staffIdField').value = staffId;
+            document.getElementById('staffFormMessages').innerHTML = '';
+
+            document.querySelector('#staffForm input[name="name"]').value = staff.name || '';
+            document.querySelector('#staffForm select[name="role"]').value = staff.role || '';
+            document.querySelector('#staffForm input[name="email"]').value = staff.email || '';
+            document.querySelector('#staffForm input[name="phone"]').value = staff.phone || '';
+
+            document.getElementById('staffModal').classList.add('active');
+        }
+
+        function saveStaff(e) {
+            e.preventDefault();
+            const form = document.getElementById('staffForm');
+            const formData = new FormData(form);
+            const staffId = document.getElementById('staffIdField').value;
+
+            const newStaff = {
+                name: formData.get('name'),
+                role: formData.get('role'),
+                email: formData.get('email'),
+                phone: formData.get('phone')
+            };
+
+            if (!newStaff.name || !newStaff.role) {
+                document.getElementById('staffFormMessages').innerHTML = '<div class="error-message">Name and Role are required</div>';
+                return;
+            }
+
+            if (staffId) {
+                // Edit existing
+                const idx = portalData.staff.findIndex(s => s.id === parseInt(staffId));
+                if (idx >= 0) {
+                    portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
+                }
+            } else {
+                // New staff
+                newStaff.id = Math.max(0, ...portalData.staff.map(s => s.id || 0)) + 1;
+                portalData.staff.push(newStaff);
+            }
+
+            localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+            document.getElementById('staffFormMessages').innerHTML = '<div class="success-message">Staff member saved successfully!</div>';
+            setTimeout(() => {
+                closeStaffModal();
+                renderStaff();
+            }, 1000);
+        }
+
+        function deleteStaff(staffId) {
+            showConfirmDelete('Are you sure you want to delete this staff member? This action cannot be undone.', () => {
+                portalData.staff = portalData.staff.filter(s => s.id !== staffId);
+                localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                renderStaff();
+            });
+        }
+
+        function editInvoice(invoiceId) {
+            const invoice = portalData.invoices.find(i => String(i.id) === String(invoiceId));
+            if (!invoice) return;
+
+            editingInvoiceId = invoiceId;
+            document.getElementById('invoiceForm').reset();
+            document.querySelector('#invoiceModal .modal-title').textContent = 'Edit Invoice';
+            document.getElementById('invoiceIdField').value = invoiceId;
+            document.getElementById('invoiceFormMessages').innerHTML = '';
+            document.getElementById('generatePdfBtn').style.display = 'inline-block';
+
+            document.getElementById('invoiceNumberField').value = invoice.Invoice_x0020_Number || '';
+            document.getElementById('invoiceClientSelect').value = invoice.Client_x0020_Name || '';
+            document.getElementById('invoiceMatterSelect').value = invoice.Matter_x0020_ID || '';
+            document.getElementById('invoiceDateField').value = invoice.Invoice_x0020_Date ? invoice.Invoice_x0020_Date.split('T')[0] : '';
+            document.getElementById('invoiceDueDateField').value = invoice.Due_x0020_Date ? invoice.Due_x0020_Date.split('T')[0] : '';
+            document.getElementById('invoiceFeesField').value = invoice.Professional_x0020_Fees || 0;
+            document.getElementById('invoiceDisbursementsField').value = invoice.Disbursements || 0;
+            document.getElementById('invoiceVatField').value = invoice.VAT_x0020_Amount || 0;
+            document.getElementById('invoiceAmountPaidField').value = invoice.Amount_x0020_Paid || 0;
+            document.querySelector('#invoiceForm select[name="status"]').value = invoice.Status || 'Draft';
+            document.querySelector('#invoiceForm textarea[name="notes"]').value = invoice.Description || '';
+
+            document.getElementById('invoiceModal').classList.add('active');
+        }
+
+        async function saveInvoice(e) {
+            e.preventDefault();
+            const form = document.getElementById('invoiceForm');
+            const formData = new FormData(form);
+            const invoiceId = document.getElementById('invoiceIdField').value;
+
+            const payload = {
+                Invoice_x0020_Number: formData.get('invoiceNumber'),
+                Client_x0020_Name: formData.get('client'),
+                Matter_x0020_ID: formData.get('matter'),
+                Invoice_x0020_Date: formData.get('invoiceDate'),
+                Due_x0020_Date: formData.get('dueDate'),
+                Professional_x0020_Fees: parseInt(formData.get('professionalFees')) || 0,
+                Disbursements: parseInt(formData.get('disbursements')) || 0,
+                VAT_x0020_Amount: parseInt(document.getElementById('invoiceVatField').value) || 0,
+                Amount_x0020_Paid: parseInt(formData.get('amountPaid')) || 0,
+                Status: formData.get('status'),
+                Description: formData.get('notes')
+            };
+
+            payload.Total_x0020_Amount = payload.Professional_x0020_Fees + payload.Disbursements + payload.VAT_x0020_Amount;
+
+            try {
+                const method = invoiceId ? 'PATCH' : 'POST';
+                const url = '/api/sharepoint-write';
+                const body = {
+                    site: 'client',
+                    list: 'Billing',
+                    fields: payload,
+                    ...(invoiceId && { itemId: invoiceId })
+                };
+
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
+                    setTimeout(() => {
+                        closeInvoiceModal();
+                        loadAllData();
+                    }, 1000);
+                } else {
+                    const error = await resp.json();
+                    document.getElementById('invoiceFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save invoice'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('invoiceFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function deleteInvoice(invoiceId) {
+            showConfirmDelete('Are you sure you want to delete this invoice? This action cannot be undone.', async () => {
+                try {
+                    const resp = await fetch('/api/sharepoint-write', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            site: 'client',
+                            list: 'Billing',
+                            itemId: invoiceId
+                        }),
+                        credentials: 'include'
+                    });
+
+                    if (resp.ok) {
+                        loadAllData();
+                    } else {
+                        alert('Failed to delete invoice');
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+            });
+        }
+
+        async function saveMessage(e) {
+            e.preventDefault();
+            const form = document.getElementById('messageForm');
+            const formData = new FormData(form);
+            const messageId = document.getElementById('messageIdField').value;
+
+            const payload = {
+                Title: formData.get('subject'),
+                Matter_x0020_ID: formData.get('matter'),
+                Message_x0020_Body: formData.get('body'),
+                Priority: formData.get('priority'),
+                Read: false
+            };
+
+            try {
+                const method = messageId ? 'PATCH' : 'POST';
+                const url = '/api/sharepoint-write';
+                const body = {
+                    site: 'client',
+                    list: 'Messages',
+                    fields: payload,
+                    ...(messageId && { itemId: messageId })
+                };
+
+                const resp = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    document.getElementById('messageFormMessages').innerHTML = '<div class="success-message">Message sent successfully!</div>';
+                    setTimeout(() => {
+                        closeMessageModal();
+                        loadAllData();
+                    }, 1000);
+                } else {
+                    const error = await resp.json();
+                    document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to send message'}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            }
+        }
+
+        function generateInvoicePDF() {
+            const invoiceNumber = document.getElementById('invoiceNumberField').value;
+            const clientName = document.getElementById('invoiceClientSelect').value;
+            const invoiceDate = document.getElementById('invoiceDateField').value;
+            const dueDate = document.getElementById('invoiceDueDateField').value;
+            const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || 0;
+            const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || 0;
+            const vat = parseInt(document.getElementById('invoiceVatField').value) || 0;
+            const total = professionalFees + disbursements + vat;
+
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; }
+                        .header { margin-bottom: 40px; }
+                        .firm-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+                        .firm-details { font-size: 12px; color: #666; }
+                        .invoice-title { font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 20px; }
+                        .ref-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 30px; }
+                        .ref-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                        th { background-color: #f5f5f5; font-weight: bold; }
+                        .total-section { margin-top: 20px; }
+                        .total-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+                        .total-amount { font-size: 18px; font-weight: bold; }
+                        .footer { margin-top: 60px; font-size: 11px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="firm-name">Crimson & Quill Advocates</div>
+                        <div class="firm-details">
+                            Kampala, Uganda<br>
+                            Tel: +256 701 000 000<br>
+                            Email: info@crimson-quill.com
+                        </div>
+                    </div>
+
+                    <div class="invoice-title">INVOICE</div>
+
+                    <div class="ref-box">
+                        <div class="ref-row">
+                            <span><strong>Invoice No:</strong> ${invoiceNumber}</span>
+                        </div>
+                        <div class="ref-row">
+                            <span><strong>Date:</strong> ${new Date(invoiceDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                            <span><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                        <div class="ref-row">
+                            <span><strong>Bill To:</strong> ${clientName}</span>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th style="text-align: right;">Professional Fees (UGX)</th>
+                                <th style="text-align: right;">Disbursements (UGX)</th>
+                                <th style="text-align: right;">VAT (UGX)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Services rendered</td>
+                                <td style="text-align: right;">${professionalFees.toLocaleString()}</td>
+                                <td style="text-align: right;">${disbursements.toLocaleString()}</td>
+                                <td style="text-align: right;">${vat.toLocaleString()}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="total-section">
+                        <div class="total-row">
+                            <span><strong>Total Amount Due (UGX): ${total.toLocaleString()}</strong></span>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        <p><strong>Bank Details:</strong></p>
+                        <p>Account Name: Crimson & Quill Advocates<br>
+                        Bank: [Bank Name]<br>
+                        Account Number: [Account Number]<br>
+                        Swift Code: [Swift Code]</p>
+                        <p style="margin-top: 20px;">Thank you for your business.</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const printWindow = window.open('', '', 'height=800,width=900');
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
         // ===== TAB SWITCHING =====
         function switchTab(tabName) {
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -2020,12 +2754,16 @@
                 renderMatters();
             } else if (tabName === 'clients') {
                 renderClients();
+            } else if (tabName === 'staff') {
+                renderStaff();
             } else if (tabName === 'documents') {
                 renderDocuments();
             } else if (tabName === 'calendar') {
                 renderCalendar();
             } else if (tabName === 'messages') {
                 renderMessages();
+            } else if (tabName === 'billing') {
+                renderInvoices();
             } else if (tabName === 'reports') {
                 renderReports();
             } else if (tabName === 'settings') {
