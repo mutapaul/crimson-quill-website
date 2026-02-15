@@ -45,6 +45,14 @@
         {
             "source": "/choose-portal",
             "destination": "/pages/choose-portal"
+        },
+        {
+            "source": "/client",
+            "destination": "/pages/client"
+        },
+        {
+            "source": "/staff",
+            "destination": "/pages/staff"
         }
     ],
     "redirects": [
@@ -96,6 +104,16 @@
         {
             "source": "/pages/choose-portal.html",
             "destination": "/choose-portal",
+            "permanent": true
+        },
+        {
+            "source": "/pages/client.html",
+            "destination": "/client",
+            "permanent": true
+        },
+        {
+            "source": "/pages/staff.html",
+            "destination": "/staff",
             "permanent": true
         }
     ]
