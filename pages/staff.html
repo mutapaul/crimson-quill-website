@@ -1319,6 +1319,11 @@
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 renderDashboard();
                 populateClientSelect();
+                renderMatters();
+                renderClients();
+                renderDocuments();
+                renderCalendar();
+                renderMessages();
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loadingOverlay').classList.add('hidden');
