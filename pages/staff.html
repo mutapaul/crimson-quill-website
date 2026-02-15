@@ -1562,8 +1562,9 @@
             pendingDeleteCallback = callback;
             document.getElementById('confirmDeleteModal').classList.add('active');
             document.getElementById('confirmDeleteBtn').onclick = function() {
+                const cb = pendingDeleteCallback;
                 closeConfirmModal();
-                if (pendingDeleteCallback) pendingDeleteCallback();
+                if (cb) cb();
             };
         }
 
