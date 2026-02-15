@@ -1169,7 +1169,7 @@
         // ===== DATA FETCHING =====
         async function fetchList(listName) {
             try {
-                const resp = await fetch(`/api/sharepoint?site=staff&list=${encodeURIComponent(listName)}`, {
+                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
                     credentials: 'include'
                 });
                 if (!resp.ok) {
