@@ -1641,7 +1641,7 @@
             const colors = { success: '#2e7d32', error: '#c62828', warning: '#e65100', info: '#1565c0' };
             const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
             const toast = document.createElement('div');
-            toast.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 20px;background:' + (colors[type] || colors.info) + ';color:#fff;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn 0.3s ease;min-width:250px;';
+            toast.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 20px;background:' + (colors[type] || colors.info) + ';color:#fff;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn 0.3s ease forwards;min-width:250px;';
             toast.innerHTML = '<span style="font-size:16px;">' + (icons[type] || icons.info) + '</span><span style="flex:1;">' + message + '</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;padding:0 0 0 8px;">×</button>';
             container.appendChild(toast);
             setTimeout(() => { if (toast.parentElement) toast.remove(); }, 4000);
