@@ -360,7 +360,6 @@
       var PORTAL_TYPE = 'client';
       var SP_BASE = 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
 
-      // SharePoint page map for sidebar navigation
       var PAGE_MAP = {
         dashboard: SP_BASE,
         matters:   SP_BASE + '/SitePages/My-Matters.aspx',
@@ -383,7 +382,6 @@
       var sidebarOverlay = document.getElementById('sidebarOverlay');
       var navItems = document.querySelectorAll('.nav-item[data-page]');
 
-      // ── Auth Check ──
       function checkSession() {
         return fetch('/api/check-session', { credentials: 'same-origin' })
           .then(function(res) { return res.json(); })
@@ -392,7 +390,6 @@
               window.location.href = '/login?type=' + PORTAL_TYPE;
               return null;
             }
-            // Check portal type matches
             if (data.portalType !== PORTAL_TYPE) {
               window.location.href = '/' + data.portalType;
               return null;
@@ -405,47 +402,35 @@
           });
       }
 
-      // ── Logout ──
       function logout() {
         document.cookie = 'cq_session=; Path=/; Max-Age=0';
         window.location.href = '/choose-portal';
       }
 
-      // ── Load Portal in Iframe ──
       function loadPortal(url) {
         iframeLoading.classList.remove('hidden');
         iframeFallback.classList.remove('visible');
-
-        // Set iframe src
         iframe.src = url;
 
-        // Detect if iframe loaded or was blocked
         var loaded = false;
         var timeout = setTimeout(function() {
-          if (!loaded) {
-            showFallback(url);
-          }
+          if (!loaded) showFallback(url);
         }, 8000);
 
         iframe.onload = function() {
           loaded = true;
           clearTimeout(timeout);
-
-          // Try to detect X-Frame-Options block
-          // If the iframe loaded but content is blank (blocked), show fallback
           try {
-            // This will throw if cross-origin and blocked
             var doc = iframe.contentDocument || iframe.contentWindow.document;
-            // If we can access it and it's about:blank, it may be blocked
             if (doc && doc.URL === 'about:blank' && url !== 'about:blank') {
               showFallback(url);
               return;
             }
           } catch(e) {
-            // Cross-origin access denied - this is EXPECTED if iframe loaded successfully
-            // SharePoint content loaded from different origin
+            // Cross-origin error means X-Frame-Options blocked the iframe
+            showFallback(url);
+            return;
           }
-
           iframeLoading.classList.add('hidden');
         };
 
@@ -463,7 +448,6 @@
         openPortalBtn.href = url;
       }
 
-      // ── Sidebar Navigation ──
       function setActiveNav(page) {
         navItems.forEach(function(item) {
           item.classList.toggle('active', item.getAttribute('data-page') === page);
@@ -478,15 +462,12 @@
           setActiveNav(page);
           iframe.style.display = 'block';
           loadPortal(url);
-          // Close mobile sidebar
           sidebar.classList.remove('open');
           sidebarOverlay.classList.remove('open');
-          // Update hash
           window.location.hash = page;
         });
       });
 
-      // ── Mobile Menu ──
       menuBtn.addEventListener('click', function() {
         sidebar.classList.toggle('open');
         sidebarOverlay.classList.toggle('open');
@@ -496,21 +477,14 @@
         sidebarOverlay.classList.remove('open');
       });
 
-      // ── Logout ──
       logoutBtn.addEventListener('click', logout);
 
-      // ── Initialize ──
       checkSession().then(function(data) {
         if (!data) return;
-
-        // Show user email
         userEmailEl.textContent = data.email;
-
-        // Hide loading screen
         loadingScreen.classList.add('hidden');
         setTimeout(function() { loadingScreen.style.display = 'none'; }, 400);
 
-        // Load the appropriate page based on hash
         var hash = window.location.hash.replace('#', '') || 'dashboard';
         if (PAGE_MAP[hash]) {
           setActiveNav(hash);
