@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Portal - Crimson & Quill</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         * {
@@ -20,7 +20,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: #f5f5f5;
+            background: #FAFAFA;
             color: #333;
         }
 
@@ -48,8 +48,8 @@
         .spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid rgba(200, 169, 81, 0.3);
-            border-top: 4px solid #c8a951;
+            border: 4px solid rgba(184, 134, 11, 0.3);
+            border-top: 4px solid #B8860B;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -72,7 +72,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 70px;
+            height: 80px;
             background: #fff;
             border-bottom: 1px solid #e0e0e0;
             display: flex;
@@ -93,12 +93,12 @@
             font-family: 'Playfair Display', serif;
             font-size: 24px;
             font-weight: 700;
-            color: #1a1a2e;
+            color: #000000;
             letter-spacing: 1px;
         }
 
         .portal-badge {
-            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
             color: #1a1a2e;
             padding: 4px 12px;
             border-radius: 20px;
@@ -117,7 +117,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            color: #666;
+            color: #888888;
             font-size: 14px;
         }
 
@@ -125,7 +125,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -136,9 +136,9 @@
 
         .logout-btn {
             background: #f5f5f5;
-            border: 1px solid #ddd;
+            border: 1px solid #E0E0E0;
             padding: 8px 16px;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
@@ -155,9 +155,9 @@
         .sidebar {
             position: fixed;
             left: 0;
-            top: 70px;
+            top: 80px;
             width: 250px;
-            height: calc(100vh - 70px);
+            height: calc(100vh - 80px);
             background: #1a1a2e;
             padding: 20px 0;
             overflow-y: auto;
@@ -180,14 +180,14 @@
         }
 
         .nav-item:hover {
-            color: #c8a951;
-            background: rgba(200, 169, 81, 0.1);
+            color: #B8860B;
+            background: rgba(184, 134, 11, 0.1);
         }
 
         .nav-item.active {
-            color: #c8a951;
-            background: rgba(200, 169, 81, 0.15);
-            border-left-color: #c8a951;
+            color: #B8860B;
+            background: rgba(184, 134, 11, 0.15);
+            border-left-color: #B8860B;
         }
 
         .nav-icon {
@@ -202,15 +202,15 @@
         /* Main Content */
         .content-wrapper {
             margin-left: 250px;
-            margin-top: 70px;
+            margin-top: 80px;
             width: calc(100% - 250px);
-            height: calc(100vh - 70px);
+            height: calc(100vh - 80px);
             overflow-y: auto;
         }
 
         .content {
             padding: 30px;
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
             animation: fadeIn 0.3s ease;
         }
@@ -258,7 +258,7 @@
         }
 
         .welcome-card .card-title {
-            color: #c8a951;
+            color: #B8860B;
         }
 
         .welcome-card p {
@@ -287,7 +287,7 @@
             font-family: 'Playfair Display', serif;
             font-size: 36px;
             font-weight: 700;
-            color: #c8a951;
+            color: #B8860B;
             margin-bottom: 8px;
         }
 
@@ -311,7 +311,7 @@
         }
 
         thead th {
-            background: #f9f9f9;
+            background: #FAFAFA;
             padding: 12px;
             text-align: left;
             font-weight: 600;
@@ -400,7 +400,7 @@
 
         .list-item:hover {
             background: #fafafa;
-            border-left-color: #c8a951;
+            border-left-color: #B8860B;
         }
 
         .list-item-title {
@@ -417,7 +417,7 @@
 
         .list-item-expanded {
             background: #f9f9f9;
-            border-left-color: #c8a951;
+            border-left-color: #B8860B;
         }
 
         .list-item-details {
@@ -491,14 +491,14 @@
             justify-content: center;
             align-items: center;
             padding: 40px;
-            color: #c8a951;
+            color: #B8860B;
         }
 
         .mini-spinner {
             width: 30px;
             height: 30px;
-            border: 3px solid rgba(200, 169, 81, 0.3);
-            border-top: 3px solid #c8a951;
+            border: 3px solid rgba(184, 134, 11, 0.3);
+            border-top: 3px solid #B8860B;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -512,7 +512,7 @@
         }
 
         .quick-link {
-            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
             color: #1a1a2e;
             padding: 15px;
             border-radius: 6px;
@@ -527,7 +527,7 @@
 
         .quick-link:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(200, 169, 81, 0.3);
+            box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
         }
 
         /* Mobile Responsive */
@@ -964,7 +964,7 @@
 
                 documents.forEach(doc => {
                     const size = doc.FileSizeDisplayString || doc.Size || 'N/A';
-                    const downloadLink = doc.WebUrl ? `<a href="${doc.WebUrl}" target="_blank" style="color: #c8a951; text-decoration: none; font-weight: 500;">Download</a>` : 'N/A';
+                    const downloadLink = doc.WebUrl ? `<a href="${doc.WebUrl}" target="_blank" style="color: #B8860B; text-decoration: none; font-weight: 500;">Download</a>` : 'N/A';
 
                     html += `
                         <tr>
@@ -1049,7 +1049,7 @@
                 messages.forEach((message, index) => {
                     const priority = message.Priority || 'Normal';
                     const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-                    const isRead = message.IsRead ? '' : ' style="font-weight: bold; background: rgba(200, 169, 81, 0.05);"';
+                    const isRead = message.IsRead ? '' : ' style="font-weight: bold; background: rgba(184, 134, 11, 0.05);"';
 
                     html += `
                         <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
@@ -1064,7 +1064,7 @@
                                 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
                                     <div style="color: #555; line-height: 1.6;">${message.MessageBody || message.Description || 'No content'}</div>
                                     <div style="margin-top: 15px; font-size: 12px; color: #999;">
-                                        ${!message.IsRead ? '<span style="background: #c8a951; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                        ${!message.IsRead ? '<span style="background: #B8860B; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
                                         Received: ${formatDate(message.Created)}
                                     </div>
                                 </div>

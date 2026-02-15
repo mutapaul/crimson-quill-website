@@ -92,7 +92,7 @@ module.exports = async function handler(req, res) {
       to: [normalizedEmail],
       subject: `${otp} â Your Crimson & Quill Verification Code`,
       html: `
-        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #FFFFFF;">
+        <div style="font-family: Inter, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #FAFAFA;">
           <div style="text-align: center; margin-bottom: 32px;">
             <span style="font-family: Georgia, serif; font-size: 22px; font-weight: 600; color: #000000;">
               Crimson <span style="color: #B8860B; font-style: italic;">&</span> Quill
@@ -105,7 +105,7 @@ module.exports = async function handler(req, res) {
             </p>
 
             <div style="text-align: center; margin: 24px 0;">
-              <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #000000; background: #F5F5F5; padding: 16px 32px; border-radius: 8px; display: inline-block;">
+              <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #000000; background: #FAFAFA; padding: 16px 32px; border-radius: 8px; display: inline-block;">
                 ${otp}
               </span>
             </div>
