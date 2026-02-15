@@ -1,500 +1,1284 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Client Portal | Crimson &amp; Quill</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --gold: #B8860B;
-      --gold-light: #D4A84B;
-      --gold-dark: #8B6914;
-      --black: #000000;
-      --white: #FFFFFF;
-      --gray: #4A4A4A;
-      --gray-light: #888888;
-      --silver: #E0E0E0;
-      --off-white: #FAFAFA;
-      --sidebar-width: 240px;
-      --header-height: 60px;
-    }
-    html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--off-white);
-      color: var(--black);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Portal - Crimson & Quill</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 
-    /* ── Loading Screen ── */
-    .loading-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--white);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      transition: opacity 0.4s ease;
-    }
-    .loading-screen.hidden { opacity: 0; pointer-events: none; }
-    .loading-logo {
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.8rem; font-weight: 400;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--black); margin-bottom: 24px;
-    }
-    .loading-logo .amp {
-      color: var(--gold); font-style: italic; margin: 0 0.1em;
-    }
-    .loading-spinner {
-      width: 32px; height: 32px;
-      border: 3px solid var(--silver);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* ── Header ── */
-    .portal-header {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: var(--header-height);
-      background: var(--white);
-      border-bottom: 1px solid #eee;
-      display: flex; align-items: center;
-      padding: 0 24px;
-      z-index: 100;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    .header-left {
-      display: flex; align-items: center; gap: 16px;
-    }
-    .menu-btn {
-      display: none; background: none; border: none;
-      cursor: pointer; padding: 4px;
-    }
-    .menu-btn svg { width: 24px; height: 24px; color: var(--gray); }
-    .logo-link {
-      text-decoration: none; display: flex;
-      align-items: center; gap: 2px;
-    }
-    .logo-name {
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.1rem; font-weight: 400;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--black);
-    }
-    .logo-amp {
-      color: var(--gold); font-style: italic;
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.2rem; margin: 0 0.1em;
-    }
-    .portal-label {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--gold-dark); background: rgba(184,134,11,0.08);
-      padding: 4px 12px; border-radius: 20px;
-      border: 1px solid rgba(184,134,11,0.2);
-      margin-left: 12px;
-    }
-    .header-right {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 16px;
-    }
-    .user-email {
-      font-size: 13px; color: var(--gray-light);
-      max-width: 200px; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
-    }
-    .btn-logout {
-      font-size: 13px; font-weight: 500;
-      color: var(--gray); background: none;
-      border: 1px solid var(--silver);
-      padding: 6px 16px; border-radius: 6px;
-      cursor: pointer; transition: all 0.2s;
-      font-family: inherit;
-    }
-    .btn-logout:hover {
-      color: var(--black); border-color: var(--gray);
-    }
+        html, body {
+            height: 100%;
+            width: 100%;
+        }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      position: fixed;
-      top: var(--header-height); left: 0; bottom: 0;
-      width: var(--sidebar-width);
-      background: var(--white);
-      border-right: 1px solid #eee;
-      overflow-y: auto;
-      z-index: 90;
-      transition: transform 0.3s ease;
-    }
-    .sidebar-nav { padding: 16px 0; }
-    .nav-section {
-      padding: 0 16px; margin-bottom: 8px;
-    }
-    .nav-section-title {
-      font-size: 10px; font-weight: 600;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--gray-light); padding: 8px 12px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; margin: 2px 8px;
-      border-radius: 8px; cursor: pointer;
-      text-decoration: none; color: var(--gray);
-      font-size: 14px; font-weight: 400;
-      transition: all 0.15s ease;
-    }
-    .nav-item:hover {
-      background: var(--off-white); color: var(--black);
-    }
-    .nav-item.active {
-      background: rgba(184,134,11,0.08);
-      color: var(--gold-dark); font-weight: 500;
-    }
-    .nav-item svg {
-      width: 20px; height: 20px; flex-shrink: 0;
-      stroke-width: 1.5;
-    }
-    .nav-divider {
-      height: 1px; background: #eee;
-      margin: 12px 20px;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
 
-    /* ── Main Content ── */
-    .main-content {
-      position: fixed;
-      top: var(--header-height);
-      left: var(--sidebar-width);
-      right: 0; bottom: 0;
-      background: var(--off-white);
-    }
-    .portal-iframe {
-      width: 100%; height: 100%;
-      border: none; display: block;
-    }
-    .iframe-loading {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: var(--off-white);
-      transition: opacity 0.3s ease;
-    }
-    .iframe-loading.hidden { opacity: 0; pointer-events: none; }
-    .iframe-loading p {
-      margin-top: 16px; font-size: 14px; color: var(--gray-light);
-    }
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
 
-    /* ── Iframe Fallback ── */
-    .iframe-fallback {
-      display: none;
-      position: absolute; inset: 0;
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      background: var(--off-white);
-      padding: 40px;
-      text-align: center;
-    }
-    .iframe-fallback.visible { display: flex; }
-    .fallback-icon {
-      width: 64px; height: 64px; color: var(--gold);
-      margin-bottom: 20px;
-    }
-    .iframe-fallback h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem; color: var(--black);
-      margin-bottom: 12px;
-    }
-    .iframe-fallback p {
-      font-size: 14px; color: var(--gray);
-      max-width: 480px; line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .btn-open-portal {
-      display: inline-block;
-      padding: 12px 32px;
-      background: var(--gold); color: var(--white);
-      border: none; border-radius: 6px;
-      font-size: 15px; font-weight: 600;
-      font-family: inherit; cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .btn-open-portal:hover { background: var(--gold-dark); }
+        .loading-overlay.hidden {
+            display: none;
+            opacity: 0;
+        }
 
-    /* ── Mobile Overlay ── */
-    .sidebar-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.3); z-index: 85;
-    }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(200, 169, 81, 0.3);
+            border-top: 4px solid #c8a951;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
 
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-overlay.open { display: block; }
-      .menu-btn { display: block; }
-      .main-content { left: 0; }
-      .portal-label { display: none; }
-      .user-email { display: none; }
-    }
-  </style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+            background: #fff;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-text {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+            letter-spacing: 1px;
+        }
+
+        .portal-badge {
+            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            color: #1a1a2e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1a1a2e;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .logout-btn {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #e8e8e8;
+            border-color: #bbb;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 70px;
+            width: 250px;
+            height: calc(100vh - 70px);
+            background: #1a1a2e;
+            padding: 20px 0;
+            overflow-y: auto;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            color: #999;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            color: #c8a951;
+            background: rgba(200, 169, 81, 0.1);
+        }
+
+        .nav-item.active {
+            color: #c8a951;
+            background: rgba(200, 169, 81, 0.15);
+            border-left-color: #c8a951;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Main Content */
+        .content-wrapper {
+            margin-left: 250px;
+            margin-top: 70px;
+            width: calc(100% - 250px);
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+        }
+
+        .content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%);
+            color: #fff;
+        }
+
+        .welcome-card .card-title {
+            color: #c8a951;
+        }
+
+        .welcome-card p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: #c8a951;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead th {
+            background: #f9f9f9;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a2e;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        td {
+            padding: 12px;
+            color: #555;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #2e7d32;
+        }
+
+        .badge-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #f57f17;
+        }
+
+        .badge-closed {
+            background: rgba(158, 158, 158, 0.2);
+            color: #616161;
+        }
+
+        .badge-onhold {
+            background: rgba(255, 152, 0, 0.2);
+            color: #e65100;
+        }
+
+        .badge-high {
+            background: rgba(244, 67, 54, 0.2);
+            color: #c62828;
+        }
+
+        .badge-normal {
+            background: rgba(33, 150, 243, 0.2);
+            color: #1565c0;
+        }
+
+        .badge-low {
+            background: rgba(158, 158, 158, 0.2);
+            color: #616161;
+        }
+
+        .badge-paid {
+            background: rgba(76, 175, 80, 0.2);
+            color: #2e7d32;
+        }
+
+        .badge-overdue {
+            background: rgba(244, 67, 54, 0.2);
+            color: #c62828;
+        }
+
+        /* List Items */
+        .list-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .list-item:hover {
+            background: #fafafa;
+            border-left-color: #c8a951;
+        }
+
+        .list-item-title {
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+
+        .list-item-meta {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .list-item-expanded {
+            background: #f9f9f9;
+            border-left-color: #c8a951;
+        }
+
+        .list-item-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .list-item-details.show {
+            display: block;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            width: 150px;
+        }
+
+        .detail-value {
+            color: #333;
+            flex: 1;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* Error Messages */
+        .error-message {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #c62828;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #c8a951;
+        }
+
+        .mini-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(200, 169, 81, 0.3);
+            border-top: 3px solid #c8a951;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Quick Links */
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .quick-link {
+            background: linear-gradient(135deg, #c8a951 0%, #d4b85e 100%);
+            color: #1a1a2e;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .quick-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(200, 169, 81, 0.3);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 15px;
+            }
+
+            .logo-text {
+                font-size: 18px;
+            }
+
+            .header-right {
+                gap: 15px;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                width: 250px;
+                transform: translateX(0);
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .content-wrapper {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toggle-sidebar-btn {
+                display: block;
+                background: none;
+                border: none;
+                color: #1a1a2e;
+                font-size: 20px;
+                cursor: pointer;
+                padding: 5px;
+            }
+
+            .quick-links {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .toggle-sidebar-btn {
+                display: none;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loading-logo">Crimson <span class="amp">&amp;</span> Quill</div>
-    <div class="loading-spinner"></div>
-  </div>
-
-  <!-- Header -->
-  <header class="portal-header">
-    <div class="header-left">
-      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-      <a href="/" class="logo-link">
-        <span class="logo-name">Crimson</span>
-        <span class="logo-amp">&amp;</span>
-        <span class="logo-name">Quill</span>
-      </a>
-      <span class="portal-label">Client Portal</span>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
     </div>
-    <div class="header-right">
-      <span class="user-email" id="userEmail"></span>
-      <button class="btn-logout" id="logoutBtn">Sign Out</button>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
+            <div class="logo-text">CRIMSON & QUILL</div>
+            <div class="portal-badge">CLIENT PORTAL</div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">C</div>
+                <div id="userName">Welcome</div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
     </div>
-  </header>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <nav class="sidebar-nav">
-      <div class="nav-section">
-        <div class="nav-section-title">Portal</div>
-        <a class="nav-item active" data-page="dashboard" href="#dashboard">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          Dashboard
-        </a>
-        <a class="nav-item" data-page="matters" href="#matters">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-          My Matters
-        </a>
-        <a class="nav-item" data-page="documents" href="#documents">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          Documents
-        </a>
-        <a class="nav-item" data-page="calendar" href="#calendar">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
-          Calendar
-        </a>
-        <a class="nav-item" data-page="messages" href="#messages">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-          </svg>
-          Messages
-        </a>
-        <a class="nav-item" data-page="billing" href="#billing">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-          </svg>
-          Billing
-        </a>
-        <a class="nav-item" data-page="insights" href="#insights">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-          </svg>
-          Insights
-        </a>
-      </div>
-      <div class="nav-divider"></div>
-      <div class="nav-section">
-        <a class="nav-item" href="/">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-          </svg>
-          Back to Website
-        </a>
-      </div>
-    </nav>
-  </aside>
-
-  <!-- Sidebar Overlay (mobile) -->
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <!-- Main Content -->
-  <main class="main-content" id="mainContent">
-    <div class="iframe-loading" id="iframeLoading">
-      <div class="loading-spinner"></div>
-      <p>Loading your portal...</p>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="nav-item active" data-tab="dashboard">
+            <div class="nav-icon">📊</div>
+            <div>Dashboard</div>
+        </div>
+        <div class="nav-item" data-tab="matters">
+            <div class="nav-icon">📋</div>
+            <div>Matters</div>
+        </div>
+        <div class="nav-item" data-tab="documents">
+            <div class="nav-icon">📄</div>
+            <div>Documents</div>
+        </div>
+        <div class="nav-item" data-tab="calendar">
+            <div class="nav-icon">📅</div>
+            <div>Calendar</div>
+        </div>
+        <div class="nav-item" data-tab="messages">
+            <div class="nav-icon">💬</div>
+            <div>Messages</div>
+        </div>
+        <div class="nav-item" data-tab="billing">
+            <div class="nav-icon">💰</div>
+            <div>Billing</div>
+        </div>
     </div>
-    <iframe class="portal-iframe" id="portalFrame" title="Client Portal"
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
-      allow="clipboard-write"></iframe>
-    <div class="iframe-fallback" id="iframeFallback">
-      <svg class="fallback-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-      </svg>
-      <h2>Your Portal is Ready</h2>
-      <p>Click below to access your secure client portal where you can view your matters, documents, and communicate with your legal team.</p>
-      <a class="btn-open-portal" id="openPortalBtn" href="#" target="_blank" rel="noopener">Open Portal</a>
+
+    <!-- Content Area -->
+    <div class="content-wrapper" id="contentWrapper">
+        <div class="content" id="content">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active" id="dashboard">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Matters Tab -->
+            <div class="tab-content" id="matters">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Documents Tab -->
+            <div class="tab-content" id="documents">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Calendar Tab -->
+            <div class="tab-content" id="calendar">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Messages Tab -->
+            <div class="tab-content" id="messages">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Billing Tab -->
+            <div class="tab-content" id="billing">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
     </div>
-  </main>
 
-  <script>
-    (function() {
-      'use strict';
+    <script>
+        // ============================================================================
+        // GLOBAL STATE
+        // ============================================================================
+        let currentTab = 'dashboard';
+        let portalData = {};
+        let expandedItems = {};
 
-      var PORTAL_TYPE = 'client';
-      var SP_BASE = 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
-
-      var PAGE_MAP = {
-        dashboard: SP_BASE,
-        matters:   SP_BASE + '/SitePages/My-Matters.aspx',
-        documents: SP_BASE + '/Shared%20Documents',
-        calendar:  SP_BASE + '/SitePages/Calendar.aspx',
-        messages:  SP_BASE + '/SitePages/Messages.aspx',
-        billing:   SP_BASE + '/SitePages/Billing.aspx',
-        insights:  SP_BASE + '/SitePages/Insights.aspx'
-      };
-
-      var loadingScreen = document.getElementById('loadingScreen');
-      var iframe = document.getElementById('portalFrame');
-      var iframeLoading = document.getElementById('iframeLoading');
-      var iframeFallback = document.getElementById('iframeFallback');
-      var openPortalBtn = document.getElementById('openPortalBtn');
-      var userEmailEl = document.getElementById('userEmail');
-      var logoutBtn = document.getElementById('logoutBtn');
-      var menuBtn = document.getElementById('menuBtn');
-      var sidebar = document.getElementById('sidebar');
-      var sidebarOverlay = document.getElementById('sidebarOverlay');
-      var navItems = document.querySelectorAll('.nav-item[data-page]');
-
-      function checkSession() {
-        return fetch('/api/check-session', { credentials: 'same-origin' })
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            if (!data.authenticated) {
-              window.location.href = '/login?type=' + PORTAL_TYPE;
-              return null;
+        // ============================================================================
+        // UTILITIES
+        // ============================================================================
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch {
+                return dateString;
             }
-            if (data.portalType !== PORTAL_TYPE) {
-              window.location.href = '/' + data.portalType;
-              return null;
-            }
-            return data;
-          })
-          .catch(function() {
-            window.location.href = '/login?type=' + PORTAL_TYPE;
-            return null;
-          });
-      }
-
-      function logout() {
-        document.cookie = 'cq_session=; Path=/; Max-Age=0';
-        window.location.href = '/choose-portal';
-      }
-
-      function loadPortal(url) {
-        iframeLoading.classList.remove('hidden');
-        iframeFallback.classList.remove('visible');
-        iframe.src = url;
-
-        var loaded = false;
-        var timeout = setTimeout(function() {
-          if (!loaded) showFallback(url);
-        }, 8000);
-
-        iframe.onload = function() {
-          loaded = true;
-          clearTimeout(timeout);
-          try {
-            var doc = iframe.contentDocument || iframe.contentWindow.document;
-            if (doc && doc.URL === 'about:blank' && url !== 'about:blank') {
-              showFallback(url);
-              return;
-            }
-          } catch(e) {
-            // Cross-origin error means X-Frame-Options blocked the iframe
-            showFallback(url);
-            return;
-          }
-          iframeLoading.classList.add('hidden');
-        };
-
-        iframe.onerror = function() {
-          loaded = true;
-          clearTimeout(timeout);
-          showFallback(url);
-        };
-      }
-
-      function showFallback(url) {
-        iframeLoading.classList.add('hidden');
-        iframe.style.display = 'none';
-        iframeFallback.classList.add('visible');
-        openPortalBtn.href = url;
-      }
-
-      function setActiveNav(page) {
-        navItems.forEach(function(item) {
-          item.classList.toggle('active', item.getAttribute('data-page') === page);
-        });
-      }
-
-      navItems.forEach(function(item) {
-        item.addEventListener('click', function(e) {
-          e.preventDefault();
-          var page = this.getAttribute('data-page');
-          var url = PAGE_MAP[page] || SP_BASE;
-          setActiveNav(page);
-          iframe.style.display = 'block';
-          loadPortal(url);
-          sidebar.classList.remove('open');
-          sidebarOverlay.classList.remove('open');
-          window.location.hash = page;
-        });
-      });
-
-      menuBtn.addEventListener('click', function() {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('open');
-      });
-      sidebarOverlay.addEventListener('click', function() {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.remove('open');
-      });
-
-      logoutBtn.addEventListener('click', logout);
-
-      checkSession().then(function(data) {
-        if (!data) return;
-        userEmailEl.textContent = data.email;
-        loadingScreen.classList.add('hidden');
-        setTimeout(function() { loadingScreen.style.display = 'none'; }, 400);
-
-        var hash = window.location.hash.replace('#', '') || 'dashboard';
-        if (PAGE_MAP[hash]) {
-          setActiveNav(hash);
-          loadPortal(PAGE_MAP[hash]);
-        } else {
-          loadPortal(PAGE_MAP.dashboard);
         }
-      });
 
-    })();
-  </script>
+        function formatCurrency(value) {
+            if (!value) return '$0.00';
+            const num = parseFloat(value);
+            if (isNaN(num)) return '$0.00';
+            return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            } catch {
+                return dateString;
+            }
+        }
+
+        function getInitial(email) {
+            if (!email) return 'C';
+            return email.charAt(0).toUpperCase();
+        }
+
+        // ============================================================================
+        // API FUNCTIONS
+        // ============================================================================
+        async function fetchList(listName) {
+            try {
+                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
+                    credentials: 'include'
+                });
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}: Failed to fetch ${listName}`);
+                }
+                const data = await resp.json();
+                return data;
+            } catch (error) {
+                console.error(`Error fetching ${listName}:`, error);
+                throw error;
+            }
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // ============================================================================
+        // INITIALIZATION & AUTH
+        // ============================================================================
+        async function initializePage() {
+            try {
+                const session = getCookie('cq_session');
+                if (!session) {
+                    window.location.href = '/login?type=client';
+                    return;
+                }
+
+                // Extract user email from session or cookie
+                const userEmail = getCookie('cq_user') || 'Client User';
+                document.getElementById('userName').textContent = userEmail;
+                document.getElementById('userAvatar').textContent = getInitial(userEmail);
+
+                // Load dashboard data
+                await loadDashboard();
+                hideLoadingOverlay();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                hideLoadingOverlay();
+                showError('Failed to initialize portal');
+            }
+        }
+
+        function showLoadingOverlay() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        function hideLoadingOverlay() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        // ============================================================================
+        // RENDER FUNCTIONS
+        // ============================================================================
+        async function loadDashboard() {
+            const container = document.getElementById('dashboard');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const [matters, messages, events] = await Promise.all([
+                    portalData.matters || fetchList('Matters'),
+                    portalData.messages || fetchList('Messages'),
+                    portalData.events || fetchList('Events')
+                ]);
+
+                portalData.matters = matters;
+                portalData.messages = messages;
+                portalData.events = events;
+
+                const activeMatters = (matters.value || []).filter(m => m.Status === 'Active').length;
+                const totalMatters = (matters.value || []).length;
+                const unreadMessages = (messages.value || []).filter(m => !m.IsRead).length;
+                const upcomingEvents = (events.value || []).length;
+
+                let html = `
+                    <div class="card welcome-card">
+                        <div class="card-title">Welcome to Your Client Portal</div>
+                        <p>Stay updated on your matters, documents, and billing information. Access all your legal matters in one secure location.</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${totalMatters}</div>
+                            <div class="stat-label">Total Matters</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${activeMatters}</div>
+                            <div class="stat-label">Active Matters</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${unreadMessages}</div>
+                            <div class="stat-label">Unread Messages</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${upcomingEvents}</div>
+                            <div class="stat-label">Upcoming Events</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Recent Activity</div>
+                        <div id="recentActivity"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Quick Links</div>
+                        <div class="quick-links">
+                            <div class="quick-link" onclick="switchTab('matters')">View Matters</div>
+                            <div class="quick-link" onclick="switchTab('documents')">Documents</div>
+                            <div class="quick-link" onclick="switchTab('calendar')">Calendar</div>
+                            <div class="quick-link" onclick="switchTab('billing')">Billing</div>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+
+                // Load recent activity
+                try {
+                    const activity = await fetchList('Activity Log');
+                    const activityList = activity.value || [];
+                    let activityHtml = '';
+
+                    if (activityList.length === 0) {
+                        activityHtml = '<div class="empty-state"><div class="empty-state-text">No recent activity</div></div>';
+                    } else {
+                        activityList.slice(0, 5).forEach(item => {
+                            activityHtml += `
+                                <div class="list-item">
+                                    <div class="list-item-title">${item.Title || 'Activity'}</div>
+                                    <div class="list-item-meta">${formatDate(item.Created)} - ${item.Description || ''}</div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    document.getElementById('recentActivity').innerHTML = activityHtml;
+                } catch (error) {
+                    console.warn('Could not load activity:', error);
+                    document.getElementById('recentActivity').innerHTML = '<div class="empty-state"><div class="empty-state-text">Activity data unavailable</div></div>';
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load dashboard: ${error.message}</div>`;
+            }
+        }
+
+        async function loadMatters() {
+            const container = document.getElementById('matters');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const data = portalData.matters || await fetchList('Matters');
+                portalData.matters = data;
+
+                const matters = data.value || [];
+
+                if (matters.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No Matters Found</div><div class="empty-state-text">You currently have no active matters.</div></div>';
+                    return;
+                }
+
+                let html = '<div class="card"><div class="card-title">Your Matters</div><div class="table-container"><table>';
+                html += '<thead><tr><th>Matter ID</th><th>Title</th><th>Client Name</th><th>Practice Area</th><th>Status</th><th>Priority</th><th>Lead Lawyer</th></tr></thead><tbody>';
+
+                matters.forEach((matter, index) => {
+                    const status = matter.Status || 'Active';
+                    const statusBadgeClass = `badge-${status.toLowerCase().replace(' ', '')}`;
+                    const priority = matter.Priority || 'Normal';
+                    const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
+
+                    html += `
+                        <tr onclick="toggleMatterDetails(this, ${index})" style="cursor: pointer;">
+                            <td>${matter.MatterId || 'N/A'}</td>
+                            <td><strong>${matter.Title || 'Untitled'}</strong></td>
+                            <td>${matter.ClientName || 'N/A'}</td>
+                            <td>${matter.PracticeArea || 'N/A'}</td>
+                            <td><span class="badge ${statusBadgeClass}">${status}</span></td>
+                            <td><span class="badge ${priorityBadgeClass}">${priority}</span></td>
+                            <td>${matter.LeadLawyer || 'N/A'}</td>
+                        </tr>
+                        <tr class="matter-details-row" style="display: none;">
+                            <td colspan="7">
+                                <div class="detail-row">
+                                    <span class="detail-label">Description:</span>
+                                    <span class="detail-value">${matter.Description || 'N/A'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Opposing Party:</span>
+                                    <span class="detail-value">${matter.OpposingParty || 'N/A'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Court:</span>
+                                    <span class="detail-value">${matter.Court || 'N/A'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Case Number:</span>
+                                    <span class="detail-value">${matter.CaseNumber || 'N/A'}</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">Last Updated:</span>
+                                    <span class="detail-value">${formatDate(matter.Modified)}</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div></div>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load matters: ${error.message}</div>`;
+            }
+        }
+
+        async function loadDocuments() {
+            const container = document.getElementById('documents');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const data = portalData.documents || await fetchList('Client Documents');
+                portalData.documents = data;
+
+                const documents = data.value || [];
+
+                if (documents.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">No Documents Found</div><div class="empty-state-text">There are no documents available yet.</div></div>';
+                    return;
+                }
+
+                let html = '<div class="card"><div class="card-title">Documents</div><div class="table-container"><table>';
+                html += '<thead><tr><th>Name</th><th>Modified</th><th>Size</th><th>Action</th></tr></thead><tbody>';
+
+                documents.forEach(doc => {
+                    const size = doc.FileSizeDisplayString || doc.Size || 'N/A';
+                    const downloadLink = doc.WebUrl ? `<a href="${doc.WebUrl}" target="_blank" style="color: #c8a951; text-decoration: none; font-weight: 500;">Download</a>` : 'N/A';
+
+                    html += `
+                        <tr>
+                            <td><strong>${doc.Name || doc.Title || 'Untitled'}</strong></td>
+                            <td>${formatDate(doc.TimeLastModified || doc.Modified)}</td>
+                            <td>${size}</td>
+                            <td>${downloadLink}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table></div></div>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load documents: ${error.message}</div>`;
+            }
+        }
+
+        async function loadCalendar() {
+            const container = document.getElementById('calendar');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const data = portalData.events || await fetchList('Events');
+                portalData.events = data;
+
+                const events = (data.value || []).sort((a, b) => {
+                    const dateA = new Date(a.EventDate || a.Created);
+                    const dateB = new Date(b.EventDate || b.Created);
+                    return dateA - dateB;
+                });
+
+                if (events.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-title">No Events Found</div><div class="empty-state-text">There are no upcoming events.</div></div>';
+                    return;
+                }
+
+                let html = '<div class="card"><div class="card-title">Calendar</div>';
+
+                events.forEach(event => {
+                    const category = event.Category || 'Event';
+                    const categoryClass = category.toLowerCase().replace(/\s+/g, '');
+
+                    html += `
+                        <div class="list-item">
+                            <div class="list-item-title">${event.Title || 'Untitled Event'}</div>
+                            <div class="list-item-meta">
+                                📅 ${formatDate(event.EventDate)} ${event.StartTime ? '⏰ ' + event.StartTime : ''} | 📍 ${event.Location || 'TBD'}
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <span class="badge badge-normal">${category}</span>
+                            </div>
+                            ${event.Description ? `<div style="margin-top: 10px; font-size: 14px; color: #666;">${event.Description}</div>` : ''}
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load calendar: ${error.message}</div>`;
+            }
+        }
+
+        async function loadMessages() {
+            const container = document.getElementById('messages');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const data = portalData.messages || await fetchList('Messages');
+                portalData.messages = data;
+
+                const messages = data.value || [];
+
+                if (messages.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages Found</div><div class="empty-state-text">You have no messages at this time.</div></div>';
+                    return;
+                }
+
+                let html = '<div class="card"><div class="card-title">Messages</div>';
+
+                messages.forEach((message, index) => {
+                    const priority = message.Priority || 'Normal';
+                    const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
+                    const isRead = message.IsRead ? '' : ' style="font-weight: bold; background: rgba(200, 169, 81, 0.05);"';
+
+                    html += `
+                        <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <div class="list-item-title">${message.Subject || message.Title || 'No Subject'}</div>
+                                    <div class="list-item-meta">From: ${message.SenderName || 'Unknown'} • ${formatDate(message.Created)}</div>
+                                </div>
+                                <span class="badge ${priorityBadgeClass}">${priority}</span>
+                            </div>
+                            <div class="list-item-details" id="msg-details-${index}">
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
+                                    <div style="color: #555; line-height: 1.6;">${message.MessageBody || message.Description || 'No content'}</div>
+                                    <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                                        ${!message.IsRead ? '<span style="background: #c8a951; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                        Received: ${formatDate(message.Created)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load messages: ${error.message}</div>`;
+            }
+        }
+
+        async function loadBilling() {
+            const container = document.getElementById('billing');
+            container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+            try {
+                const data = portalData.billing || await fetchList('Billing Records');
+                portalData.billing = data;
+
+                const records = data.value || [];
+
+                let totalBilled = 0;
+                let totalPaid = 0;
+                let totalOutstanding = 0;
+                let totalOverdue = 0;
+
+                records.forEach(record => {
+                    const amount = parseFloat(record.Amount) || 0;
+                    const status = record.PaymentStatus || 'Pending';
+
+                    totalBilled += amount;
+
+                    if (status === 'Paid') {
+                        totalPaid += amount;
+                    } else if (status === 'Overdue') {
+                        totalOverdue += amount;
+                    } else {
+                        totalOutstanding += amount;
+                    }
+                });
+
+                let html = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${formatCurrency(totalBilled)}</div>
+                            <div class="stat-label">Total Billed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${formatCurrency(totalPaid)}</div>
+                            <div class="stat-label">Paid</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${formatCurrency(totalOutstanding)}</div>
+                            <div class="stat-label">Outstanding</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${formatCurrency(totalOverdue)}</div>
+                            <div class="stat-label">Overdue</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Billing Records</div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Record Type</th>
+                                        <th>Matter ID</th>
+                                        <th>Amount</th>
+                                        <th>Payment Status</th>
+                                        <th>Due Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                if (records.length === 0) {
+                    html += '<tr><td colspan="5" style="text-align: center; padding: 40px;">No billing records found</td></tr>';
+                } else {
+                    records.forEach(record => {
+                        const status = record.PaymentStatus || 'Pending';
+                        const statusBadgeClass = status === 'Paid' ? 'badge-paid' : status === 'Overdue' ? 'badge-overdue' : 'badge-pending';
+
+                        html += `
+                            <tr>
+                                <td>${record.RecordType || 'Invoice'}</td>
+                                <td>${record.MatterId || 'N/A'}</td>
+                                <td><strong>${formatCurrency(record.Amount)}</strong></td>
+                                <td><span class="badge ${statusBadgeClass}">${status}</span></td>
+                                <td>${formatDate(record.DueDate)}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = `<div class="error-message">⚠️ Failed to load billing: ${error.message}</div>`;
+            }
+        }
+
+        // ============================================================================
+        // EVENT HANDLERS
+        // ============================================================================
+        function switchTab(tabName) {
+            currentTab = tabName;
+
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+
+            // Load content
+            switch (tabName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'matters':
+                    loadMatters();
+                    break;
+                case 'documents':
+                    loadDocuments();
+                    break;
+                case 'calendar':
+                    loadCalendar();
+                    break;
+                case 'messages':
+                    loadMessages();
+                    break;
+                case 'billing':
+                    loadBilling();
+                    break;
+            }
+        }
+
+        function toggleMatterDetails(rowElement, index) {
+            const detailRow = rowElement.nextElementSibling;
+            if (detailRow && detailRow.classList.contains('matter-details-row')) {
+                detailRow.style.display = detailRow.style.display === 'none' ? 'table-row' : 'none';
+            }
+        }
+
+        function toggleMessageDetails(element, index) {
+            const detailsDiv = document.getElementById(`msg-details-${index}`);
+            if (detailsDiv) {
+                detailsDiv.classList.toggle('show');
+            }
+        }
+
+        function logout() {
+            document.cookie = 'cq_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'cq_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            window.location.href = '/';
+        }
+
+        function showError(message) {
+            const content = document.getElementById('content');
+            const errorHtml = `<div class="error-message">⚠️ ${message}</div>`;
+            content.innerHTML = errorHtml + content.innerHTML;
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // ============================================================================
+        // EVENT LISTENERS
+        // ============================================================================
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function () {
+                const tabName = this.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+
+        // Close sidebar when clicking outside on mobile
+        document.getElementById('contentWrapper').addEventListener('click', function () {
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+
+        // ============================================================================
+        // INITIALIZE
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
 </body>
 </html>

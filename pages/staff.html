@@ -1,499 +1,1767 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Staff Portal | Crimson &amp; Quill</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --gold: #B8860B;
-      --gold-light: #D4A84B;
-      --gold-dark: #8B6914;
-      --black: #000000;
-      --white: #FFFFFF;
-      --gray: #4A4A4A;
-      --gray-light: #888888;
-      --silver: #E0E0E0;
-      --off-white: #FAFAFA;
-      --sidebar-width: 240px;
-      --header-height: 60px;
-    }
-    html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--off-white);
-      color: var(--black);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRIMSON & QUILL - Staff Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* ── Loading Screen ── */
-    .loading-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      background: var(--white);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      transition: opacity 0.4s ease;
-    }
-    .loading-screen.hidden { opacity: 0; pointer-events: none; }
-    .loading-logo {
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.8rem; font-weight: 400;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--black); margin-bottom: 24px;
-    }
-    .loading-logo .amp {
-      color: var(--gold); font-style: italic; margin: 0 0.1em;
-    }
-    .loading-spinner {
-      width: 32px; height: 32px;
-      border: 3px solid var(--silver);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d1a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
 
-    /* ── Header ── */
-    .portal-header {
-      position: fixed; top: 0; left: 0; right: 0;
-      height: var(--header-height);
-      background: var(--black);
-      border-bottom: 1px solid #222;
-      display: flex; align-items: center;
-      padding: 0 24px;
-      z-index: 100;
-    }
-    .header-left {
-      display: flex; align-items: center; gap: 16px;
-    }
-    .menu-btn {
-      display: none; background: none; border: none;
-      cursor: pointer; padding: 4px;
-    }
-    .menu-btn svg { width: 24px; height: 24px; color: #aaa; }
-    .logo-link {
-      text-decoration: none; display: flex;
-      align-items: center; gap: 2px;
-    }
-    .logo-name {
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.1rem; font-weight: 400;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--white);
-    }
-    .logo-amp {
-      color: var(--gold); font-style: italic;
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 1.2rem; margin: 0 0.1em;
-    }
-    .portal-label {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--white); background: rgba(255,255,255,0.1);
-      padding: 4px 12px; border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.2);
-      margin-left: 12px;
-    }
-    .header-right {
-      margin-left: auto;
-      display: flex; align-items: center; gap: 16px;
-    }
-    .user-email {
-      font-size: 13px; color: #aaa;
-      max-width: 200px; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap;
-    }
-    .btn-logout {
-      font-size: 13px; font-weight: 500;
-      color: #ccc; background: none;
-      border: 1px solid #444;
-      padding: 6px 16px; border-radius: 6px;
-      cursor: pointer; transition: all 0.2s;
-      font-family: inherit;
-    }
-    .btn-logout:hover {
-      color: var(--white); border-color: #888;
-    }
+        .container {
+            display: flex;
+            height: 100vh;
+            flex-direction: row;
+        }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      position: fixed;
-      top: var(--header-height); left: 0; bottom: 0;
-      width: var(--sidebar-width);
-      background: var(--white);
-      border-right: 1px solid #eee;
-      overflow-y: auto;
-      z-index: 90;
-      transition: transform 0.3s ease;
-    }
-    .sidebar-nav { padding: 16px 0; }
-    .nav-section {
-      padding: 0 16px; margin-bottom: 8px;
-    }
-    .nav-section-title {
-      font-size: 10px; font-weight: 600;
-      letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--gray-light); padding: 8px 12px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px; margin: 2px 8px;
-      border-radius: 8px; cursor: pointer;
-      text-decoration: none; color: var(--gray);
-      font-size: 14px; font-weight: 400;
-      transition: all 0.15s ease;
-    }
-    .nav-item:hover {
-      background: var(--off-white); color: var(--black);
-    }
-    .nav-item.active {
-      background: rgba(0,0,0,0.06);
-      color: var(--black); font-weight: 500;
-    }
-    .nav-item svg {
-      width: 20px; height: 20px; flex-shrink: 0;
-      stroke-width: 1.5;
-    }
-    .nav-divider {
-      height: 1px; background: #eee;
-      margin: 12px 20px;
-    }
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 260px;
+            background-color: #0d0d1a;
+            border-right: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
 
-    /* ── Main Content ── */
-    .main-content {
-      position: fixed;
-      top: var(--header-height);
-      left: var(--sidebar-width);
-      right: 0; bottom: 0;
-      background: var(--off-white);
-    }
-    .portal-iframe {
-      width: 100%; height: 100%;
-      border: none; display: block;
-    }
-    .iframe-loading {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: var(--off-white);
-      transition: opacity 0.3s ease;
-    }
-    .iframe-loading.hidden { opacity: 0; pointer-events: none; }
-    .iframe-loading p {
-      margin-top: 16px; font-size: 14px; color: var(--gray-light);
-    }
+        .sidebar.mobile-hidden {
+            transform: translateX(-100%);
+            position: absolute;
+            height: 100%;
+            z-index: 999;
+        }
 
-    /* ── Iframe Fallback ── */
-    .iframe-fallback {
-      display: none;
-      position: absolute; inset: 0;
-      flex-direction: column;
-      align-items: center; justify-content: center;
-      background: var(--off-white);
-      padding: 40px;
-      text-align: center;
-    }
-    .iframe-fallback.visible { display: flex; }
-    .fallback-icon {
-      width: 64px; height: 64px; color: var(--black);
-      margin-bottom: 20px;
-    }
-    .iframe-fallback h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem; color: var(--black);
-      margin-bottom: 12px;
-    }
-    .iframe-fallback p {
-      font-size: 14px; color: var(--gray);
-      max-width: 480px; line-height: 1.6;
-      margin-bottom: 24px;
-    }
-    .btn-open-portal {
-      display: inline-block;
-      padding: 12px 32px;
-      background: var(--black); color: var(--white);
-      border: none; border-radius: 6px;
-      font-size: 15px; font-weight: 600;
-      font-family: inherit; cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .btn-open-portal:hover { background: #333; }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
-    /* ── Mobile Overlay ── */
-    .sidebar-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.3); z-index: 85;
-    }
+        .sidebar-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #c8a951;
+            letter-spacing: 1px;
+        }
 
-    /* ── Responsive ── */
-    @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-overlay.open { display: block; }
-      .menu-btn { display: block; }
-      .main-content { left: 0; }
-      .portal-label { display: none; }
-      .user-email { display: none; }
-    }
-  </style>
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 0;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            color: #b0b0b0;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+
+        .nav-item.active {
+            color: #c8a951;
+            border-left-color: #c8a951;
+            background-color: rgba(200, 169, 81, 0.05);
+        }
+
+        .sidebar-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #222;
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background-color: #1a1a2e;
+            border-bottom: 1px solid #222;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #c8a951;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .header-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .header-badge {
+            background: linear-gradient(135deg, #c8a951, #a68a3f);
+            color: #0d0d1a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 13px;
+        }
+
+        .user-email {
+            color: #c8a951;
+            font-weight: 500;
+        }
+
+        .user-role {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .logout-btn {
+            background-color: #c8a951;
+            color: #0d0d1a;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #a68a3f;
+            transform: translateY(-2px);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        /* ===== TAB CONTENT ===== */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== DASHBOARD ===== */
+        .dashboard-welcome {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%);
+            border-left: 4px solid #c8a951;
+            padding: 25px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-welcome h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .dashboard-welcome p {
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            padding: 20px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #c8a951;
+            background-color: rgba(200, 169, 81, 0.02);
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #c8a951;
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .activity-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .activity-feed {
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .activity-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #222;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-text {
+            color: #e0e0e0;
+        }
+
+        .activity-time {
+            color: #666;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            background-color: #c8a951;
+            color: #0d0d1a;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background-color: #a68a3f;
+            transform: translateY(-2px);
+        }
+
+        /* ===== TABLES ===== */
+        .table-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            color: #b0b0b0;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            background-color: #c8a951;
+            color: #0d0d1a;
+            border-color: #c8a951;
+        }
+
+        .filter-btn:hover {
+            border-color: #c8a951;
+            color: #c8a951;
+        }
+
+        .data-table {
+            width: 100%;
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            border-radius: 6px;
+            overflow: hidden;
+            border-collapse: collapse;
+        }
+
+        .data-table thead {
+            background-color: #0d0d1a;
+            border-bottom: 1px solid #222;
+        }
+
+        .data-table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #222;
+            font-size: 13px;
+            color: #e0e0e0;
+        }
+
+        .data-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: rgba(200, 169, 81, 0.05);
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #c8a951;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+        }
+
+        .expanded-details {
+            display: none;
+            background-color: #0d0d1a;
+            padding: 20px;
+            border-top: 1px solid #222;
+            font-size: 13px;
+        }
+
+        .expanded-details.show {
+            display: block;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .detail-label {
+            color: #999;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+
+        /* ===== BADGES ===== */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-active {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .badge-pending {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .badge-on-hold {
+            background-color: rgba(255, 87, 34, 0.2);
+            color: #ff5722;
+        }
+
+        .badge-closed {
+            background-color: rgba(158, 158, 158, 0.2);
+            color: #9e9e9e;
+        }
+
+        .badge-high {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        .badge-medium {
+            background-color: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+        }
+
+        .badge-low {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .card-subtitle {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .card-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .card-meta-label {
+            color: #666;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-meta-value {
+            color: #e0e0e0;
+        }
+
+        /* ===== MESSAGE VIEW ===== */
+        .message-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .message-item:last-child {
+            border-bottom: none;
+        }
+
+        .message-item:hover {
+            background-color: rgba(200, 169, 81, 0.05);
+        }
+
+        .message-item.unread {
+            background-color: rgba(200, 169, 81, 0.08);
+        }
+
+        .message-checkbox {
+            margin-top: 3px;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-from {
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 3px;
+        }
+
+        .message-subject {
+            color: #c8a951;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .message-preview {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .message-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .message-body {
+            display: none;
+            background-color: #0d0d1a;
+            padding: 20px;
+            border-top: 1px solid #222;
+            margin-top: 10px;
+            border-radius: 4px;
+            line-height: 1.6;
+        }
+
+        .message-body.show {
+            display: block;
+        }
+
+        /* ===== LOADING & EMPTY STATES ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(13, 13, 26, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #222;
+            border-top: 3px solid #c8a951;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .empty-state-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            background-color: rgba(244, 67, 54, 0.1);
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        /* ===== REPORT CARDS ===== */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .report-card {
+            background-color: #1a1a2e;
+            border: 1px solid #222;
+            padding: 20px;
+            border-radius: 6px;
+        }
+
+        .report-card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #222;
+        }
+
+        .report-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .report-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .report-item-label {
+            color: #999;
+        }
+
+        .report-item-value {
+            color: #c8a951;
+            font-weight: 600;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                height: calc(100vh - 60px);
+                width: 260px;
+                z-index: 998;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            .header {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .header-left {
+                gap: 10px;
+            }
+
+            .header-logo {
+                font-size: 16px;
+            }
+
+            .header-right {
+                gap: 10px;
+                font-size: 12px;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .content-area {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-controls {
+                overflow-x: auto;
+            }
+
+            .data-table {
+                font-size: 12px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px;
+            }
+
+            .header-badge {
+                font-size: 9px;
+                padding: 3px 8px;
+            }
+
+            .content-area {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-welcome h1 {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 16px;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loading-logo">Crimson <span class="amp">&amp;</span> Quill</div>
-    <div class="loading-spinner"></div>
-  </div>
-
-  <!-- Header (Dark theme for Staff) -->
-  <header class="portal-header">
-    <div class="header-left">
-      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
-      <a href="/" class="logo-link">
-        <span class="logo-name">Crimson</span>
-        <span class="logo-amp">&amp;</span>
-        <span class="logo-name">Quill</span>
-      </a>
-      <span class="portal-label">Staff Portal</span>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
     </div>
-    <div class="header-right">
-      <span class="user-email" id="userEmail"></span>
-      <button class="btn-logout" id="logoutBtn">Sign Out</button>
+
+    <div class="container">
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">CRIMSON & QUILL</div>
+                <div class="sidebar-title">Staff Portal</div>
+            </div>
+            <div class="sidebar-nav">
+                <div class="nav-item active" data-tab="dashboard">Dashboard</div>
+                <div class="nav-item" data-tab="matters">Matters</div>
+                <div class="nav-item" data-tab="clients">Clients</div>
+                <div class="nav-item" data-tab="documents">Documents</div>
+                <div class="nav-item" data-tab="calendar">Calendar</div>
+                <div class="nav-item" data-tab="messages">Messages</div>
+                <div class="nav-item" data-tab="reports">Reports</div>
+                <div class="nav-item" data-tab="settings">Settings</div>
+            </div>
+            <div class="sidebar-footer">
+                <div>Staff Portal v1.0</div>
+                <div style="margin-top: 10px; color: #666;">Admin View</div>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- HEADER -->
+            <div class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="mobileMenuToggle">☰</button>
+                    <div class="header-logo">CRIMSON & QUILL</div>
+                    <div class="header-badge">Staff Portal</div>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <div class="user-email" id="userEmail">user@crimson-quill.com</div>
+                        <div class="user-role">Administrator</div>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+
+            <!-- CONTENT AREA -->
+            <div class="content-area" id="contentArea">
+
+                <!-- DASHBOARD TAB -->
+                <div class="tab-content active" id="dashboard-tab">
+                    <div class="dashboard-welcome">
+                        <h1>Welcome back</h1>
+                        <p>Admin overview of firm operations</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Matters</div>
+                            <div class="stat-value" id="statTotalMatters">—</div>
+                            <div class="stat-change">All matters in system</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Active Matters</div>
+                            <div class="stat-value" id="statActiveMatters">—</div>
+                            <div class="stat-change">Currently in progress</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Clients</div>
+                            <div class="stat-value" id="statTotalClients">—</div>
+                            <div class="stat-change">Registered clients</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Pending Billing</div>
+                            <div class="stat-value" id="statPendingBilling">—</div>
+                            <div class="stat-change">Awaiting invoice</div>
+                        </div>
+                    </div>
+
+                    <div class="activity-section">
+                        <div class="section-title">Recent Activity</div>
+                        <div class="activity-feed" id="activityFeed">
+                            <div class="activity-item">
+                                <span class="activity-text">Loading activity...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="activity-section">
+                        <div class="section-title">Quick Actions</div>
+                        <div class="quick-actions">
+                            <button class="action-btn">+ New Matter</button>
+                            <button class="action-btn">+ New Client</button>
+                            <button class="action-btn">+ New Message</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MATTERS TAB -->
+                <div class="tab-content" id="matters-tab">
+                    <h2 class="section-title">Matters Management</h2>
+                    <div class="table-controls" id="matterFilters">
+                        <button class="filter-btn active" data-filter="all">All Matters</button>
+                        <button class="filter-btn" data-filter="active">Active</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="on-hold">On Hold</button>
+                        <button class="filter-btn" data-filter="closed">Closed</button>
+                    </div>
+                    <table class="data-table" id="mattersTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;"></th>
+                                <th>Matter ID</th>
+                                <th>Title</th>
+                                <th>Client</th>
+                                <th>Practice Area</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Lead Lawyer</th>
+                                <th>Team</th>
+                                <th>Open Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mattersTableBody">
+                            <tr><td colspan="10" style="text-align: center; padding: 40px; color: #666;">Loading matters...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- CLIENTS TAB -->
+                <div class="tab-content" id="clients-tab">
+                    <h2 class="section-title">Clients</h2>
+                    <div id="clientsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <div class="empty-state-title">Loading clients...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DOCUMENTS TAB -->
+                <div class="tab-content" id="documents-tab">
+                    <h2 class="section-title">Documents</h2>
+                    <div style="margin-bottom: 20px;">
+                        <div class="card" style="background-color: rgba(76, 175, 80, 0.1); border-color: #4caf50;">
+                            <div style="color: #4caf50; font-size: 13px;">
+                                📤 To upload documents, please use SharePoint directly at the Client Portal site. The document manager syncs automatically.
+                            </div>
+                        </div>
+                    </div>
+                    <table class="data-table" id="documentsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Modified</th>
+                                <th>Size</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="documentsTableBody">
+                            <tr><td colspan="4" style="text-align: center; padding: 40px; color: #666;">Loading documents...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- CALENDAR TAB -->
+                <div class="tab-content" id="calendar-tab">
+                    <h2 class="section-title">Calendar & Events</h2>
+                    <div id="calendarContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-title">Loading events...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MESSAGES TAB -->
+                <div class="tab-content" id="messages-tab">
+                    <h2 class="section-title">Messages</h2>
+                    <div style="background-color: #1a1a2e; border: 1px solid #222; border-radius: 6px; overflow: hidden;" id="messagesContainer">
+                        <div style="padding: 40px; text-align: center; color: #666;">
+                            <div style="font-size: 24px; margin-bottom: 10px;">💌</div>
+                            <div>Loading messages...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div class="tab-content" id="reports-tab">
+                    <h2 class="section-title">Analytics & Reports</h2>
+
+                    <div class="report-grid" id="reportsContainer">
+                        <div class="report-card">
+                            <div class="report-card-title">Matters by Status</div>
+                            <div class="report-list" id="reportMattersByStatus">
+                                <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="report-card">
+                            <div class="report-card-title">Matters by Practice Area</div>
+                            <div class="report-list" id="reportMattersByArea">
+                                <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="report-card">
+                            <div class="report-card-title">Billing Summary</div>
+                            <div class="report-list" id="reportBilling">
+                                <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                            </div>
+                        </div>
+
+                        <div class="report-card">
+                            <div class="report-card-title">Team Workload</div>
+                            <div class="report-list" id="reportWorkload">
+                                <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS TAB -->
+                <div class="tab-content" id="settings-tab">
+                    <h2 class="section-title">Portal Settings</h2>
+
+                    <div class="card">
+                        <div class="card-title">Portal Configuration</div>
+                        <div class="card-content">
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                                <span style="color: #999;">Portal Name</span>
+                                <span>CRIMSON & QUILL Staff Portal</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222;">
+                                <span style="color: #999;">Version</span>
+                                <span>1.0</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
+                                <span style="color: #999;">Last Updated</span>
+                                <span id="lastUpdated">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Connected SharePoint Lists</div>
+                        <div class="report-list" id="sharePointLists">
+                            <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Practice Areas</div>
+                        <div class="report-list" id="practiceAreas">
+                            <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Team Assignments</div>
+                        <div id="teamAssignments">
+                            <div style="color: #666; padding: 20px 0; text-align: center;">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
-  </header>
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <nav class="sidebar-nav">
-      <div class="nav-section">
-        <div class="nav-section-title">Management</div>
-        <a class="nav-item active" data-page="dashboard" href="#dashboard">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          Dashboard
-        </a>
-        <a class="nav-item" data-page="matters" href="#matters">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-          Matters
-        </a>
-        <a class="nav-item" data-page="documents" href="#documents">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          Documents
-        </a>
-        <a class="nav-item" data-page="calendar" href="#calendar">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
-          Calendar
-        </a>
-        <a class="nav-item" data-page="messages" href="#messages">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-          </svg>
-          Messages
-        </a>
-        <a class="nav-item" data-page="billing" href="#billing">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-          </svg>
-          Billing
-        </a>
-        <a class="nav-item" data-page="insights" href="#insights">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-          </svg>
-          Insights
-        </a>
-      </div>
-      <div class="nav-divider"></div>
-      <div class="nav-section">
-        <a class="nav-item" href="/">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-          </svg>
-          Back to Website
-        </a>
-      </div>
-    </nav>
-  </aside>
-
-  <!-- Sidebar Overlay (mobile) -->
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <!-- Main Content -->
-  <main class="main-content" id="mainContent">
-    <div class="iframe-loading" id="iframeLoading">
-      <div class="loading-spinner"></div>
-      <p>Loading your portal...</p>
-    </div>
-    <iframe class="portal-iframe" id="portalFrame" title="Staff Portal"
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
-      allow="clipboard-write"></iframe>
-    <div class="iframe-fallback" id="iframeFallback">
-      <svg class="fallback-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
-      <h2>Staff Portal is Ready</h2>
-      <p>Click below to access the firm management portal where you can manage matters, clients, and operations.</p>
-      <a class="btn-open-portal" id="openPortalBtn" href="#" target="_blank" rel="noopener">Open Staff Portal</a>
-    </div>
-  </main>
-
-  <script>
-    (function() {
-      'use strict';
-
-      var PORTAL_TYPE = 'staff';
-      var SP_BASE = 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
-
-      var PAGE_MAP = {
-        dashboard: SP_BASE,
-        matters:   SP_BASE + '/SitePages/My-Matters.aspx',
-        documents: SP_BASE + '/Shared%20Documents',
-        calendar:  SP_BASE + '/SitePages/Calendar.aspx',
-        messages:  SP_BASE + '/SitePages/Messages.aspx',
-        billing:   SP_BASE + '/SitePages/Billing.aspx',
-        insights:  SP_BASE + '/SitePages/Insights.aspx'
-      };
-
-      var loadingScreen = document.getElementById('loadingScreen');
-      var iframe = document.getElementById('portalFrame');
-      var iframeLoading = document.getElementById('iframeLoading');
-      var iframeFallback = document.getElementById('iframeFallback');
-      var openPortalBtn = document.getElementById('openPortalBtn');
-      var userEmailEl = document.getElementById('userEmail');
-      var logoutBtn = document.getElementById('logoutBtn');
-      var menuBtn = document.getElementById('menuBtn');
-      var sidebar = document.getElementById('sidebar');
-      var sidebarOverlay = document.getElementById('sidebarOverlay');
-      var navItems = document.querySelectorAll('.nav-item[data-page]');
-
-      function checkSession() {
-        return fetch('/api/check-session', { credentials: 'same-origin' })
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            if (!data.authenticated) {
-              window.location.href = '/login?type=' + PORTAL_TYPE;
-              return null;
-            }
-            if (data.portalType !== PORTAL_TYPE) {
-              window.location.href = '/' + data.portalType;
-              return null;
-            }
-            return data;
-          })
-          .catch(function() {
-            window.location.href = '/login?type=' + PORTAL_TYPE;
-            return null;
-          });
-      }
-
-      function logout() {
-        document.cookie = 'cq_session=; Path=/; Max-Age=0';
-        window.location.href = '/choose-portal';
-      }
-
-      function loadPortal(url) {
-        iframeLoading.classList.remove('hidden');
-        iframeFallback.classList.remove('visible');
-        iframe.src = url;
-
-        var loaded = false;
-        var timeout = setTimeout(function() {
-          if (!loaded) showFallback(url);
-        }, 8000);
-
-        iframe.onload = function() {
-          loaded = true;
-          clearTimeout(timeout);
-          try {
-            var doc = iframe.contentDocument || iframe.contentWindow.document;
-            if (doc && doc.URL === 'about:blank' && url !== 'about:blank') {
-              showFallback(url);
-              return;
-            }
-          } catch(e) {
-            // Cross-origin error means X-Frame-Options blocked the iframe
-            showFallback(url);
-            return;
-          }
-          iframeLoading.classList.add('hidden');
+    <script>
+        // ===== STATE & CONFIG =====
+        let currentTab = 'dashboard';
+        let portalData = {
+            matters: [],
+            clients: [],
+            documents: [],
+            events: [],
+            messages: [],
+            activityLog: [],
+            practiceAreas: [],
+            teamAssignments: []
         };
+        let mattersFilter = 'all';
 
-        iframe.onerror = function() {
-          loaded = true;
-          clearTimeout(timeout);
-          showFallback(url);
-        };
-      }
+        // ===== AUTHENTICATION =====
+        function checkAuth() {
+            const sessionCookie = getCookie('cq_session');
+            const userCookie = getCookie('cq_user');
 
-      function showFallback(url) {
-        iframeLoading.classList.add('hidden');
-        iframe.style.display = 'none';
-        iframeFallback.classList.add('visible');
-        openPortalBtn.href = url;
-      }
+            if (!sessionCookie) {
+                window.location.href = '/login?type=staff';
+                return false;
+            }
 
-      function setActiveNav(page) {
-        navItems.forEach(function(item) {
-          item.classList.toggle('active', item.getAttribute('data-page') === page);
-        });
-      }
+            if (userCookie) {
+                document.getElementById('userEmail').textContent = userCookie;
+            }
 
-      navItems.forEach(function(item) {
-        item.addEventListener('click', function(e) {
-          e.preventDefault();
-          var page = this.getAttribute('data-page');
-          var url = PAGE_MAP[page] || SP_BASE;
-          setActiveNav(page);
-          iframe.style.display = 'block';
-          loadPortal(url);
-          sidebar.classList.remove('open');
-          sidebarOverlay.classList.remove('open');
-          window.location.hash = page;
-        });
-      });
-
-      menuBtn.addEventListener('click', function() {
-        sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('open');
-      });
-      sidebarOverlay.addEventListener('click', function() {
-        sidebar.classList.remove('open');
-        sidebarOverlay.classList.remove('open');
-      });
-
-      logoutBtn.addEventListener('click', logout);
-
-      checkSession().then(function(data) {
-        if (!data) return;
-        userEmailEl.textContent = data.email;
-        loadingScreen.classList.add('hidden');
-        setTimeout(function() { loadingScreen.style.display = 'none'; }, 400);
-
-        var hash = window.location.hash.replace('#', '') || 'dashboard';
-        if (PAGE_MAP[hash]) {
-          setActiveNav(hash);
-          loadPortal(PAGE_MAP[hash]);
-        } else {
-          loadPortal(PAGE_MAP.dashboard);
+            return true;
         }
-      });
 
-    })();
-  </script>
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.indexOf(nameEQ) === 0) {
+                    return decodeURIComponent(cookie.substring(nameEQ.length));
+                }
+            }
+            return null;
+        }
+
+        function logout() {
+            document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            window.location.href = '/';
+        }
+
+        // ===== DATA FETCHING =====
+        async function fetchList(listName) {
+            try {
+                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
+                    credentials: 'include'
+                });
+                if (!resp.ok) {
+                    throw new Error(`Failed to fetch ${listName}`);
+                }
+                return resp.json();
+            } catch (error) {
+                console.error(`Error fetching ${listName}:`, error);
+                return [];
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                const [matters, clients, documents, events, messages, activityLog, practiceAreas, teamAssignments] = await Promise.all([
+                    fetchList('Matters'),
+                    fetchList('Clients'),
+                    fetchList('Client Documents'),
+                    fetchList('Events'),
+                    fetchList('Messages'),
+                    fetchList('Activity Log'),
+                    fetchList('Practice Area Config'),
+                    fetchList('Team Assignments')
+                ]);
+
+                portalData.matters = matters || [];
+                portalData.clients = clients || [];
+                portalData.documents = documents || [];
+                portalData.events = events || [];
+                portalData.messages = messages || [];
+                portalData.activityLog = activityLog || [];
+                portalData.practiceAreas = practiceAreas || [];
+                portalData.teamAssignments = teamAssignments || [];
+
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                renderDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                showError('Failed to load portal data');
+            }
+        }
+
+        // ===== FORMATTING =====
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatDatetime(dateStr) {
+            if (!dateStr) return '—';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatCurrency(amount) {
+            if (!amount) return '$0';
+            try {
+                return '$' + parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } catch {
+                return amount;
+            }
+        }
+
+        function getStatusBadgeClass(status) {
+            if (!status) return '';
+            status = status.toLowerCase();
+            if (status === 'active') return 'badge-active';
+            if (status === 'pending') return 'badge-pending';
+            if (status === 'on hold' || status === 'on-hold') return 'badge-on-hold';
+            if (status === 'closed') return 'badge-closed';
+            return 'badge-pending';
+        }
+
+        function getPriorityBadgeClass(priority) {
+            if (!priority) return '';
+            priority = priority.toLowerCase();
+            if (priority === 'high') return 'badge-high';
+            if (priority === 'medium') return 'badge-medium';
+            if (priority === 'low') return 'badge-low';
+            return 'badge-medium';
+        }
+
+        function getTimeAgo(dateStr) {
+            if (!dateStr) return 'Recently';
+            try {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const seconds = Math.floor((now - date) / 1000);
+
+                if (seconds < 60) return 'Just now';
+                if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+                if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+                if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+                return formatDate(dateStr);
+            } catch {
+                return 'Recently';
+            }
+        }
+
+        // ===== RENDER FUNCTIONS =====
+        function renderDashboard() {
+            // Stats
+            document.getElementById('statTotalMatters').textContent = portalData.matters.length;
+            const activeMatters = portalData.matters.filter(m => m.Status && m.Status.toLowerCase() === 'active').length;
+            document.getElementById('statActiveMatters').textContent = activeMatters;
+            document.getElementById('statTotalClients').textContent = portalData.clients.length;
+
+            // Pending billing (estimate based on matters without paid status)
+            const pendingBilling = portalData.matters.filter(m => !m['Billing Status'] || m['Billing Status'].toLowerCase() !== 'paid').length;
+            document.getElementById('statPendingBilling').textContent = pendingBilling;
+
+            // Activity feed
+            const activityFeed = document.getElementById('activityFeed');
+            if (portalData.activityLog.length === 0) {
+                activityFeed.innerHTML = '<div class="activity-item"><span class="activity-text">No recent activity</span></div>';
+            } else {
+                activityFeed.innerHTML = portalData.activityLog.slice(0, 10).map(activity => `
+                    <div class="activity-item">
+                        <span class="activity-text">${escapeHtml(activity.Description || 'Activity recorded')}</span>
+                        <span class="activity-time">${getTimeAgo(activity.Timestamp || activity.Modified)}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderMatters() {
+            const tbody = document.getElementById('mattersTableBody');
+            let filtered = portalData.matters;
+
+            if (mattersFilter !== 'all') {
+                filtered = portalData.matters.filter(m => {
+                    const status = (m.Status || '').toLowerCase();
+                    if (mattersFilter === 'active') return status === 'active';
+                    if (mattersFilter === 'pending') return status === 'pending';
+                    if (mattersFilter === 'on-hold') return status === 'on hold' || status === 'on-hold';
+                    if (mattersFilter === 'closed') return status === 'closed';
+                    return true;
+                });
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #666;">No matters found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach((matter, idx) => {
+                const statusClass = getStatusBadgeClass(matter.Status);
+                const priorityClass = getPriorityBadgeClass(matter.Priority);
+                const teamMembers = Array.isArray(matter['Team Members']) ? matter['Team Members'].join(', ') : (matter['Team Members'] || '');
+
+                html += `
+                    <tr>
+                        <td><button class="expand-btn" onclick="toggleMatterDetails(${idx})">▼</button></td>
+                        <td>${escapeHtml(matter['Matter ID'] || '—')}</td>
+                        <td>${escapeHtml(matter.Title || '—')}</td>
+                        <td>${escapeHtml(matter['Client Name'] || '—')}</td>
+                        <td>${escapeHtml(matter['Practice Area'] || '—')}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(matter.Status || 'Unknown')}</span></td>
+                        <td><span class="badge ${priorityClass}">${escapeHtml(matter.Priority || 'Medium')}</span></td>
+                        <td>${escapeHtml(matter['Lead Lawyer'] || '—')}</td>
+                        <td>${escapeHtml(teamMembers || '—')}</td>
+                        <td>${formatDate(matter['Open Date'])}</td>
+                    </tr>
+                    <tr class="expanded-details" id="details-${idx}">
+                        <td colspan="10">
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Description</div>
+                                    <div class="detail-value">${escapeHtml(matter.Description || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Opposing Party</div>
+                                    <div class="detail-value">${escapeHtml(matter['Opposing Party'] || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Opposing Counsel</div>
+                                    <div class="detail-value">${escapeHtml(matter['Opposing Counsel'] || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Court/Tribunal</div>
+                                    <div class="detail-value">${escapeHtml(matter['Court/Tribunal'] || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Case Number</div>
+                                    <div class="detail-value">${escapeHtml(matter['Case Number'] || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Fee Arrangement</div>
+                                    <div class="detail-value">${escapeHtml(matter['Fee Arrangement'] || '—')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Conflict Check</div>
+                                    <div class="detail-value">${escapeHtml(matter['Conflict Check'] || 'Pending')}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Target Close Date</div>
+                                    <div class="detail-value">${formatDate(matter['Target Close Date'])}</div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function toggleMatterDetails(idx) {
+            const details = document.getElementById(`details-${idx}`);
+            if (details) {
+                details.classList.toggle('show');
+            }
+        }
+
+        function renderClients() {
+            const container = document.getElementById('clientsContainer');
+
+            if (portalData.clients.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-title">No clients</div>
+                        <div style="color: #666; font-size: 12px; margin-top: 10px;">No clients found in the system</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const matterCounts = {};
+            portalData.matters.forEach(m => {
+                const clientName = m['Client Name'] || 'Unknown';
+                matterCounts[clientName] = (matterCounts[clientName] || 0) + 1;
+            });
+
+            container.innerHTML = portalData.clients.map(client => `
+                <div class="card">
+                    <div class="card-title">${escapeHtml(client.Name || 'Unnamed Client')}</div>
+                    <div class="card-meta">
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Matters</div>
+                            <div class="card-meta-value">${matterCounts[client.Name] || 0}</div>
+                        </div>
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Contact</div>
+                            <div class="card-meta-value">${escapeHtml(client['Contact Person'] || '—')}</div>
+                        </div>
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Email</div>
+                            <div class="card-meta-value">${escapeHtml(client.Email || '—')}</div>
+                        </div>
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Phone</div>
+                            <div class="card-meta-value">${escapeHtml(client.Phone || '—')}</div>
+                        </div>
+                    </div>
+                    ${client.Address ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #222; font-size: 13px; color: #b0b0b0;">${escapeHtml(client.Address)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderDocuments() {
+            const tbody = document.getElementById('documentsTableBody');
+
+            if (portalData.documents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #666;">No documents found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = portalData.documents.map(doc => `
+                <tr>
+                    <td>📄 ${escapeHtml(doc.Name || 'Unnamed Document')}</td>
+                    <td>${formatDate(doc.Modified)}</td>
+                    <td>${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</td>
+                    <td><a href="${doc.URL || '#'}" style="color: #c8a951; text-decoration: none;">Download</a></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('calendarContainer');
+
+            if (portalData.events.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div class="empty-state-title">No events scheduled</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sorted = [...portalData.events].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+            container.innerHTML = sorted.map(event => `
+                <div class="card">
+                    <div class="card-title">${escapeHtml(event.Title || 'Unnamed Event')}</div>
+                    <div class="card-meta">
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Date & Time</div>
+                            <div class="card-meta-value">${formatDatetime(event.Date)}</div>
+                        </div>
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Location</div>
+                            <div class="card-meta-value">${escapeHtml(event.Location || 'TBD')}</div>
+                        </div>
+                        <div class="card-meta-item">
+                            <div class="card-meta-label">Category</div>
+                            <div class="card-meta-value">${escapeHtml(event.Category || '—')}</div>
+                        </div>
+                    </div>
+                    ${event.Participants ? `<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #222; font-size: 12px; color: #b0b0b0;"><strong style="color: #e0e0e0;">Participants:</strong> ${escapeHtml(event.Participants)}</div>` : ''}
+                    ${event.Description ? `<div style="margin-top: 10px; font-size: 13px; color: #b0b0b0;">${escapeHtml(event.Description)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('messagesContainer');
+
+            if (portalData.messages.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 60px 20px; text-align: center; color: #666;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💌</div>
+                        <div style="font-size: 16px;">No messages</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = portalData.messages.map((msg, idx) => {
+                const isUnread = msg['Read Status'] && msg['Read Status'].toLowerCase() !== 'read';
+                const priorityClass = getPriorityBadgeClass(msg.Priority);
+                return `
+                    <div class="message-item ${isUnread ? 'unread' : ''}" onclick="toggleMessageBody(${idx})">
+                        <input type="checkbox" class="message-checkbox">
+                        <div class="message-content">
+                            <div class="message-from">${escapeHtml(msg.From || 'Unknown')}</div>
+                            <div class="message-subject">${escapeHtml(msg.Subject || '(No subject)')}</div>
+                            <div class="message-preview">${escapeHtml((msg.Body || '').substring(0, 100))}...</div>
+                            <div class="message-meta">
+                                <span>${escapeHtml(msg.To || '—')}</span>
+                                <span>Matter: ${escapeHtml(msg['Matter ID'] || '—')}</span>
+                                ${msg.Priority ? `<span><span class="badge ${priorityClass}">${escapeHtml(msg.Priority)}</span></span>` : ''}
+                                <span>${formatDatetime(msg.Received)}</span>
+                            </div>
+                        </div>
+                        <div class="message-body" id="msg-body-${idx}">
+                            <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #222;">
+                                <strong>From:</strong> ${escapeHtml(msg.From || '—')}<br>
+                                <strong>To:</strong> ${escapeHtml(msg.To || '—')}<br>
+                                <strong>Subject:</strong> ${escapeHtml(msg.Subject || '—')}
+                            </div>
+                            <div>${escapeHtml(msg.Body || '(Empty message)')}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleMessageBody(idx) {
+            const body = document.getElementById(`msg-body-${idx}`);
+            if (body) {
+                body.classList.toggle('show');
+            }
+        }
+
+        function renderReports() {
+            // Matters by status
+            const statusCounts = {};
+            portalData.matters.forEach(m => {
+                const status = m.Status || 'Unknown';
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+            document.getElementById('reportMattersByStatus').innerHTML = Object.entries(statusCounts)
+                .map(([status, count]) => `
+                    <div class="report-item">
+                        <span class="report-item-label">${escapeHtml(status)}</span>
+                        <span class="report-item-value">${count}</span>
+                    </div>
+                `).join('') || '<div style="text-align: center; color: #666; padding: 20px;">No data</div>';
+
+            // Matters by practice area
+            const areaCounts = {};
+            portalData.matters.forEach(m => {
+                const area = m['Practice Area'] || 'Unassigned';
+                areaCounts[area] = (areaCounts[area] || 0) + 1;
+            });
+            document.getElementById('reportMattersByArea').innerHTML = Object.entries(areaCounts)
+                .map(([area, count]) => `
+                    <div class="report-item">
+                        <span class="report-item-label">${escapeHtml(area)}</span>
+                        <span class="report-item-value">${count}</span>
+                    </div>
+                `).join('') || '<div style="text-align: center; color: #666; padding: 20px;">No data</div>';
+
+            // Billing summary
+            const totalBilling = portalData.matters.reduce((sum, m) => sum + (parseFloat(m['Total Billing'] || 0) || 0), 0);
+            const paidBilling = portalData.matters.reduce((sum, m) => {
+                if (m['Billing Status'] && m['Billing Status'].toLowerCase() === 'paid') {
+                    return sum + (parseFloat(m['Total Billing'] || 0) || 0);
+                }
+                return sum;
+            }, 0);
+            const outstandingBilling = totalBilling - paidBilling;
+
+            document.getElementById('reportBilling').innerHTML = `
+                <div class="report-item">
+                    <span class="report-item-label">Total Billing</span>
+                    <span class="report-item-value">${formatCurrency(totalBilling)}</span>
+                </div>
+                <div class="report-item">
+                    <span class="report-item-label">Paid</span>
+                    <span class="report-item-value" style="color: #4caf50;">${formatCurrency(paidBilling)}</span>
+                </div>
+                <div class="report-item">
+                    <span class="report-item-label">Outstanding</span>
+                    <span class="report-item-value" style="color: #ff9800;">${formatCurrency(outstandingBilling)}</span>
+                </div>
+            `;
+
+            // Team workload
+            const lawyerMatters = {};
+            portalData.matters.forEach(m => {
+                const lawyer = m['Lead Lawyer'] || 'Unassigned';
+                lawyerMatters[lawyer] = (lawyerMatters[lawyer] || 0) + 1;
+            });
+            document.getElementById('reportWorkload').innerHTML = Object.entries(lawyerMatters)
+                .sort((a, b) => b[1] - a[1])
+                .map(([lawyer, count]) => `
+                    <div class="report-item">
+                        <span class="report-item-label">${escapeHtml(lawyer)}</span>
+                        <span class="report-item-value">${count}</span>
+                    </div>
+                `).join('') || '<div style="text-align: center; color: #666; padding: 20px;">No data</div>';
+        }
+
+        function renderSettings() {
+            // SharePoint lists
+            const lists = ['Matters', 'Clients', 'Client Documents', 'Events', 'Messages', 'Activity Log', 'Practice Area Config', 'Team Assignments'];
+            document.getElementById('sharePointLists').innerHTML = lists.map(list => {
+                const count = portalData[list.toLowerCase().replace(/ /g, '')] ?
+                    (Array.isArray(portalData[list.toLowerCase().replace(/ /g, '')]) ? portalData[list.toLowerCase().replace(/ /g, '')].length : 0) : 0;
+                return `
+                    <div class="report-item">
+                        <span class="report-item-label">${escapeHtml(list)}</span>
+                        <span class="report-item-value">${count} items</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Practice areas
+            if (portalData.practiceAreas.length === 0) {
+                document.getElementById('practiceAreas').innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No practice areas configured</div>';
+            } else {
+                document.getElementById('practiceAreas').innerHTML = portalData.practiceAreas.map(area => `
+                    <div class="report-item">
+                        <span class="report-item-label">${escapeHtml(area.Name || area)}</span>
+                        <span class="report-item-value" style="color: #c8a951;">✓ Active</span>
+                    </div>
+                `).join('');
+            }
+
+            // Team assignments
+            if (portalData.teamAssignments.length === 0) {
+                document.getElementById('teamAssignments').innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No team assignments configured</div>';
+            } else {
+                document.getElementById('teamAssignments').innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Email</th>
+                                    <th>Practice Areas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${portalData.teamAssignments.map(member => `
+                                    <tr>
+                                        <td>${escapeHtml(member.Name || '—')}</td>
+                                        <td>${escapeHtml(member.Role || '—')}</td>
+                                        <td>${escapeHtml(member.Email || '—')}</td>
+                                        <td>${escapeHtml(member['Practice Areas'] || '—')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const contentArea = document.getElementById('contentArea');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            contentArea.insertBefore(errorDiv, contentArea.firstChild);
+        }
+
+        // ===== TAB SWITCHING =====
+        function switchTab(tabName) {
+            // Update sidebar
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-tab') === tabName) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            const tabElement = document.getElementById(`${tabName}-tab`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+
+            currentTab = tabName;
+
+            // Render specific tab data
+            if (tabName === 'matters') {
+                renderMatters();
+            } else if (tabName === 'clients') {
+                renderClients();
+            } else if (tabName === 'documents') {
+                renderDocuments();
+            } else if (tabName === 'calendar') {
+                renderCalendar();
+            } else if (tabName === 'messages') {
+                renderMessages();
+            } else if (tabName === 'reports') {
+                renderReports();
+            } else if (tabName === 'settings') {
+                renderSettings();
+            }
+
+            // Close mobile menu
+            document.getElementById('sidebar').classList.add('mobile-hidden');
+        }
+
+        // ===== EVENT LISTENERS =====
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                switchTab(item.getAttribute('data-tab'));
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        document.getElementById('mobileMenuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('mobile-hidden');
+        });
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mattersFilter = btn.getAttribute('data-filter');
+                renderMatters();
+            });
+        });
+
+        // ===== INITIALIZATION =====
+        if (checkAuth()) {
+            loadAllData();
+        }
+    </script>
 </body>
 </html>
