@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Portal | Crimson &amp; Quill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #B8860B;
+      --gold-light: #D4A84B;
+      --gold-dark: #8B6914;
+      --black: #000000;
+      --white: #FFFFFF;
+      --gray: #4A4A4A;
+      --gray-light: #888888;
+      --silver: #E0E0E0;
+      --off-white: #FAFAFA;
+      --sidebar-width: 240px;
+      --header-height: 60px;
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--off-white);
+      color: var(--black);
+    }
+
+    /* ── Loading Screen ── */
+    .loading-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--white);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    .loading-screen.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 1.8rem; font-weight: 400;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--black); margin-bottom: 24px;
+    }
+    .loading-logo .amp {
+      color: var(--gold); font-style: italic; margin: 0 0.1em;
+    }
+    .loading-spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--silver);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Header ── */
+    .portal-header {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--header-height);
+      background: var(--white);
+      border-bottom: 1px solid #eee;
+      display: flex; align-items: center;
+      padding: 0 24px;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .header-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .menu-btn {
+      display: none; background: none; border: none;
+      cursor: pointer; padding: 4px;
+    }
+    .menu-btn svg { width: 24px; height: 24px; color: var(--gray); }
+    .logo-link {
+      text-decoration: none; display: flex;
+      align-items: center; gap: 2px;
+    }
+    .logo-name {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 1.1rem; font-weight: 400;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--black);
+    }
+    .logo-amp {
+      color: var(--gold); font-style: italic;
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 1.2rem; margin: 0 0.1em;
+    }
+    .portal-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--gold-dark); background: rgba(184,134,11,0.08);
+      padding: 4px 12px; border-radius: 20px;
+      border: 1px solid rgba(184,134,11,0.2);
+      margin-left: 12px;
+    }
+    .header-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .user-email {
+      font-size: 13px; color: var(--gray-light);
+      max-width: 200px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .btn-logout {
+      font-size: 13px; font-weight: 500;
+      color: var(--gray); background: none;
+      border: 1px solid var(--silver);
+      padding: 6px 16px; border-radius: 6px;
+      cursor: pointer; transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-logout:hover {
+      color: var(--black); border-color: var(--gray);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: var(--header-height); left: 0; bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--white);
+      border-right: 1px solid #eee;
+      overflow-y: auto;
+      z-index: 90;
+      transition: transform 0.3s ease;
+    }
+    .sidebar-nav { padding: 16px 0; }
+    .nav-section {
+      padding: 0 16px; margin-bottom: 8px;
+    }
+    .nav-section-title {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--gray-light); padding: 8px 12px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; margin: 2px 8px;
+      border-radius: 8px; cursor: pointer;
+      text-decoration: none; color: var(--gray);
+      font-size: 14px; font-weight: 400;
+      transition: all 0.15s ease;
+    }
+    .nav-item:hover {
+      background: var(--off-white); color: var(--black);
+    }
+    .nav-item.active {
+      background: rgba(184,134,11,0.08);
+      color: var(--gold-dark); font-weight: 500;
+    }
+    .nav-item svg {
+      width: 20px; height: 20px; flex-shrink: 0;
+      stroke-width: 1.5;
+    }
+    .nav-divider {
+      height: 1px; background: #eee;
+      margin: 12px 20px;
+    }
+
+    /* ── Main Content ── */
+    .main-content {
+      position: fixed;
+      top: var(--header-height);
+      left: var(--sidebar-width);
+      right: 0; bottom: 0;
+      background: var(--off-white);
+    }
+    .portal-iframe {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+    .iframe-loading {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--off-white);
+      transition: opacity 0.3s ease;
+    }
+    .iframe-loading.hidden { opacity: 0; pointer-events: none; }
+    .iframe-loading p {
+      margin-top: 16px; font-size: 14px; color: var(--gray-light);
+    }
+
+    /* ── Iframe Fallback ── */
+    .iframe-fallback {
+      display: none;
+      position: absolute; inset: 0;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--off-white);
+      padding: 40px;
+      text-align: center;
+    }
+    .iframe-fallback.visible { display: flex; }
+    .fallback-icon {
+      width: 64px; height: 64px; color: var(--gold);
+      margin-bottom: 20px;
+    }
+    .iframe-fallback h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; color: var(--black);
+      margin-bottom: 12px;
+    }
+    .iframe-fallback p {
+      font-size: 14px; color: var(--gray);
+      max-width: 480px; line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .btn-open-portal {
+      display: inline-block;
+      padding: 12px 32px;
+      background: var(--gold); color: var(--white);
+      border: none; border-radius: 6px;
+      font-size: 15px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .btn-open-portal:hover { background: var(--gold-dark); }
+
+    /* ── Mobile Overlay ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.3); z-index: 85;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+      .menu-btn { display: block; }
+      .main-content { left: 0; }
+      .portal-label { display: none; }
+      .user-email { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-logo">Crimson <span class="amp">&amp;</span> Quill</div>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="portal-header">
+    <div class="header-left">
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <a href="/" class="logo-link">
+        <span class="logo-name">Crimson</span>
+        <span class="logo-amp">&amp;</span>
+        <span class="logo-name">Quill</span>
+      </a>
+      <span class="portal-label">Client Portal</span>
+    </div>
+    <div class="header-right">
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn-logout" id="logoutBtn">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Portal</div>
+        <a class="nav-item active" data-page="dashboard" href="#dashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-item" data-page="matters" href="#matters">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+          My Matters
+        </a>
+        <a class="nav-item" data-page="documents" href="#documents">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Documents
+        </a>
+        <a class="nav-item" data-page="calendar" href="#calendar">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Calendar
+        </a>
+        <a class="nav-item" data-page="messages" href="#messages">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+          </svg>
+          Messages
+        </a>
+        <a class="nav-item" data-page="billing" href="#billing">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+          Billing
+        </a>
+        <a class="nav-item" data-page="insights" href="#insights">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Insights
+        </a>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-section">
+        <a class="nav-item" href="/">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+          </svg>
+          Back to Website
+        </a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+    <div class="iframe-loading" id="iframeLoading">
+      <div class="loading-spinner"></div>
+      <p>Loading your portal...</p>
+    </div>
+    <iframe class="portal-iframe" id="portalFrame" title="Client Portal"
+      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
+      allow="clipboard-write"></iframe>
+    <div class="iframe-fallback" id="iframeFallback">
+      <svg class="fallback-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+      </svg>
+      <h2>Your Portal is Ready</h2>
+      <p>Click below to access your secure client portal where you can view your matters, documents, and communicate with your legal team.</p>
+      <a class="btn-open-portal" id="openPortalBtn" href="#" target="_blank" rel="noopener">Open Portal</a>
+    </div>
+  </main>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var PORTAL_TYPE = 'client';
+      var SP_BASE = 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
+
+      // SharePoint page map for sidebar navigation
+      var PAGE_MAP = {
+        dashboard: SP_BASE,
+        matters:   SP_BASE + '/SitePages/My-Matters.aspx',
+        documents: SP_BASE + '/Shared%20Documents',
+        calendar:  SP_BASE + '/SitePages/Calendar.aspx',
+        messages:  SP_BASE + '/SitePages/Messages.aspx',
+        billing:   SP_BASE + '/SitePages/Billing.aspx',
+        insights:  SP_BASE + '/SitePages/Insights.aspx'
+      };
+
+      var loadingScreen = document.getElementById('loadingScreen');
+      var iframe = document.getElementById('portalFrame');
+      var iframeLoading = document.getElementById('iframeLoading');
+      var iframeFallback = document.getElementById('iframeFallback');
+      var openPortalBtn = document.getElementById('openPortalBtn');
+      var userEmailEl = document.getElementById('userEmail');
+      var logoutBtn = document.getElementById('logoutBtn');
+      var menuBtn = document.getElementById('menuBtn');
+      var sidebar = document.getElementById('sidebar');
+      var sidebarOverlay = document.getElementById('sidebarOverlay');
+      var navItems = document.querySelectorAll('.nav-item[data-page]');
+
+      // ── Auth Check ──
+      function checkSession() {
+        return fetch('/api/check-session', { credentials: 'same-origin' })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (!data.authenticated) {
+              window.location.href = '/login?type=' + PORTAL_TYPE;
+              return null;
+            }
+            // Check portal type matches
+            if (data.portalType !== PORTAL_TYPE) {
+              window.location.href = '/' + data.portalType;
+              return null;
+            }
+            return data;
+          })
+          .catch(function() {
+            window.location.href = '/login?type=' + PORTAL_TYPE;
+            return null;
+          });
+      }
+
+      // ── Logout ──
+      function logout() {
+        document.cookie = 'cq_session=; Path=/; Max-Age=0';
+        window.location.href = '/choose-portal';
+      }
+
+      // ── Load Portal in Iframe ──
+      function loadPortal(url) {
+        iframeLoading.classList.remove('hidden');
+        iframeFallback.classList.remove('visible');
+
+        // Set iframe src
+        iframe.src = url;
+
+        // Detect if iframe loaded or was blocked
+        var loaded = false;
+        var timeout = setTimeout(function() {
+          if (!loaded) {
+            showFallback(url);
+          }
+        }, 8000);
+
+        iframe.onload = function() {
+          loaded = true;
+          clearTimeout(timeout);
+
+          // Try to detect X-Frame-Options block
+          // If the iframe loaded but content is blank (blocked), show fallback
+          try {
+            // This will throw if cross-origin and blocked
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            // If we can access it and it's about:blank, it may be blocked
+            if (doc && doc.URL === 'about:blank' && url !== 'about:blank') {
+              showFallback(url);
+              return;
+            }
+          } catch(e) {
+            // Cross-origin access denied - this is EXPECTED if iframe loaded successfully
+            // SharePoint content loaded from different origin
+          }
+
+          iframeLoading.classList.add('hidden');
+        };
+
+        iframe.onerror = function() {
+          loaded = true;
+          clearTimeout(timeout);
+          showFallback(url);
+        };
+      }
+
+      function showFallback(url) {
+        iframeLoading.classList.add('hidden');
+        iframe.style.display = 'none';
+        iframeFallback.classList.add('visible');
+        openPortalBtn.href = url;
+      }
+
+      // ── Sidebar Navigation ──
+      function setActiveNav(page) {
+        navItems.forEach(function(item) {
+          item.classList.toggle('active', item.getAttribute('data-page') === page);
+        });
+      }
+
+      navItems.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          var page = this.getAttribute('data-page');
+          var url = PAGE_MAP[page] || SP_BASE;
+          setActiveNav(page);
+          iframe.style.display = 'block';
+          loadPortal(url);
+          // Close mobile sidebar
+          sidebar.classList.remove('open');
+          sidebarOverlay.classList.remove('open');
+          // Update hash
+          window.location.hash = page;
+        });
+      });
+
+      // ── Mobile Menu ──
+      menuBtn.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('open');
+      });
+      sidebarOverlay.addEventListener('click', function() {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+      });
+
+      // ── Logout ──
+      logoutBtn.addEventListener('click', logout);
+
+      // ── Initialize ──
+      checkSession().then(function(data) {
+        if (!data) return;
+
+        // Show user email
+        userEmailEl.textContent = data.email;
+
+        // Hide loading screen
+        loadingScreen.classList.add('hidden');
+        setTimeout(function() { loadingScreen.style.display = 'none'; }, 400);
+
+        // Load the appropriate page based on hash
+        var hash = window.location.hash.replace('#', '') || 'dashboard';
+        if (PAGE_MAP[hash]) {
+          setActiveNav(hash);
+          loadPortal(PAGE_MAP[hash]);
+        } else {
+          loadPortal(PAGE_MAP.dashboard);
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>
