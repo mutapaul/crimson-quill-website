@@ -1518,6 +1518,24 @@
         </div>
     </div>
 
+    <!-- Document Viewer Modal -->
+    <div class="modal-overlay" id="docViewerModal">
+        <div style="background: #fff; border-radius: 12px; width: 90vw; max-width: 900px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.3); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #eee; background: #fafafa;">
+                <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
+                    <span id="docViewerIcon" style="font-size: 20px;">📄</span>
+                    <h3 id="docViewerTitle" style="font-size: 15px; font-weight: 600; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Document</h3>
+                    <span id="docViewerMeta" style="color: #888; font-size: 11px; flex-shrink: 0;"></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                    <a id="docViewerDownload" href="#" download="" class="btn btn-sm btn-gold" style="padding: 5px 12px; font-size: 12px; text-decoration: none;">Download</a>
+                    <button onclick="closeDocViewer()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: #666; padding: 0 4px; line-height: 1;">&times;</button>
+                </div>
+            </div>
+            <div id="docViewerContent" style="flex: 1; overflow: auto; min-height: 200px; background: #f5f5f5;"></div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px;"></div>
 
@@ -2106,13 +2124,13 @@
                 spDocs.forEach(doc => {
                     const ext = (doc.Name || '').split('.').pop().toLowerCase();
                     const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : '📄';
-                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewSharePointDoc('${doc.webUrl || '#'}', '${escapeHtml(doc.Name || 'Unnamed')}')">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span>${icon}</span>
                             <span style="font-size: 13px;">${escapeHtml(doc.Name || 'Unnamed')}</span>
                             <span style="color: #888; font-size: 11px;">${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : ''}</span>
                         </div>
-                        <a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); font-weight: 600; text-decoration: none; font-size: 12px;">View</a>
+                        <span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>
                     </div>`;
                 });
                 html += '</div>';
@@ -2124,14 +2142,15 @@
 
         function renderFileRow(file, matterId, fileIdx) {
             const ext = (file.name || '').split('.').pop().toLowerCase();
-            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? '🖼️' : '📄';
-            return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
+            const isPreviewable = ['png','jpg','jpeg','gif','webp','svg','bmp','pdf','txt','csv','json','xml','html','css','js','md','log','py','sql','yml','yaml','sh'].includes(ext);
+            return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewMatterFile(${matterId}, ${fileIdx})">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span>${icon}</span>
-                    <span style="font-size: 13px;">${escapeHtml(file.name)}</span>
+                    <span style="font-size: 13px; ${isPreviewable ? 'color: var(--dark-brown);' : ''}">${escapeHtml(file.name)}</span>
                     <span style="color: #888; font-size: 11px;">${file.size || ''}</span>
                 </div>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 8px; align-items: center;" onclick="event.stopPropagation();">
                     ${file.dataUrl ? '<a href="' + file.dataUrl + '" download="' + escapeHtml(file.name) + '" style="color: var(--gold); font-weight: 600; text-decoration: none; font-size: 12px;">Download</a>' : ''}
                     <button class="btn btn-sm btn-danger" onclick="deleteMatterFile(${matterId}, ${fileIdx})" style="padding: 2px 6px; font-size: 10px;">Delete</button>
                 </div>
@@ -2214,6 +2233,85 @@
                 saveMatterFileStore(matterId, store);
                 viewMatterDetail(matterId);
             });
+        }
+
+        function previewMatterFile(matterId, fileIdx) {
+            const store = getMatterFileStore(matterId);
+            const file = store.files[fileIdx];
+            if (!file) { showToast('File not found', 'error'); return; }
+
+            const ext = (file.name || '').split('.').pop().toLowerCase();
+            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
+            const modal = document.getElementById('docViewerModal');
+            const content = document.getElementById('docViewerContent');
+            const downloadBtn = document.getElementById('docViewerDownload');
+
+            document.getElementById('docViewerIcon').textContent = icon;
+            document.getElementById('docViewerTitle').textContent = file.name;
+            document.getElementById('docViewerMeta').textContent = file.size || '';
+
+            if (file.dataUrl) {
+                downloadBtn.href = file.dataUrl;
+                downloadBtn.download = file.name;
+                downloadBtn.style.display = 'inline-block';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
+
+            // Render content based on file type
+            if (['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) && file.dataUrl) {
+                content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 300px; background: #f8f8f8;"><img src="' + file.dataUrl + '" alt="' + escapeHtml(file.name) + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);"></div>';
+            } else if (ext === 'pdf' && file.dataUrl) {
+                content.innerHTML = '<iframe src="' + file.dataUrl + '" style="width: 100%; height: 70vh; border: none;"></iframe>';
+            } else if (['txt','csv','json','xml','html','css','js','md','log','py','sql','yml','yaml','env','sh','bat'].includes(ext) && file.dataUrl) {
+                // Decode Base64 text content
+                try {
+                    const base64Data = file.dataUrl.split(',')[1] || '';
+                    const decoded = atob(base64Data);
+                    const escaped = decoded.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const lineCount = decoded.split('\n').length;
+                    const lines = escaped.split('\n').map((line, i) => '<span style="color: #999; display: inline-block; width: 40px; text-align: right; padding-right: 12px; user-select: none; border-right: 1px solid #e0e0e0; margin-right: 12px;">' + (i + 1) + '</span>' + line).join('\n');
+                    content.innerHTML = '<div style="padding: 4px 0;"><div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: #e8e8e8; border-bottom: 1px solid #ddd;"><span style="font-size: 12px; color: #666;">' + ext.toUpperCase() + ' &middot; ' + lineCount + ' lines</span></div><pre style="margin: 0; padding: 16px; font-family: \'SF Mono\', \'Fira Code\', \'Consolas\', monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; background: #fafafa; white-space: pre-wrap; word-wrap: break-word;">' + lines + '</pre></div>';
+                } catch (e) {
+                    content.innerHTML = '<div style="padding: 40px; text-align: center; color: #888;"><div style="font-size: 36px; margin-bottom: 12px;">📄</div><p style="font-size: 14px;">Unable to decode file content</p><p style="font-size: 12px; margin-top: 8px;">Try downloading the file to view it</p></div>';
+                }
+            } else if (['docx','doc','xlsx','xls','pptx','ppt'].includes(ext)) {
+                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(file.name) + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">Microsoft Office files cannot be previewed in the browser.<br>Download the file to open it in the appropriate application.</p><a href="' + (file.dataUrl || '#') + '" download="' + escapeHtml(file.name) + '" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Download to Open</a></div>';
+            } else if (file.dataUrl) {
+                // Unknown type — offer download
+                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(file.name) + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">Preview is not available for this file type.</p><a href="' + file.dataUrl + '" download="' + escapeHtml(file.name) + '" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Download File</a></div>';
+            } else {
+                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #888;"><div style="font-size: 48px; margin-bottom: 16px;">📄</div><p style="font-size: 14px;">No file data available for preview</p></div>';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function previewSharePointDoc(url, name) {
+            if (!url || url === '#') { showToast('Document URL not available', 'warning'); return; }
+            const ext = (name || '').split('.').pop().toLowerCase();
+            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : '📄';
+            const modal = document.getElementById('docViewerModal');
+            const content = document.getElementById('docViewerContent');
+
+            document.getElementById('docViewerIcon').textContent = icon;
+            document.getElementById('docViewerTitle').textContent = name || 'SharePoint Document';
+            document.getElementById('docViewerMeta').textContent = 'SharePoint';
+            document.getElementById('docViewerDownload').href = url;
+            document.getElementById('docViewerDownload').download = '';
+            document.getElementById('docViewerDownload').style.display = 'inline-block';
+            document.getElementById('docViewerDownload').setAttribute('target', '_blank');
+
+            content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(name || 'Document') + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">This document is stored on SharePoint.</p><a href="' + url + '" target="_blank" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Open in SharePoint</a></div>';
+
+            modal.classList.add('active');
+        }
+
+        function closeDocViewer() {
+            document.getElementById('docViewerModal').classList.remove('active');
+            document.getElementById('docViewerContent').innerHTML = '';
+            const downloadBtn = document.getElementById('docViewerDownload');
+            downloadBtn.removeAttribute('target');
         }
 
         function renderClients() {
@@ -3379,6 +3477,20 @@
                 mattersFilter = btn.getAttribute('data-filter');
                 renderMatters();
             });
+        });
+
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('docViewerModal').classList.contains('active')) {
+                    closeDocViewer();
+                }
+            }
+        });
+
+        // Close doc viewer on overlay click
+        document.getElementById('docViewerModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDocViewer();
         });
 
         // ===== INITIALIZATION =====
