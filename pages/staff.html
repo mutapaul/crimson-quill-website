@@ -425,7 +425,11 @@
               showFallback(url);
               return;
             }
-          } catch(e) {}
+          } catch(e) {
+            // Cross-origin error means X-Frame-Options blocked the iframe
+            showFallback(url);
+            return;
+          }
           iframeLoading.classList.add('hidden');
         };
 
