@@ -759,8 +759,9 @@
                     window.location.href = '/login?type=client';
                     return;
                 }
-                document.getElementById('userName').textContent = userEmail;
-                document.getElementById('userAvatar').textContent = getInitial(userEmail);
+                const decodedEmail = decodeURIComponent(userEmail);
+                document.getElementById('userName').textContent = decodedEmail;
+                document.getElementById('userAvatar').textContent = getInitial(decodedEmail);
 
                 // Load dashboard data
                 await loadDashboard();
