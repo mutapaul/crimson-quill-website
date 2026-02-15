@@ -753,14 +753,12 @@
         // ============================================================================
         async function initializePage() {
             try {
-                const session = getCookie('cq_session');
-                if (!session) {
+                // Check for user cookie (cq_session is HttpOnly, so check cq_user instead)
+                const userEmail = getCookie('cq_user');
+                if (!userEmail) {
                     window.location.href = '/login?type=client';
                     return;
                 }
-
-                // Extract user email from session or cookie
-                const userEmail = getCookie('cq_user') || 'Client User';
                 document.getElementById('userName').textContent = userEmail;
                 document.getElementById('userAvatar').textContent = getInitial(userEmail);
 

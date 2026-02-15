@@ -1136,17 +1136,15 @@
 
         // ===== AUTHENTICATION =====
         function checkAuth() {
-            const sessionCookie = getCookie('cq_session');
+            // Check for user cookie (cq_session is HttpOnly, so check cq_user instead)
             const userCookie = getCookie('cq_user');
 
-            if (!sessionCookie) {
+            if (!userCookie) {
                 window.location.href = '/login?type=staff';
                 return false;
             }
 
-            if (userCookie) {
-                document.getElementById('userEmail').textContent = userCookie;
-            }
+            document.getElementById('userEmail').textContent = userCookie;
 
             return true;
         }

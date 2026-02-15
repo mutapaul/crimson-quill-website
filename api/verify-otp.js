@@ -90,7 +90,21 @@ module.exports = async function handler(req, res) {
       cookieOptions.push('Secure');
     }
 
-    res.setHeader('Set-Cookie', cookieOptions.join('; '));
+    // User info cookie (readable by JS for display purposes)
+    const userCookieOptions = [
+      `cq_user=${encodeURIComponent(normalizedEmail)}`,
+      'Path=/',
+      'SameSite=Lax',
+      `Max-Age=${24 * 60 * 60}`,
+    ];
+    if (isProduction) {
+      userCookieOptions.push('Secure');
+    }
+
+    res.setHeader('Set-Cookie', [
+      cookieOptions.join('; '),
+      userCookieOptions.join('; '),
+    ]);
 
     return res.status(200).json({
       success: true,
