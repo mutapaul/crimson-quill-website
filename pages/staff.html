@@ -2468,9 +2468,9 @@
                 document.getElementById('invoiceNumberField').value = 'Select a matter first';
                 return;
             }
-            // Get matter ID from the selected matter
-            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value));
-            const matterID = matter ? (matter.Matter_x0020_ID || 'CQ-M000') : 'CQ-M000';
+            // Get matter by Matter_x0020_ID (dropdown value)
+            const matter = portalData.matters.find(m => m.Matter_x0020_ID === matterSelect.value || String(m.id) === String(matterSelect.value));
+            const matterID = matter ? (matter.Matter_x0020_ID || 'CQ-M000') : matterSelect.value || 'CQ-M000';
             document.getElementById('invoiceNumberField').value = generateNextInvoiceNumber(matterID);
 
             // Auto-select client
@@ -3046,8 +3046,8 @@
 
             // Get matter number for invoice numbering
             const matterId = formData.get('matter');
-            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
-            const matterNumber = matter ? (matter.Matter_x0020_ID || '') : '';
+            const matter = portalData.matters.find(m => m.Matter_x0020_ID === matterId || String(m.id) === String(matterId));
+            const matterNumber = matter ? (matter.Matter_x0020_ID || matterId) : matterId || '';
 
             // Collect custom fields
             const customFields = [];
