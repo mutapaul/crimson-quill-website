@@ -1170,13 +1170,14 @@
         // ===== DATA FETCHING =====
         async function fetchList(listName) {
             try {
-                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
+                const resp = await fetch(`/api/sharepoint?site=staff&list=${encodeURIComponent(listName)}`, {
                     credentials: 'include'
                 });
                 if (!resp.ok) {
                     throw new Error(`Failed to fetch ${listName}`);
                 }
-                return resp.json();
+                const data = await resp.json();
+                return data.value || [];
             } catch (error) {
                 console.error(`Error fetching ${listName}:`, error);
                 return [];
