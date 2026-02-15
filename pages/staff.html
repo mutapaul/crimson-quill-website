@@ -1284,6 +1284,12 @@
                         <input type="text" name="category" class="form-input">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Matter</label>
+                        <select name="matter" class="form-select" id="eventMattersSelect">
+                            <option value="">Select a matter...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-textarea"></textarea>
                     </div>
@@ -2976,7 +2982,8 @@
                 EventDate: formData.get('date'),
                 Location: formData.get('location'),
                 Category: formData.get('category'),
-                Description: formData.get('description')
+                Description: formData.get('description'),
+                Matter_x0020_ID: formData.get('matter')
             };
 
             try {
@@ -3319,7 +3326,8 @@
                 Matter_x0020_ID: formData.get('matter'),
                 Message_x0020_Body: formData.get('body'),
                 Priority: formData.get('priority'),
-                Read: false
+                Read: false,
+                Sender: 'Staff'
             };
 
             try {

@@ -1,8 +1,33 @@
 const { Resend } = require('resend');
+const { createClient } = require('@vercel/kv');
 const jwt = require('jsonwebtoken');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const JWT_SECRET = process.env.JWT_SECRET;
+
+/**
+ * Check rate limit for invoice emails
+ * Max 5 emails per hour per email address
+ */
+async function checkEmailRateLimit(kv, email) {
+  const key = `invoice_rate:${email.toLowerCase()}`;
+  const raw = await kv.get(key);
+  const count = raw ? (typeof raw === 'string' ? parseInt(raw) : raw) : 0;
+
+  if (count >= 5) {
+    return false; // Rate limited
+  }
+
+  // Increment and set 1-hour TTL if first request
+  if (count === 0) {
+    await kv.set(key, 1, { ex: 3600 });
+  } else {
+    const ttl = await kv.ttl(key);
+    await kv.set(key, count + 1, { ex: ttl > 0 ? ttl : 3600 });
+  }
+
+  return true;
+}
 
 /**
  * Validate session cookie
@@ -103,6 +128,20 @@ module.exports = async function handler(req, res) {
 
     const normalizedEmail = email.toLowerCase().trim();
     const formattedAmount = formatCurrency(totalAmount, currency);
+
+    // Initialize Vercel KV
+    const kv = createClient({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+    });
+
+    // Check rate limit
+    const allowed = await checkEmailRateLimit(kv, normalizedEmail);
+    if (!allowed) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Maximum 5 invoice emails per hour per client email.',
+      });
+    }
 
     // Parse due date
     let dueDateFormatted = dueDate;
