@@ -914,24 +914,33 @@
                         <button class="btn btn-gold" onclick="openNewMatterModal()">+ New Matter</button>
                     </div>
 
-                    <div class="card">
-                        <table class="data-table" id="mattersTable">
-                            <thead>
-                                <tr>
-                                    <th>Matter ID</th>
-                                    <th>Title</th>
-                                    <th>Client</th>
-                                    <th>Practice Area</th>
-                                    <th>Status</th>
-                                    <th>Priority</th>
-                                    <th>Open Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="mattersTableBody">
-                                <tr><td colspan="9" style="text-align: center; padding: 40px; color: #888;">Loading matters...</td></tr>
-                            </tbody>
-                        </table>
+                    <!-- Matters List View -->
+                    <div id="mattersListView">
+                        <div class="card">
+                            <table class="data-table" id="mattersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Matter ID</th>
+                                        <th>Title</th>
+                                        <th>Client</th>
+                                        <th>Practice Area</th>
+                                        <th>Status</th>
+                                        <th>Priority</th>
+                                        <th>Open Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mattersTableBody">
+                                    <tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">Loading matters...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Matter Detail View -->
+                    <div id="matterDetailView" style="display: none;">
+                        <button class="btn btn-secondary" onclick="closeMatterDetail()" style="margin-bottom: 20px;">&larr; Back to Matters</button>
+                        <div id="matterDetailContent"></div>
                     </div>
                 </div>
 
@@ -988,15 +997,11 @@
                 <div class="tab-content" id="documents-tab">
                     <div class="page-header">
                         <h1>Documents</h1>
-                        <p>Access and manage documents from SharePoint</p>
+                        <p>Access and manage client documents from SharePoint</p>
                     </div>
 
-                    <div class="card">
-                        <div style="padding: 20px; background-color: rgba(76, 175, 80, 0.08); border-radius: var(--radius-sm); border: 1px solid rgba(76, 175, 80, 0.3);">
-                            <div style="color: #2e7d32; font-size: 13px;">
-                                📤 To upload documents, please use SharePoint directly at the Client Portal site. Documents sync automatically here.
-                            </div>
-                        </div>
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                        <a href="https://cqadvocates.sharepoint.com/sites/CQClientPortal/Client%20Documents" target="_blank" class="btn btn-gold" style="text-decoration: none;">Open SharePoint Library</a>
                     </div>
 
                     <div class="card">
@@ -1006,7 +1011,7 @@
                                     <th>Name</th>
                                     <th>Modified</th>
                                     <th>Size</th>
-                                    <th>Action</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="documentsTableBody">
@@ -1728,19 +1733,237 @@
                 return `
                     <tr>
                         <td>${escapeHtml(matter.Matter_x0020_ID || '—')}</td>
-                        <td><strong>${escapeHtml(matter.Title || '—')}</strong></td>
+                        <td><a href="#" onclick="viewMatterDetail(${matter.id}); return false;" style="color: var(--gold); text-decoration: none; font-weight: 700;">${escapeHtml(matter.Title || '—')}</a></td>
                         <td>${escapeHtml(matter.Client_x0020_Name || '—')}</td>
                         <td>${escapeHtml(matter.Practice_x0020_Area || '—')}</td>
                         <td><span class="badge ${statusClass}">${escapeHtml(matter.Matter_x0020_Status || 'Unknown')}</span></td>
                         <td><span class="badge ${priorityClass}">${escapeHtml(matter.Priority || 'Medium')}</span></td>
                         <td>${formatDate(matter.Open_x0020_Date)}</td>
                         <td>
+                            <button class="btn btn-sm btn-gold" onclick="viewMatterDetail(${matter.id})" style="padding: 4px 10px; font-size: 11px;">View</button>
                             <button class="btn btn-sm btn-secondary" onclick="editMatter(${matter.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteMatter(${matter.id})">Delete</button>
                         </td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        function viewMatterDetail(matterId) {
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+            if (!matter) { alert('Matter not found'); return; }
+
+            document.getElementById('mattersListView').style.display = 'none';
+            document.querySelector('#matters-tab .table-controls').style.display = 'none';
+            document.getElementById('matterDetailView').style.display = 'block';
+
+            const statusClass = getStatusBadgeClass(matter.Matter_x0020_Status);
+            const priorityClass = getPriorityBadgeClass(matter.Priority);
+
+            // Get assigned staff for this matter
+            const staffList = JSON.parse(localStorage.getItem('cq_staff') || '[]');
+            const allStaffOptions = staffList.map(s =>
+                `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)} — ${escapeHtml(s.role)}</option>`
+            ).join('');
+
+            // Get related documents
+            const matterDocs = portalData.documents.filter(d =>
+                (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase()) ||
+                (d.Name || '').toLowerCase().includes((matter.Title || '').toLowerCase().split(' - ')[0].toLowerCase())
+            );
+
+            // Get related messages
+            const matterMsgs = portalData.messages.filter(msg =>
+                String(msg.Matter_x0020_ID || '') === String(matter.Matter_x0020_ID || '')
+            );
+
+            // Get related invoices
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const matterInvoices = invoices.filter(inv => String(inv.matterId) === String(matterId));
+
+            const content = document.getElementById('matterDetailContent');
+            content.innerHTML = `
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                        <div>
+                            <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 5px;">${escapeHtml(matter.Title || 'Untitled Matter')}</h2>
+                            <div style="color: var(--gray-light); font-size: 13px;">Matter ID: ${escapeHtml(matter.Matter_x0020_ID || '—')}</div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <span class="badge ${statusClass}" style="font-size: 13px; padding: 6px 16px;">${escapeHtml(matter.Matter_x0020_Status || 'Unknown')}</span>
+                            <span class="badge ${priorityClass}" style="font-size: 13px; padding: 6px 16px;">${escapeHtml(matter.Priority || 'Medium')}</span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Client</div>
+                            <div style="font-size: 14px; font-weight: 600;">${escapeHtml(matter.Client_x0020_Name || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Practice Area</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Practice_x0020_Area || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Open Date</div>
+                            <div style="font-size: 14px;">${formatDate(matter.Open_x0020_Date)}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Target Close Date</div>
+                            <div style="font-size: 14px;">${formatDate(matter.Target_x0020_Close_x0020_Date)}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Fee Arrangement</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Fee_x0020_Arrangement || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Case Number</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Case_x0020_Number || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Court / Tribunal</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Court_x0020__x002f__x0020_Tribunal || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Opposing Party</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Opposing_x0020_Party || '—')}</div>
+                        </div>
+                        <div>
+                            <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Opposing Counsel</div>
+                            <div style="font-size: 14px;">${escapeHtml(matter.Opposing_x0020_Counsel || '—')}</div>
+                        </div>
+                    </div>
+                    ${matter.Matter_x0020_Description ? `
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--silver);">
+                        <div style="color: #888; font-size: 12px; margin-bottom: 8px;">Description</div>
+                        <div style="font-size: 14px; line-height: 1.6;">${escapeHtml(matter.Matter_x0020_Description)}</div>
+                    </div>` : ''}
+                </div>
+
+                <!-- Team Assignment Section -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Team Assignment</h3>
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <select id="matterStaffSelect" style="flex: 1; padding: 8px 12px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 13px;">
+                            <option value="">Select staff member...</option>
+                            ${allStaffOptions}
+                        </select>
+                        <select id="matterRoleSelect" style="width: 160px; padding: 8px 12px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 13px;">
+                            <option value="Lead Lawyer">Lead Lawyer</option>
+                            <option value="Associate">Associate</option>
+                            <option value="Paralegal">Paralegal</option>
+                            <option value="Legal Assistant">Legal Assistant</option>
+                        </select>
+                        <button class="btn btn-gold" onclick="assignStaffToMatter(${matter.id})" style="white-space: nowrap;">+ Assign</button>
+                    </div>
+                    <div id="matterTeamList">
+                        ${renderMatterTeam(matter.id)}
+                    </div>
+                </div>
+
+                <!-- Related Documents -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Documents</h3>
+                    ${matterDocs.length > 0 ? `
+                        <table class="data-table">
+                            <thead><tr><th>Name</th><th>Modified</th><th>Size</th><th>Action</th></tr></thead>
+                            <tbody>
+                                ${matterDocs.map(doc => `
+                                    <tr>
+                                        <td>📄 ${escapeHtml(doc.Name || 'Unnamed')}</td>
+                                        <td>${formatDate(doc.Modified)}</td>
+                                        <td>${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</td>
+                                        <td><a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); font-weight: 600; text-decoration: none;">View</a></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents linked to this matter yet</div>'}
+                </div>
+
+                <!-- Related Invoices -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="font-size: 16px; font-weight: 600;">Invoices</h3>
+                        <button class="btn btn-gold btn-sm" onclick="closeMatterDetail(); switchTab('billing'); setTimeout(() => openNewInvoiceModal(), 300);">+ Create Invoice</button>
+                    </div>
+                    ${matterInvoices.length > 0 ? `
+                        <table class="data-table">
+                            <thead><tr><th>Invoice #</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
+                            <tbody>
+                                ${matterInvoices.map(inv => `
+                                    <tr>
+                                        <td>${escapeHtml(inv.invoiceNumber || '—')}</td>
+                                        <td>${formatDate(inv.date)}</td>
+                                        <td>${formatCurrencyUGX(inv.totalAmount || 0)}</td>
+                                        <td><span class="badge ${inv.status === 'Paid' ? 'badge-active' : inv.status === 'Sent' ? 'badge-pending' : 'badge-medium'}">${escapeHtml(inv.status || 'Draft')}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No invoices for this matter yet</div>'}
+                </div>
+
+                <!-- Actions -->
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-secondary" onclick="editMatter(${matter.id})">Edit Matter</button>
+                    <button class="btn btn-danger" onclick="deleteMatter(${matter.id})">Delete Matter</button>
+                </div>
+            `;
+        }
+
+        function closeMatterDetail() {
+            document.getElementById('matterDetailView').style.display = 'none';
+            document.getElementById('mattersListView').style.display = 'block';
+            document.querySelector('#matters-tab .table-controls').style.display = 'flex';
+        }
+
+        function renderMatterTeam(matterId) {
+            const assignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
+            const team = assignments[String(matterId)] || [];
+            if (team.length === 0) {
+                return '<div style="text-align: center; padding: 20px; color: #888; font-size: 13px;">No staff assigned to this matter yet</div>';
+            }
+            return team.map((member, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--silver);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">${escapeHtml(member.name)}</div>
+                        <div style="color: var(--gray-light); font-size: 12px;">${escapeHtml(member.role)}</div>
+                    </div>
+                    <button class="btn btn-sm btn-danger" onclick="removeStaffFromMatter(${matterId}, ${idx})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        function assignStaffToMatter(matterId) {
+            const staffName = document.getElementById('matterStaffSelect').value;
+            const role = document.getElementById('matterRoleSelect').value;
+            if (!staffName) { alert('Please select a staff member'); return; }
+
+            const assignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
+            const key = String(matterId);
+            if (!assignments[key]) assignments[key] = [];
+
+            // Check for duplicates
+            if (assignments[key].some(m => m.name === staffName)) {
+                alert(staffName + ' is already assigned to this matter');
+                return;
+            }
+
+            assignments[key].push({ name: staffName, role: role });
+            localStorage.setItem('cq_matter_teams', JSON.stringify(assignments));
+
+            document.getElementById('matterTeamList').innerHTML = renderMatterTeam(matterId);
+            document.getElementById('matterStaffSelect').value = '';
+        }
+
+        function removeStaffFromMatter(matterId, memberIdx) {
+            const assignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
+            const key = String(matterId);
+            if (assignments[key]) {
+                assignments[key].splice(memberIdx, 1);
+                localStorage.setItem('cq_matter_teams', JSON.stringify(assignments));
+            }
+            document.getElementById('matterTeamList').innerHTML = renderMatterTeam(matterId);
         }
 
         function renderClients() {
@@ -1808,14 +2031,20 @@
                 return;
             }
 
-            tbody.innerHTML = portalData.documents.map(doc => `
+            tbody.innerHTML = portalData.documents.map(doc => {
+                const ext = (doc.Name || '').split('.').pop().toLowerCase();
+                const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ext === 'pptx' ? '📙' : ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? '🖼️' : '📄';
+                return `
                 <tr>
-                    <td>📄 ${escapeHtml(doc.Name || 'Unnamed Document')}</td>
+                    <td>${icon} ${escapeHtml(doc.Name || 'Unnamed Document')}</td>
                     <td>${formatDate(doc.Modified)}</td>
                     <td>${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</td>
-                    <td><a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: 600;">Download</a></td>
-                </tr>
-            `).join('');
+                    <td>
+                        <a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: 600; margin-right: 12px;">View</a>
+                        <a href="${doc['@microsoft.graph.downloadUrl'] || doc.webUrl || '#'}" target="_blank" style="color: var(--gray); text-decoration: none; font-weight: 500;">Download</a>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
         function renderCalendar() {
