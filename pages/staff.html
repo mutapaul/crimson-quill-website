@@ -35,12 +35,7 @@
             transition: transform 0.3s ease;
         }
 
-        .sidebar.mobile-hidden {
-            transform: translateX(-100%);
-            position: absolute;
-            height: 100%;
-            z-index: 999;
-        }
+        /* mobile-hidden only applies on small screens */
 
         .sidebar-header {
             padding: 20px;
@@ -759,6 +754,10 @@
                 width: 260px;
                 z-index: 998;
                 box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            }
+
+            .sidebar.mobile-hidden {
+                transform: translateX(-100%);
             }
 
             .mobile-menu-toggle {
@@ -1731,8 +1730,10 @@
                 renderSettings();
             }
 
-            // Close mobile menu
-            document.getElementById('sidebar').classList.add('mobile-hidden');
+            // Close mobile menu (only on small screens)
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('mobile-hidden');
+            }
         }
 
         // ===== EVENT LISTENERS =====
