@@ -2267,7 +2267,7 @@
 
             const recordType = cells[0].textContent || 'Invoice';
             const matterId = cells[1].textContent || 'N/A';
-            const amount = cells[2].textContent || '$0.00';
+            const amount = cells[2].textContent || 'UGX 0';
             const status = cells[3].textContent || 'Pending';
             const dueDate = cells[4].textContent || 'N/A';
 
@@ -2335,7 +2335,7 @@
                     </div>
                     <div class="invoice-total-row">
                         <span>Tax (0%)</span>
-                        <span>$0.00</span>
+                        <span>${amount.startsWith('UGX') ? 'UGX 0' : '$0.00'}</span>
                     </div>
                     <div class="invoice-total-row final">
                         <span>Total Due</span>
