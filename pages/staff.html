@@ -71,17 +71,19 @@
         }
 
         .sidebar-logo {
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.2rem;
+            font-weight: 400;
             color: var(--primary);
             letter-spacing: 0.15em;
             text-transform: uppercase;
+            line-height: 1;
         }
 
         .sidebar-logo-amp {
             color: var(--gold);
-            font-family: 'Playfair Display', serif;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
         }
@@ -159,17 +161,19 @@
         }
 
         .header-logo {
-            font-family: 'Inter', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.2rem;
+            font-weight: 400;
             color: var(--primary);
             letter-spacing: 0.15em;
             text-transform: uppercase;
+            line-height: 1;
         }
 
         .header-logo-amp {
             color: var(--gold);
-            font-family: 'Playfair Display', serif;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
         }
@@ -997,27 +1001,11 @@
                 <div class="tab-content" id="documents-tab">
                     <div class="page-header">
                         <h1>Documents</h1>
-                        <p>Access and manage client documents from SharePoint</p>
+                        <p>All documents are organized by matter. Click on a matter to manage its files.</p>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <a href="https://cqadvocates.sharepoint.com/sites/CQClientPortal/Client%20Documents" target="_blank" class="btn btn-gold" style="text-decoration: none;">Open SharePoint Library</a>
-                    </div>
-
-                    <div class="card">
-                        <table class="data-table" id="documentsTable">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Modified</th>
-                                    <th>Size</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="documentsTableBody">
-                                <tr><td colspan="4" style="text-align: center; padding: 40px; color: #888;">Loading documents...</td></tr>
-                            </tbody>
-                        </table>
+                    <div id="documentsOverview">
+                        <div style="color: #888; font-size: 13px; padding: 20px; text-align: center;">Loading...</div>
                     </div>
                 </div>
 
@@ -1370,11 +1358,16 @@
                         <select name="role" class="form-select" required>
                             <option value="">Select a role...</option>
                             <option value="Managing Partner">Managing Partner</option>
+                            <option value="Partner">Partner</option>
                             <option value="Senior Associate">Senior Associate</option>
                             <option value="Associate">Associate</option>
-                            <option value="Paralegal">Paralegal</option>
+                            <option value="Of Counsel">Of Counsel</option>
+                            <option value="Consultant">Consultant</option>
+                            <option value="Clerk">Clerk</option>
                             <option value="Legal Assistant">Legal Assistant</option>
                             <option value="Office Manager">Office Manager</option>
+                            <option value="Practice Manager">Practice Manager</option>
+                            <option value="Finance">Finance</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1406,52 +1399,56 @@
                 <div id="invoiceFormMessages"></div>
                 <form id="invoiceForm" onsubmit="saveInvoice(event)">
                     <div class="form-group">
-                        <label class="form-label">Invoice Number</label>
-                        <input type="text" name="invoiceNumber" class="form-input" readonly id="invoiceNumberField">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Client *</label>
-                        <select name="client" class="form-select" required id="invoiceClientSelect">
-                            <option value="">Select a client...</option>
+                        <label class="form-label">Matter</label>
+                        <select name="matter" class="form-select" id="invoiceMatterSelect" onchange="updateInvoiceNumber()">
+                            <option value="">Select a matter...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Matter *</label>
-                        <select name="matter" class="form-select" required id="invoiceMatterSelect">
-                            <option value="">Select a matter...</option>
+                        <label class="form-label">Invoice Number</label>
+                        <input type="text" name="invoiceNumber" class="form-input" readonly id="invoiceNumberField" style="background: var(--off-white);">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Client</label>
+                        <select name="client" class="form-select" id="invoiceClientSelect">
+                            <option value="">Select a client...</option>
                         </select>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
-                            <label class="form-label">Invoice Date *</label>
-                            <input type="date" name="invoiceDate" class="form-input" required id="invoiceDateField">
+                            <label class="form-label">Invoice Date</label>
+                            <input type="date" name="invoiceDate" class="form-input" id="invoiceDateField">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Due Date *</label>
-                            <input type="date" name="dueDate" class="form-input" required id="invoiceDueDateField">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" name="dueDate" class="form-input" id="invoiceDueDateField">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Professional Fees (UGX) *</label>
-                        <input type="number" name="professionalFees" class="form-input" required id="invoiceFeesField" onchange="updateInvoiceTotal()">
+                        <label class="form-label">Description of Services</label>
+                        <textarea name="serviceDescription" class="form-textarea" id="invoiceDescriptionField" rows="2" placeholder="Describe the services rendered..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Professional Fees (UGX)</label>
+                        <input type="number" name="professionalFees" class="form-input" id="invoiceFeesField" oninput="updateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Disbursements (UGX)</label>
-                        <input type="number" name="disbursements" class="form-input" id="invoiceDisbursementsField" onchange="updateInvoiceTotal()">
+                        <input type="number" name="disbursements" class="form-input" id="invoiceDisbursementsField" oninput="updateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">VAT Amount (18%, Auto-calculated) (UGX)</label>
-                        <input type="number" name="vatAmount" class="form-input" readonly id="invoiceVatField">
+                        <input type="number" name="vatAmount" class="form-input" readonly id="invoiceVatField" style="background: var(--off-white);">
                     </div>
                     <div style="background-color: var(--off-white); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 600;">
+                        <div style="display: flex; justify-content: space-between; font-weight: 600;">
                             <span>Total Amount (UGX)</span>
                             <span id="invoiceTotalField">UGX 0</span>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Amount Paid (UGX)</label>
-                        <input type="number" name="amountPaid" class="form-input" id="invoiceAmountPaidField" onchange="updateInvoiceTotal()">
+                        <input type="number" name="amountPaid" class="form-input" id="invoiceAmountPaidField" oninput="updateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status</label>
@@ -1463,6 +1460,16 @@
                             <option value="Cancelled">Cancelled</option>
                         </select>
                     </div>
+
+                    <!-- Custom Fields -->
+                    <div style="border-top: 1px solid var(--silver); padding-top: 15px; margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label class="form-label" style="margin-bottom: 0;">Custom Fields</label>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="addCustomInvoiceField()">+ Add Field</button>
+                        </div>
+                        <div id="customFieldsContainer"></div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Notes</label>
                         <textarea name="notes" class="form-textarea"></textarea>
@@ -1605,7 +1612,10 @@
                 portalData.documents = documents || [];
                 portalData.events = events || [];
                 portalData.messages = messages || [];
-                portalData.invoices = invoices || [];
+                // Merge SharePoint invoices with localStorage invoices
+                const spInvoices = invoices || [];
+                const localInvoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+                portalData.invoices = localInvoices.length > 0 ? localInvoices : spInvoices;
 
                 // Initialize staff from localStorage or use defaults
                 const storedStaff = localStorage.getItem('cq_staff');
@@ -1847,11 +1857,18 @@
                             <option value="">Select staff member...</option>
                             ${allStaffOptions}
                         </select>
-                        <select id="matterRoleSelect" style="width: 160px; padding: 8px 12px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 13px;">
-                            <option value="Lead Lawyer">Lead Lawyer</option>
+                        <select id="matterRoleSelect" style="width: 180px; padding: 8px 12px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 13px;">
+                            <option value="Managing Partner">Managing Partner</option>
+                            <option value="Partner">Partner</option>
+                            <option value="Senior Associate">Senior Associate</option>
                             <option value="Associate">Associate</option>
-                            <option value="Paralegal">Paralegal</option>
+                            <option value="Of Counsel">Of Counsel</option>
+                            <option value="Consultant">Consultant</option>
+                            <option value="Clerk">Clerk</option>
                             <option value="Legal Assistant">Legal Assistant</option>
+                            <option value="Office Manager">Office Manager</option>
+                            <option value="Practice Manager">Practice Manager</option>
+                            <option value="Finance">Finance</option>
                         </select>
                         <button class="btn btn-gold" onclick="assignStaffToMatter(${matter.id})" style="white-space: nowrap;">+ Assign</button>
                     </div>
@@ -1860,24 +1877,20 @@
                     </div>
                 </div>
 
-                <!-- Related Documents -->
+                <!-- Matter Documents & Folders -->
                 <div class="card" style="margin-bottom: 20px;">
-                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">Documents</h3>
-                    ${matterDocs.length > 0 ? `
-                        <table class="data-table">
-                            <thead><tr><th>Name</th><th>Modified</th><th>Size</th><th>Action</th></tr></thead>
-                            <tbody>
-                                ${matterDocs.map(doc => `
-                                    <tr>
-                                        <td>📄 ${escapeHtml(doc.Name || 'Unnamed')}</td>
-                                        <td>${formatDate(doc.Modified)}</td>
-                                        <td>${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</td>
-                                        <td><a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); font-weight: 600; text-decoration: none;">View</a></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    ` : '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents linked to this matter yet</div>'}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="font-size: 16px; font-weight: 600;">Documents & Files</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm btn-secondary" onclick="createMatterFolder(${matter.id})">+ New Folder</button>
+                            <button class="btn btn-sm btn-gold" onclick="uploadMatterFile(${matter.id})">Upload File</button>
+                        </div>
+                    </div>
+
+                    <!-- Folder/File Browser -->
+                    <div id="matterFileBrowser_${matter.id}">
+                        ${renderMatterFiles(matter.id, matterDocs)}
+                    </div>
                 </div>
 
                 <!-- Related Invoices -->
@@ -1966,6 +1979,178 @@
             document.getElementById('matterTeamList').innerHTML = renderMatterTeam(matterId);
         }
 
+        // ===== MATTER FILE MANAGEMENT =====
+        function getMatterFileStore(matterId) {
+            const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
+            if (!store[String(matterId)]) store[String(matterId)] = { folders: [], files: [] };
+            return store[String(matterId)];
+        }
+
+        function saveMatterFileStore(matterId, data) {
+            const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
+            store[String(matterId)] = data;
+            localStorage.setItem('cq_matter_files', JSON.stringify(store));
+        }
+
+        function renderMatterFiles(matterId, spDocs) {
+            const store = getMatterFileStore(matterId);
+            const folders = store.folders || [];
+            const files = store.files || [];
+            const hasContent = folders.length > 0 || files.length > 0 || (spDocs && spDocs.length > 0);
+
+            if (!hasContent) {
+                return '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents or folders yet. Create a folder or upload a file to get started.</div>';
+            }
+
+            let html = '<div style="display: flex; flex-direction: column; gap: 2px;">';
+
+            // Render folders
+            folders.forEach((folder, idx) => {
+                const folderFiles = files.filter(f => f.folder === folder.name);
+                html += `
+                <div style="border: 1px solid var(--silver); border-radius: var(--radius-sm); margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--off-white); cursor: pointer;" onclick="toggleMatterFolder(this)">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">📁</span>
+                            <strong style="font-size: 14px;">${escapeHtml(folder.name)}</strong>
+                            <span style="color: #888; font-size: 12px;">(${folderFiles.length} files)</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <button class="btn btn-sm btn-gold" onclick="event.stopPropagation(); uploadMatterFileToFolder(${matterId}, '${escapeHtml(folder.name)}')" style="padding: 3px 8px; font-size: 11px;">Upload</button>
+                            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteMatterFolder(${matterId}, ${idx})" style="padding: 3px 8px; font-size: 11px;">Delete</button>
+                        </div>
+                    </div>
+                    <div style="display: none; padding: 8px 15px;">`;
+                if (folderFiles.length === 0) {
+                    html += '<div style="color: #888; font-size: 12px; padding: 10px 0;">Empty folder</div>';
+                } else {
+                    folderFiles.forEach((file, fileIdx) => {
+                        const globalIdx = files.indexOf(file);
+                        html += renderFileRow(file, matterId, globalIdx);
+                    });
+                }
+                html += '</div></div>';
+            });
+
+            // Render root-level files (no folder)
+            const rootFiles = files.filter(f => !f.folder);
+            rootFiles.forEach((file, idx) => {
+                const globalIdx = files.indexOf(file);
+                html += renderFileRow(file, matterId, globalIdx);
+            });
+
+            // Render SharePoint documents
+            if (spDocs && spDocs.length > 0) {
+                html += '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--silver);">';
+                html += '<div style="color: #888; font-size: 11px; margin-bottom: 6px;">From SharePoint:</div>';
+                spDocs.forEach(doc => {
+                    const ext = (doc.Name || '').split('.').pop().toLowerCase();
+                    const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : '📄';
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span>${icon}</span>
+                            <span style="font-size: 13px;">${escapeHtml(doc.Name || 'Unnamed')}</span>
+                            <span style="color: #888; font-size: 11px;">${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : ''}</span>
+                        </div>
+                        <a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); font-weight: 600; text-decoration: none; font-size: 12px;">View</a>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderFileRow(file, matterId, fileIdx) {
+            const ext = (file.name || '').split('.').pop().toLowerCase();
+            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? '🖼️' : '📄';
+            return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span>${icon}</span>
+                    <span style="font-size: 13px;">${escapeHtml(file.name)}</span>
+                    <span style="color: #888; font-size: 11px;">${file.size || ''}</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    ${file.dataUrl ? '<a href="' + file.dataUrl + '" download="' + escapeHtml(file.name) + '" style="color: var(--gold); font-weight: 600; text-decoration: none; font-size: 12px;">Download</a>' : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deleteMatterFile(${matterId}, ${fileIdx})" style="padding: 2px 6px; font-size: 10px;">Delete</button>
+                </div>
+            </div>`;
+        }
+
+        function toggleMatterFolder(el) {
+            const contentDiv = el.nextElementSibling;
+            contentDiv.style.display = contentDiv.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function createMatterFolder(matterId) {
+            const folderName = prompt('Enter folder name:');
+            if (!folderName || !folderName.trim()) return;
+            const store = getMatterFileStore(matterId);
+            if (store.folders.some(f => f.name === folderName.trim())) {
+                alert('A folder with this name already exists');
+                return;
+            }
+            store.folders.push({ name: folderName.trim(), created: new Date().toISOString() });
+            saveMatterFileStore(matterId, store);
+            viewMatterDetail(matterId); // Refresh
+        }
+
+        function deleteMatterFolder(matterId, folderIdx) {
+            showConfirmDelete('Delete this folder and all its files?', () => {
+                const store = getMatterFileStore(matterId);
+                const folderName = store.folders[folderIdx].name;
+                store.files = store.files.filter(f => f.folder !== folderName);
+                store.folders.splice(folderIdx, 1);
+                saveMatterFileStore(matterId, store);
+                viewMatterDetail(matterId);
+            });
+        }
+
+        function uploadMatterFile(matterId) {
+            uploadMatterFileToFolder(matterId, null);
+        }
+
+        function uploadMatterFileToFolder(matterId, folderName) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = (e) => {
+                const files = Array.from(e.target.files);
+                const store = getMatterFileStore(matterId);
+                let processed = 0;
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        store.files.push({
+                            name: file.name,
+                            size: (file.size / 1024).toFixed(1) + ' KB',
+                            type: file.type,
+                            folder: folderName,
+                            uploaded: new Date().toISOString(),
+                            dataUrl: ev.target.result
+                        });
+                        processed++;
+                        if (processed === files.length) {
+                            saveMatterFileStore(matterId, store);
+                            viewMatterDetail(matterId);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            };
+            input.click();
+        }
+
+        function deleteMatterFile(matterId, fileIdx) {
+            showConfirmDelete('Delete this file?', () => {
+                const store = getMatterFileStore(matterId);
+                store.files.splice(fileIdx, 1);
+                saveMatterFileStore(matterId, store);
+                viewMatterDetail(matterId);
+            });
+        }
+
         function renderClients() {
             const container = document.getElementById('clientsContainer');
 
@@ -2024,27 +2209,39 @@
         }
 
         function renderDocuments() {
-            const tbody = document.getElementById('documentsTableBody');
+            const container = document.getElementById('documentsOverview');
+            const allFileStore = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
 
-            if (portalData.documents.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: #888;">No documents found</td></tr>';
-                return;
+            let html = '';
+            portalData.matters.forEach(matter => {
+                const matterKey = String(matter.id);
+                const store = allFileStore[matterKey] || { folders: [], files: [] };
+                const folderCount = store.folders.length;
+                const fileCount = store.files.length;
+
+                // Count SharePoint docs for this matter
+                const spDocs = portalData.documents.filter(d =>
+                    (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase())
+                );
+                const totalFiles = fileCount + spDocs.length;
+
+                html += `
+                <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="switchTab('matters'); setTimeout(() => viewMatterDetail(${matter.id}), 100);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">📂 ${escapeHtml(matter.Matter_x0020_ID || '')} — ${escapeHtml(matter.Title || 'Untitled')}</div>
+                            <div style="color: #888; font-size: 12px; margin-top: 4px;">${folderCount} folder${folderCount !== 1 ? 's' : ''}, ${totalFiles} file${totalFiles !== 1 ? 's' : ''}</div>
+                        </div>
+                        <div style="color: var(--gold); font-size: 13px; font-weight: 600;">View Files &rarr;</div>
+                    </div>
+                </div>`;
+            });
+
+            if (!html) {
+                html = '<div style="text-align: center; padding: 40px; color: #888;">No matters found. Create a matter first to start managing documents.</div>';
             }
 
-            tbody.innerHTML = portalData.documents.map(doc => {
-                const ext = (doc.Name || '').split('.').pop().toLowerCase();
-                const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ext === 'pptx' ? '📙' : ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? '🖼️' : '📄';
-                return `
-                <tr>
-                    <td>${icon} ${escapeHtml(doc.Name || 'Unnamed Document')}</td>
-                    <td>${formatDate(doc.Modified)}</td>
-                    <td>${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : '—'}</td>
-                    <td>
-                        <a href="${doc.webUrl || '#'}" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: 600; margin-right: 12px;">View</a>
-                        <a href="${doc['@microsoft.graph.downloadUrl'] || doc.webUrl || '#'}" target="_blank" style="color: var(--gray); text-decoration: none; font-weight: 500;">Download</a>
-                    </td>
-                </tr>`;
-            }).join('');
+            container.innerHTML = html;
         }
 
         function renderCalendar() {
@@ -2152,18 +2349,25 @@
             }
 
             tbody.innerHTML = portalData.invoices.map(invoice => {
-                const statusClass = invoice.Status ? 'badge-' + invoice.Status.toLowerCase().replace(' ', '-') : 'badge-pending';
+                const invNumber = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '—';
+                const invMatter = invoice.matterNumber || invoice.Matter_x0020_ID || '—';
+                const invClient = invoice.client || invoice.Client_x0020_Name || '—';
+                const invDate = invoice.date || invoice.Invoice_x0020_Date;
+                const invTotal = invoice.totalAmount || invoice.Total_x0020_Amount || 0;
+                const invStatus = invoice.status || invoice.Status || 'Draft';
+                const invId = invoice.id;
+                const statusClass = invStatus === 'Paid' ? 'badge-active' : invStatus === 'Sent' ? 'badge-pending' : invStatus === 'Overdue' ? 'badge-high' : 'badge-medium';
                 return `
                     <tr>
-                        <td><strong>${escapeHtml(invoice.Invoice_x0020_Number || '—')}</strong></td>
-                        <td>${escapeHtml(invoice.Matter_x0020_ID || '—')}</td>
-                        <td>${escapeHtml(invoice.Client_x0020_Name || '—')}</td>
-                        <td>${formatDate(invoice.Invoice_x0020_Date)}</td>
-                        <td style="text-align: right; font-weight: 600;">UGX ${parseInt(invoice.Total_x0020_Amount || 0).toLocaleString()}</td>
-                        <td><span class="badge ${statusClass}">${escapeHtml(invoice.Status || 'Draft')}</span></td>
+                        <td><strong>${escapeHtml(invNumber)}</strong></td>
+                        <td>${escapeHtml(invMatter)}</td>
+                        <td>${escapeHtml(invClient)}</td>
+                        <td>${formatDate(invDate)}</td>
+                        <td style="text-align: right; font-weight: 600;">UGX ${parseInt(invTotal).toLocaleString()}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(invStatus)}</span></td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editInvoice(${invoice.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})">Delete</button>
+                            <button class="btn btn-sm btn-secondary" onclick="editInvoice('${invId}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${invId}')">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -2189,10 +2393,47 @@
             document.getElementById('invoiceTotalField').textContent = formatCurrencyUGX(Math.round(total));
         }
 
-        function generateNextInvoiceNumber() {
-            const timestamp = Date.now();
-            const random = Math.floor(Math.random() * 10000);
-            return `CQ-INV-${timestamp.toString().slice(-6)}-${random.toString().padStart(4, '0')}`;
+        function generateNextInvoiceNumber(matterID) {
+            if (!matterID) return 'Select a matter first';
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const matterInvoices = invoices.filter(inv => inv.matterNumber === matterID);
+            const nextNum = matterInvoices.length + 1;
+            return `${matterID}-INV-${String(nextNum).padStart(3, '0')}`;
+        }
+
+        function updateInvoiceNumber() {
+            const matterSelect = document.getElementById('invoiceMatterSelect');
+            const selectedOption = matterSelect.options[matterSelect.selectedIndex];
+            if (!matterSelect.value) {
+                document.getElementById('invoiceNumberField').value = 'Select a matter first';
+                return;
+            }
+            // Get matter ID from the selected matter
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value));
+            const matterID = matter ? (matter.Matter_x0020_ID || 'CQ-M000') : 'CQ-M000';
+            document.getElementById('invoiceNumberField').value = generateNextInvoiceNumber(matterID);
+
+            // Auto-select client
+            if (matter && matter.Client_x0020_Name) {
+                const clientSelect = document.getElementById('invoiceClientSelect');
+                for (let opt of clientSelect.options) {
+                    if (opt.value === matter.Client_x0020_Name) { clientSelect.value = matter.Client_x0020_Name; break; }
+                }
+            }
+        }
+
+        function addCustomInvoiceField() {
+            const container = document.getElementById('customFieldsContainer');
+            const fieldId = Date.now();
+            const fieldDiv = document.createElement('div');
+            fieldDiv.id = 'customField_' + fieldId;
+            fieldDiv.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start;';
+            fieldDiv.innerHTML = `
+                <input type="text" class="form-input" placeholder="Field name" style="font-size: 13px;" data-custom-label>
+                <input type="text" class="form-input" placeholder="Value" style="font-size: 13px;" data-custom-value>
+                <button type="button" class="btn btn-sm btn-danger" onclick="document.getElementById('customField_${fieldId}').remove()" style="padding: 8px 12px;">×</button>
+            `;
+            container.appendChild(fieldDiv);
         }
 
         function renderReports() {
@@ -2312,7 +2553,7 @@
             editingInvoiceId = null;
             document.getElementById('invoiceForm').reset();
             document.getElementById('invoiceIdField').value = '';
-            document.getElementById('invoiceNumberField').value = generateNextInvoiceNumber();
+            document.getElementById('invoiceNumberField').value = 'Select a matter first';
             document.querySelector('#invoiceModal .modal-title').textContent = 'New Invoice';
             document.getElementById('invoiceFormMessages').innerHTML = '';
             document.getElementById('generatePdfBtn').style.display = 'none';
@@ -2320,6 +2561,8 @@
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 30);
             document.getElementById('invoiceDueDateField').value = dueDate.toISOString().split('T')[0];
+            document.getElementById('customFieldsContainer').innerHTML = '';
+            document.getElementById('invoiceTotalField').textContent = 'UGX 0';
             document.getElementById('invoiceModal').classList.add('active');
         }
 
@@ -2741,52 +2984,58 @@
             const formData = new FormData(form);
             const invoiceId = document.getElementById('invoiceIdField').value;
 
-            const payload = {
-                Invoice_x0020_Number: formData.get('invoiceNumber'),
-                Client_x0020_Name: formData.get('client'),
-                Matter_x0020_ID: formData.get('matter'),
-                Invoice_x0020_Date: formData.get('invoiceDate'),
-                Due_x0020_Date: formData.get('dueDate'),
-                Professional_x0020_Fees: parseInt(formData.get('professionalFees')) || 0,
-                Disbursements: parseInt(formData.get('disbursements')) || 0,
-                VAT_x0020_Amount: parseInt(document.getElementById('invoiceVatField').value) || 0,
-                Amount_x0020_Paid: parseInt(formData.get('amountPaid')) || 0,
-                Status: formData.get('status'),
-                Description: formData.get('notes')
-            };
+            // Get matter number for invoice numbering
+            const matterId = formData.get('matter');
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+            const matterNumber = matter ? (matter.Matter_x0020_ID || '') : '';
 
-            payload.Total_x0020_Amount = payload.Professional_x0020_Fees + payload.Disbursements + payload.VAT_x0020_Amount;
-
-            try {
-                const method = invoiceId ? 'PATCH' : 'POST';
-                const url = '/api/sharepoint-write';
-                const body = {
-                    site: 'client',
-                    list: 'Billing',
-                    fields: payload,
-                    ...(invoiceId && { itemId: invoiceId })
-                };
-
-                const resp = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                    credentials: 'include'
-                });
-
-                if (resp.ok) {
-                    document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
-                    setTimeout(() => {
-                        closeInvoiceModal();
-                        loadAllData();
-                    }, 1000);
-                } else {
-                    const error = await resp.json();
-                    document.getElementById('invoiceFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save invoice'}</div>`;
+            // Collect custom fields
+            const customFields = [];
+            document.querySelectorAll('#customFieldsContainer > div').forEach(div => {
+                const label = div.querySelector('[data-custom-label]');
+                const value = div.querySelector('[data-custom-value]');
+                if (label && value && label.value.trim()) {
+                    customFields.push({ label: label.value.trim(), value: value.value.trim() });
                 }
-            } catch (error) {
-                document.getElementById('invoiceFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            });
+
+            const invoiceData = {
+                id: invoiceId || String(Date.now()),
+                invoiceNumber: formData.get('invoiceNumber'),
+                client: formData.get('client'),
+                matterId: matterId,
+                matterNumber: matterNumber,
+                date: formData.get('invoiceDate'),
+                dueDate: formData.get('dueDate'),
+                serviceDescription: formData.get('serviceDescription') || '',
+                professionalFees: parseInt(formData.get('professionalFees')) || 0,
+                disbursements: parseInt(formData.get('disbursements')) || 0,
+                vatAmount: parseInt(document.getElementById('invoiceVatField').value) || 0,
+                totalAmount: 0,
+                amountPaid: parseInt(formData.get('amountPaid')) || 0,
+                status: formData.get('status'),
+                notes: formData.get('notes') || '',
+                customFields: customFields
+            };
+            invoiceData.totalAmount = invoiceData.professionalFees + invoiceData.disbursements + invoiceData.vatAmount;
+
+            // Save locally
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const existingIdx = invoices.findIndex(inv => inv.id === invoiceId);
+            if (existingIdx >= 0) {
+                invoices[existingIdx] = invoiceData;
+            } else {
+                invoices.push(invoiceData);
             }
+            localStorage.setItem('cq_invoices', JSON.stringify(invoices));
+            portalData.invoices = invoices;
+
+            document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
+            document.getElementById('generatePdfBtn').style.display = 'inline-block';
+            setTimeout(() => {
+                closeInvoiceModal();
+                renderInvoices();
+            }, 1000);
         }
 
         async function deleteInvoice(invoiceId) {
@@ -2863,100 +3112,130 @@
         function generateInvoicePDF() {
             const invoiceNumber = document.getElementById('invoiceNumberField').value;
             const clientName = document.getElementById('invoiceClientSelect').value;
+            const matterSelect = document.getElementById('invoiceMatterSelect');
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value));
+            const matterTitle = matter ? matter.Title : '';
+            const matterRef = matter ? (matter.Matter_x0020_ID || '') : '';
             const invoiceDate = document.getElementById('invoiceDateField').value;
             const dueDate = document.getElementById('invoiceDueDateField').value;
+            const serviceDescription = document.getElementById('invoiceDescriptionField') ? document.getElementById('invoiceDescriptionField').value : 'Services rendered';
             const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || 0;
             const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || 0;
             const vat = parseInt(document.getElementById('invoiceVatField').value) || 0;
             const total = professionalFees + disbursements + vat;
+            const amountPaid = parseInt(document.getElementById('invoiceAmountPaidField').value) || 0;
+            const amountPayable = total - amountPaid;
 
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 40px; }
-                        .header { margin-bottom: 40px; }
-                        .firm-name { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-                        .firm-details { font-size: 12px; color: #666; }
-                        .invoice-title { font-size: 20px; font-weight: bold; margin-top: 40px; margin-bottom: 20px; }
-                        .ref-box { border: 1px solid #ddd; padding: 15px; margin-bottom: 30px; }
-                        .ref-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                        th { background-color: #f5f5f5; font-weight: bold; }
-                        .total-section { margin-top: 20px; }
-                        .total-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-                        .total-amount { font-size: 18px; font-weight: bold; }
-                        .footer { margin-top: 60px; font-size: 11px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="firm-name">Crimson & Quill Advocates</div>
-                        <div class="firm-details">
-                            Kampala, Uganda<br>
-                            Tel: +256 701 000 000<br>
-                            Email: info@crimson-quill.com
-                        </div>
-                    </div>
+            // Collect custom fields
+            let customFieldsHTML = '';
+            document.querySelectorAll('#customFieldsContainer > div').forEach(div => {
+                const label = div.querySelector('[data-custom-label]');
+                const value = div.querySelector('[data-custom-value]');
+                if (label && value && label.value.trim()) {
+                    customFieldsHTML += '<tr><td>' + label.value.trim() + '</td><td style="text-align: right;" colspan="3">' + value.value.trim() + '</td></tr>';
+                }
+            });
 
-                    <div class="invoice-title">INVOICE</div>
+            const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
-                    <div class="ref-box">
-                        <div class="ref-row">
-                            <span><strong>Invoice No:</strong> ${invoiceNumber}</span>
-                        </div>
-                        <div class="ref-row">
-                            <span><strong>Date:</strong> ${new Date(invoiceDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                            <span><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                        </div>
-                        <div class="ref-row">
-                            <span><strong>Bill To:</strong> ${clientName}</span>
-                        </div>
-                    </div>
+            const htmlContent = `<!DOCTYPE html>
+<html><head><style>
+    @page { margin: 30mm 20mm; }
+    body { font-family: 'Times New Roman', Georgia, serif; margin: 0; padding: 40px; color: #000; font-size: 13px; }
+    .logo-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #B8860B; padding-bottom: 20px; }
+    .logo-text { font-family: 'Times New Roman', Georgia, serif; font-size: 28px; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; }
+    .logo-amp { color: #B8860B; font-style: italic; }
+    .firm-subtitle { font-size: 11px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+    .firm-contact { font-size: 11px; color: #444; text-align: right; line-height: 1.8; }
+    .invoice-title { font-size: 22px; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; margin: 25px 0 20px; color: #B8860B; }
+    .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #ddd; margin-bottom: 25px; }
+    .ref-cell { padding: 10px 15px; border-bottom: 1px solid #eee; }
+    .ref-cell:nth-child(even) { border-left: 1px solid #eee; }
+    .ref-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .ref-value { font-size: 13px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background-color: #000; color: #fff; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { border-bottom: 1px solid #eee; padding: 10px 12px; }
+    .subtotal-row td { border-top: 2px solid #B8860B; font-weight: 600; }
+    .total-row td { background: #f8f6f0; font-weight: 700; font-size: 15px; border-top: 2px solid #000; }
+    .footer { margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; font-size: 11px; color: #666; }
+    .bank-details { background: #f8f6f0; padding: 15px; border-radius: 4px; margin-top: 15px; }
+</style></head><body>
+    <div class="logo-section">
+        <div>
+            <div class="logo-text">Crimson <span class="logo-amp">&</span> Quill</div>
+            <div class="firm-subtitle">Advocates & Legal Consultants</div>
+        </div>
+        <div class="firm-contact">
+            Plot 1, Kimathi Avenue<br>
+            Kampala, Uganda<br>
+            Tel: +256 701 000 000<br>
+            info@cqadvocates.com<br>
+            www.cqadvocates.com
+        </div>
+    </div>
 
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th style="text-align: right;">Professional Fees (UGX)</th>
-                                <th style="text-align: right;">Disbursements (UGX)</th>
-                                <th style="text-align: right;">VAT (UGX)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Services rendered</td>
-                                <td style="text-align: right;">${professionalFees.toLocaleString()}</td>
-                                <td style="text-align: right;">${disbursements.toLocaleString()}</td>
-                                <td style="text-align: right;">${vat.toLocaleString()}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+    <div class="invoice-title">Tax Invoice</div>
 
-                    <div class="total-section">
-                        <div class="total-row">
-                            <span><strong>Total Amount Due (UGX): ${total.toLocaleString()}</strong></span>
-                        </div>
-                    </div>
+    <div class="ref-grid">
+        <div class="ref-cell"><div class="ref-label">Invoice Number</div><div class="ref-value">${invoiceNumber}</div></div>
+        <div class="ref-cell"><div class="ref-label">Invoice Date</div><div class="ref-value">${fmtDate(invoiceDate)}</div></div>
+        <div class="ref-cell"><div class="ref-label">Matter Reference</div><div class="ref-value">${matterRef}</div></div>
+        <div class="ref-cell"><div class="ref-label">Due Date</div><div class="ref-value">${fmtDate(dueDate)}</div></div>
+        <div class="ref-cell"><div class="ref-label">Bill To</div><div class="ref-value">${clientName || '—'}</div></div>
+        <div class="ref-cell"><div class="ref-label">Matter</div><div class="ref-value">${matterTitle || '—'}</div></div>
+    </div>
 
-                    <div class="footer">
-                        <p><strong>Bank Details:</strong></p>
-                        <p>Account Name: Crimson & Quill Advocates<br>
-                        Bank: [Bank Name]<br>
-                        Account Number: [Account Number]<br>
-                        Swift Code: [Swift Code]</p>
-                        <p style="margin-top: 20px;">Thank you for your business.</p>
-                    </div>
-                </body>
-                </html>
-            `;
+    <table>
+        <thead><tr>
+            <th>Details</th>
+            <th style="text-align: right;">Costs (UGX)</th>
+            <th style="text-align: right;">Disbursements (UGX)</th>
+            <th style="text-align: right;">VAT 18% (UGX)</th>
+        </tr></thead>
+        <tbody>
+            <tr>
+                <td>${serviceDescription || 'Professional charges as agreed'}</td>
+                <td style="text-align: right;">${professionalFees.toLocaleString()}</td>
+                <td style="text-align: right;">${disbursements > 0 ? disbursements.toLocaleString() : '—'}</td>
+                <td style="text-align: right;">${vat.toLocaleString()}</td>
+            </tr>
+            ${customFieldsHTML}
+            <tr class="subtotal-row">
+                <td>Sub-Total</td>
+                <td style="text-align: right;">${professionalFees.toLocaleString()}</td>
+                <td style="text-align: right;">${disbursements > 0 ? disbursements.toLocaleString() : '—'}</td>
+                <td style="text-align: right;">${vat.toLocaleString()}</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="3">Total Due</td>
+                <td style="text-align: right;">UGX ${total.toLocaleString()}</td>
+            </tr>
+            ${amountPaid > 0 ? '<tr><td colspan="3">Less: Amount Held on Account / Paid</td><td style="text-align: right;">(UGX ' + amountPaid.toLocaleString() + ')</td></tr>' : ''}
+            ${amountPaid > 0 ? '<tr class="total-row"><td colspan="3"><strong>Amount Payable</strong></td><td style="text-align: right;"><strong>UGX ' + amountPayable.toLocaleString() + '</strong></td></tr>' : ''}
+        </tbody>
+    </table>
 
-            const printWindow = window.open('', '', 'height=800,width=900');
+    <div class="footer">
+        <p><strong>Payment should be made within 30 days of the date of this invoice.</strong></p>
+        <div class="bank-details">
+            <p><strong>Bank Payment Details:</strong></p>
+            <p>Account Name: Crimson & Quill Advocates<br>
+            Bank: [Bank Name]<br>
+            Account Number: [Account Number]<br>
+            Branch: Kampala Main Branch<br>
+            Swift Code: [Swift Code]</p>
+        </div>
+        <p style="margin-top: 20px; text-align: center; font-size: 10px; color: #999;">
+            Crimson & Quill Advocates | Advocates & Legal Consultants | TIN: [Tax ID Number]
+        </p>
+    </div>
+</body></html>`;
+
+            const printWindow = window.open('', '', 'height=900,width=800');
             printWindow.document.write(htmlContent);
             printWindow.document.close();
-            printWindow.print();
+            setTimeout(() => printWindow.print(), 500);
         }
 
         // ===== TAB SWITCHING =====
