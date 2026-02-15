@@ -1546,7 +1546,7 @@
             { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul@crimson-quill.com', phone: '+256 701 000 001' },
             { id: 2, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
             { id: 3, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
-            { id: 4, name: 'Grace Amara', role: 'Paralegal', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
+            { id: 4, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
             { id: 5, name: 'James Kato', role: 'Legal Assistant', email: 'james@crimson-quill.com', phone: '+256 701 000 005' }
         ];
 
@@ -2074,9 +2074,9 @@
                             <strong style="font-size: 14px;">${escapeHtml(folder.name)}</strong>
                             <span style="color: #888; font-size: 12px;">(${folderFiles.length} files)</span>
                         </div>
-                        <div style="display: flex; gap: 6px; align-items: center;">
-                            <button class="btn btn-sm btn-gold" onclick="event.stopPropagation(); uploadMatterFileToFolder(${matterId}, '${escapeHtml(folder.name)}')" style="padding: 3px 8px; font-size: 11px;">Upload</button>
-                            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteMatterFolder(${matterId}, ${idx})" style="padding: 3px 8px; font-size: 11px;">Delete</button>
+                        <div style="display: flex; gap: 6px; align-items: center;" onclick="return false;">
+                            <button class="btn btn-sm btn-gold" onclick="uploadMatterFileToFolder(${matterId}, '${escapeHtml(folder.name)}'); return false;" style="padding: 3px 8px; font-size: 11px;">Upload</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteMatterFolder(${matterId}, ${idx}); return false;" style="padding: 3px 8px; font-size: 11px;">Delete</button>
                         </div>
                     </div>
                     <div style="display: none; padding: 8px 15px;">`;
@@ -2180,6 +2180,10 @@
                 const store = getMatterFileStore(matterId);
                 let processed = 0;
                 files.forEach(file => {
+                    if (file.size > 5 * 1024 * 1024) {
+                        showToast('File too large. Maximum 5MB allowed.', 'warning');
+                        return;
+                    }
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         store.files.push({
@@ -3023,17 +3027,23 @@
             document.getElementById('invoiceFormMessages').innerHTML = '';
             document.getElementById('generatePdfBtn').style.display = 'inline-block';
 
-            document.getElementById('invoiceNumberField').value = invoice.Invoice_x0020_Number || '';
-            document.getElementById('invoiceClientSelect').value = invoice.Client_x0020_Name || '';
-            document.getElementById('invoiceMatterSelect').value = invoice.Matter_x0020_ID || '';
-            document.getElementById('invoiceDateField').value = invoice.Invoice_x0020_Date ? invoice.Invoice_x0020_Date.split('T')[0] : '';
-            document.getElementById('invoiceDueDateField').value = invoice.Due_x0020_Date ? invoice.Due_x0020_Date.split('T')[0] : '';
-            document.getElementById('invoiceFeesField').value = invoice.Professional_x0020_Fees || 0;
-            document.getElementById('invoiceDisbursementsField').value = invoice.Disbursements || 0;
-            document.getElementById('invoiceVatField').value = invoice.VAT_x0020_Amount || 0;
-            document.getElementById('invoiceAmountPaidField').value = invoice.Amount_x0020_Paid || 0;
-            document.querySelector('#invoiceForm select[name="status"]').value = invoice.Status || 'Draft';
-            document.querySelector('#invoiceForm textarea[name="notes"]').value = invoice.Description || '';
+            document.getElementById('invoiceNumberField').value = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '';
+            document.getElementById('invoiceClientSelect').value = invoice.client || invoice.Client_x0020_Name || '';
+            document.getElementById('invoiceMatterSelect').value = invoice.matterId || invoice.Matter_x0020_ID || '';
+            const invoiceDate = invoice.date || invoice.Invoice_x0020_Date;
+            document.getElementById('invoiceDateField').value = invoiceDate ? (invoiceDate.split('T')[0]) : '';
+            const dueDate = invoice.dueDate || invoice.Due_x0020_Date;
+            document.getElementById('invoiceDueDateField').value = dueDate ? (dueDate.split('T')[0]) : '';
+            document.getElementById('invoiceFeesField').value = invoice.professionalFees || invoice.Professional_x0020_Fees || 0;
+            document.getElementById('invoiceDisbursementsField').value = invoice.disbursements || invoice.Disbursements || 0;
+            document.getElementById('invoiceVatField').value = invoice.vatAmount || invoice.VAT_x0020_Amount || 0;
+            document.getElementById('invoiceAmountPaidField').value = invoice.amountPaid || invoice.Amount_x0020_Paid || 0;
+            document.querySelector('#invoiceForm select[name="status"]').value = invoice.status || invoice.Status || 'Draft';
+            document.querySelector('#invoiceForm textarea[name="notes"]').value = invoice.notes || invoice.Description || '';
+            const serviceDescriptionField = document.getElementById('invoiceDescriptionField');
+            if (serviceDescriptionField) {
+                serviceDescriptionField.value = invoice.serviceDescription || '';
+            }
 
             document.getElementById('invoiceModal').classList.add('active');
         }
@@ -3173,7 +3183,7 @@
             const invoiceNumber = document.getElementById('invoiceNumberField').value;
             const clientName = document.getElementById('invoiceClientSelect').value;
             const matterSelect = document.getElementById('invoiceMatterSelect');
-            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value));
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value) || m.Matter_x0020_ID === matterSelect.value);
             const matterTitle = matter ? matter.Title : '';
             const matterRef = matter ? (matter.Matter_x0020_ID || '') : '';
             const invoiceDate = document.getElementById('invoiceDateField').value;
@@ -3293,6 +3303,10 @@
 </body></html>`;
 
             const printWindow = window.open('', '', 'height=900,width=800');
+            if (!printWindow) {
+                showToast('Please allow popups to view the invoice PDF', 'warning');
+                return;
+            }
             printWindow.document.write(htmlContent);
             printWindow.document.close();
             setTimeout(() => printWindow.print(), 500);
