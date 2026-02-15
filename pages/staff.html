@@ -1481,6 +1481,7 @@
                 <button class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button>
                 <button class="btn btn-gold" onclick="document.getElementById('invoiceForm').dispatchEvent(new Event('submit'))">Save Invoice</button>
                 <button class="btn btn-primary" onclick="generateInvoicePDF()" id="generatePdfBtn" style="display: none;">Generate PDF</button>
+                <button class="btn btn-primary" onclick="sendInvoiceToClient()" id="sendInvoiceBtn" style="display: none;">Send to Client</button>
             </div>
         </div>
     </div>
@@ -2720,6 +2721,7 @@
             document.querySelector('#invoiceModal .modal-title').textContent = 'New Invoice';
             document.getElementById('invoiceFormMessages').innerHTML = '';
             document.getElementById('generatePdfBtn').style.display = 'none';
+            document.getElementById('sendInvoiceBtn').style.display = 'none';
             document.getElementById('invoiceDateField').value = new Date().toISOString().split('T')[0];
             const dueDate = new Date();
             dueDate.setDate(dueDate.getDate() + 30);
@@ -2917,6 +2919,39 @@
 
                 if (resp.ok) {
                     document.getElementById('clientFormMessages').innerHTML = '<div class="success-message">Client saved successfully!</div>';
+
+                    // Send welcome email notification to client (only for new clients)
+                    if (!clientId) {
+                        const clientEmail = formData.get('email');
+                        const clientName = formData.get('name');
+
+                        if (clientEmail) {
+                            try {
+                                const notifyResp = await fetch('/api/notify-client', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        email: clientEmail,
+                                        clientName: clientName,
+                                        portalType: 'welcome'
+                                    }),
+                                    credentials: 'include'
+                                });
+
+                                if (notifyResp.ok) {
+                                    showToast('Welcome email sent to ' + clientEmail, 'success');
+                                } else {
+                                    // Email notification failed but client was created successfully
+                                    showToast('Client created but email notification failed', 'warning');
+                                }
+                            } catch (emailError) {
+                                // Log error but don't block the main success flow
+                                console.error('Email notification error:', emailError);
+                                showToast('Client created but email notification failed', 'warning');
+                            }
+                        }
+                    }
+
                     setTimeout(() => {
                         closeClientModal();
                         loadAllData();
@@ -3125,6 +3160,7 @@
             document.getElementById('invoiceIdField').value = invoiceId;
             document.getElementById('invoiceFormMessages').innerHTML = '';
             document.getElementById('generatePdfBtn').style.display = 'inline-block';
+            document.getElementById('sendInvoiceBtn').style.display = 'inline-block';
 
             document.getElementById('invoiceNumberField').value = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '';
             document.getElementById('invoiceClientSelect').value = invoice.client || invoice.Client_x0020_Name || '';
@@ -3200,8 +3236,47 @@
             localStorage.setItem('cq_invoices', JSON.stringify(invoices));
             portalData.invoices = invoices;
 
+            // Sync invoice to SharePoint Billing list
+            try {
+                const sharePointPayload = {
+                    RecordType: 'Invoice',
+                    Matter_x0020_ID: matterNumber,
+                    Amount: invoiceData.totalAmount,
+                    PaymentStatus: invoiceData.status,
+                    Due_x0020_Date: invoiceData.dueDate,
+                    Client_x0020_Name: invoiceData.client,
+                    Invoice_x0020_Number: invoiceData.invoiceNumber,
+                    Currency: 'UGX',
+                    Description: invoiceData.serviceDescription
+                };
+
+                const method = invoiceId ? 'PATCH' : 'POST';
+                const sharePointBody = {
+                    site: 'client',
+                    list: 'Billing',
+                    fields: sharePointPayload,
+                    ...(invoiceId && { itemId: invoiceId })
+                };
+
+                const spResp = await fetch('/api/sharepoint-write', {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sharePointBody),
+                    credentials: 'include'
+                });
+
+                if (!spResp.ok) {
+                    console.error('Failed to sync invoice to SharePoint Billing list');
+                    // Continue anyway - local save was successful
+                }
+            } catch (spError) {
+                console.error('Error syncing to SharePoint:', spError);
+                // Continue anyway - local save was successful
+            }
+
             document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
             document.getElementById('generatePdfBtn').style.display = 'inline-block';
+            document.getElementById('sendInvoiceBtn').style.display = 'inline-block';
             setTimeout(() => {
                 closeInvoiceModal();
                 renderInvoices();
@@ -3276,6 +3351,59 @@
                 }
             } catch (error) {
                 document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function sendInvoiceToClient() {
+            const invoiceNumber = document.getElementById('invoiceNumberField').value;
+            const clientName = document.getElementById('invoiceClientSelect').value;
+            const matterSelect = document.getElementById('invoiceMatterSelect');
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value) || m.Matter_x0020_ID === matterSelect.value);
+            const matterTitle = matter ? matter.Title : '';
+            const invoiceDate = document.getElementById('invoiceDateField').value;
+            const dueDate = document.getElementById('invoiceDueDateField').value;
+            const serviceDescription = document.getElementById('invoiceDescriptionField') ? document.getElementById('invoiceDescriptionField').value : 'Services rendered';
+            const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || 0;
+            const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || 0;
+            const vat = parseInt(document.getElementById('invoiceVatField').value) || 0;
+            const total = professionalFees + disbursements + vat;
+            const status = document.querySelector('#invoiceForm select[name="status"]').value;
+
+            // Get client email from client name
+            const client = portalData.clients.find(c => c.Title === clientName);
+            const clientEmail = client ? client.Email : '';
+
+            if (!clientEmail) {
+                showToast('Client email not found. Please ensure client has an email address.', 'error');
+                return;
+            }
+
+            try {
+                const invoiceDetails = {
+                    email: clientEmail,
+                    clientName: clientName,
+                    invoiceNumber: invoiceNumber,
+                    matterReference: matter ? (matter.Matter_x0020_ID || matterTitle) : matterTitle,
+                    totalAmount: total,
+                    currency: 'UGX',
+                    dueDate: dueDate
+                };
+
+                const resp = await fetch('/api/send-invoice-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(invoiceDetails),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    showToast('Invoice email sent to ' + clientEmail, 'success');
+                } else {
+                    const error = await resp.json();
+                    showToast('Failed to send invoice email: ' + (error.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error sending invoice: ' + error.message, 'error');
             }
         }
 
