@@ -1683,7 +1683,7 @@
         }
 
         function editMatter(matterId) {
-            const matter = portalData.matters.find(m => m.id === matterId);
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
             if (!matter) return;
 
             editingMatterId = matterId;
@@ -1703,7 +1703,7 @@
         }
 
         function editClient(clientId) {
-            const client = portalData.clients.find(c => c.id === clientId);
+            const client = portalData.clients.find(c => String(c.id) === String(clientId));
             if (!client) return;
 
             editingClientId = clientId;
@@ -1723,7 +1723,7 @@
         }
 
         function editEvent(eventId) {
-            const event = portalData.events.find(e => e.id === eventId);
+            const event = portalData.events.find(e => String(e.id) === String(eventId));
             if (!event) return;
 
             editingEventId = eventId;
