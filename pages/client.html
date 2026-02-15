@@ -7,6 +7,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
+        /* ============================================
+           CSS VARIABLES - MATCH MAIN BRANDING
+           ============================================ */
+        :root {
+            /* Brand Colors - Black & Gold */
+            --primary: #000000;
+            --gold: #B8860B;
+            --gold-light: #D4A84B;
+            --gold-dark: #8B6914;
+
+            /* Neutral Colors */
+            --dark: #000000;
+            --gray: #4A4A4A;
+            --gray-light: #888888;
+            --silver: #E0E0E0;
+            --off-white: #FAFAFA;
+            --white: #FFFFFF;
+
+            /* Typography */
+            --font-sans: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+
+            /* Border Radius */
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-full: 9999px;
+
+            /* Transitions */
+            --transition-base: 0.3s ease;
+        }
+
+        /* ============================================
+           RESET & BASE STYLES
+           ============================================ */
         * {
             margin: 0;
             padding: 0;
@@ -16,22 +62,26 @@
         html, body {
             height: 100%;
             width: 100%;
+            font-family: var(--font-sans);
+            background: var(--white);
+            color: var(--dark);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: #FAFAFA;
-            color: #333;
+            font-size: 1rem;
+            line-height: 1.6;
         }
 
-        /* Loading Overlay */
+        /* ============================================
+           LOADING OVERLAY
+           ============================================ */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(26, 26, 46, 0.9);
+            background: rgba(0, 0, 0, 0.7);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -49,7 +99,7 @@
             width: 50px;
             height: 50px;
             border: 4px solid rgba(184, 134, 11, 0.3);
-            border-top: 4px solid #B8860B;
+            border-top: 4px solid var(--gold);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -59,28 +109,32 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Main Layout */
+        /* ============================================
+           MAIN LAYOUT
+           ============================================ */
         .container {
             display: flex;
             height: 100vh;
-            background: #fff;
+            background: var(--white);
         }
 
-        /* Header */
+        /* ============================================
+           HEADER
+           ============================================ */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: 80px;
-            background: #fff;
-            border-bottom: 1px solid #e0e0e0;
+            background: var(--white);
+            border-bottom: 1px solid var(--silver);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 30px;
             z-index: 100;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
         }
 
         .header-left {
@@ -91,20 +145,29 @@
 
         .logo-text {
             font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: #000000;
-            letter-spacing: 1px;
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--dark);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .logo-amp {
+            color: var(--gold);
+            font-weight: 400;
+            font-style: italic;
+            margin: 0 0.1em;
         }
 
         .portal-badge {
-            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
-            color: #1a1a2e;
-            padding: 4px 12px;
-            border-radius: 20px;
+            background: var(--gold);
+            color: var(--white);
+            padding: 6px 14px;
+            border-radius: 4px;
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
         .header-right {
@@ -116,8 +179,8 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            color: #888888;
+            gap: 12px;
+            color: var(--gray-light);
             font-size: 14px;
         }
 
@@ -125,40 +188,44 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
+            background: var(--gold);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #1a1a2e;
+            color: var(--white);
             font-weight: 600;
             font-size: 16px;
         }
 
         .logout-btn {
-            background: #f5f5f5;
-            border: 1px solid #E0E0E0;
+            background: var(--off-white);
+            border: 1px solid var(--silver);
             padding: 8px 16px;
-            border-radius: 4px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            color: #333;
-            transition: all 0.3s ease;
+            color: var(--dark);
+            transition: all var(--transition-base);
+            font-family: var(--font-sans);
         }
 
         .logout-btn:hover {
-            background: #e8e8e8;
-            border-color: #bbb;
+            background: var(--silver);
+            border-color: var(--gray);
         }
 
-        /* Sidebar */
+        /* ============================================
+           SIDEBAR
+           ============================================ */
         .sidebar {
             position: fixed;
             left: 0;
             top: 80px;
             width: 250px;
             height: calc(100vh - 80px);
-            background: #1a1a2e;
+            background: var(--white);
+            border-right: 1px solid var(--silver);
             padding: 20px 0;
             overflow-y: auto;
             z-index: 50;
@@ -167,27 +234,28 @@
 
         .nav-item {
             padding: 15px 20px;
-            color: #999;
+            color: var(--gray-light);
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
             border-left: 3px solid transparent;
             position: relative;
         }
 
         .nav-item:hover {
-            color: #B8860B;
-            background: rgba(184, 134, 11, 0.1);
+            color: var(--gold);
+            background: rgba(184, 134, 11, 0.05);
         }
 
         .nav-item.active {
-            color: #B8860B;
-            background: rgba(184, 134, 11, 0.15);
-            border-left-color: #B8860B;
+            color: var(--gold);
+            background: rgba(184, 134, 11, 0.08);
+            border-left-color: var(--gold);
+            font-weight: 600;
         }
 
         .nav-icon {
@@ -199,7 +267,9 @@
             font-size: 16px;
         }
 
-        /* Main Content */
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
         .content-wrapper {
             margin-left: 250px;
             margin-top: 80px;
@@ -209,7 +279,7 @@
         }
 
         .content {
-            padding: 30px;
+            padding: 40px;
             max-width: 1280px;
             margin: 0 auto;
             animation: fadeIn 0.3s ease;
@@ -234,31 +304,41 @@
             display: block;
         }
 
-        /* Cards */
+        /* ============================================
+           CARDS
+           ============================================ */
         .card {
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            border: 1px solid var(--silver);
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
         }
 
         .card-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 18px;
+            font-family: 'Inter', sans-serif;
+            font-size: 20px;
             font-weight: 600;
-            color: #1a1a2e;
-            margin-bottom: 15px;
+            color: var(--dark);
+            margin-bottom: 20px;
+            line-height: 1.2;
         }
 
         .welcome-card {
-            background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%);
-            color: #fff;
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+            color: var(--white);
+            border: none;
         }
 
         .welcome-card .card-title {
-            color: #B8860B;
+            color: var(--gold);
         }
 
         .welcome-card p {
@@ -267,39 +347,51 @@
             color: rgba(255, 255, 255, 0.9);
         }
 
-        /* Stats Grid */
+        /* ============================================
+           STATS GRID
+           ============================================ */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            gap: var(--space-xl);
             margin-bottom: 30px;
         }
 
         .stat-card {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            background: var(--white);
+            padding: var(--space-xl);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--silver);
             text-align: center;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
         }
 
         .stat-value {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 36px;
-            font-weight: 700;
-            color: #B8860B;
+            font-weight: 600;
+            color: var(--gold);
             margin-bottom: 8px;
+            line-height: 1;
         }
 
         .stat-label {
             font-size: 13px;
-            color: #999;
+            color: var(--gray-light);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
         }
 
-        /* Table */
+        /* ============================================
+           TABLES
+           ============================================ */
         .table-container {
             overflow-x: auto;
         }
@@ -311,29 +403,31 @@
         }
 
         thead th {
-            background: #FAFAFA;
+            background: var(--off-white);
             padding: 12px;
             text-align: left;
             font-weight: 600;
-            color: #1a1a2e;
-            border-bottom: 2px solid #e0e0e0;
+            color: var(--dark);
+            border-bottom: 2px solid var(--silver);
         }
 
         tbody tr {
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--silver);
             transition: background 0.2s ease;
         }
 
         tbody tr:hover {
-            background: #fafafa;
+            background: var(--off-white);
         }
 
         td {
             padding: 12px;
-            color: #555;
+            color: var(--gray);
         }
 
-        /* Badges */
+        /* ============================================
+           BADGES
+           ============================================ */
         .badge {
             display: inline-block;
             padding: 4px 10px;
@@ -389,42 +483,39 @@
             color: #c62828;
         }
 
-        /* List Items */
+        /* ============================================
+           LIST ITEMS
+           ============================================ */
         .list-item {
             padding: 15px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--silver);
             cursor: pointer;
             transition: all 0.2s ease;
             border-left: 3px solid transparent;
         }
 
         .list-item:hover {
-            background: #fafafa;
-            border-left-color: #B8860B;
+            background: var(--off-white);
+            border-left-color: var(--gold);
         }
 
         .list-item-title {
             font-weight: 600;
-            color: #1a1a2e;
+            color: var(--dark);
             margin-bottom: 5px;
             font-size: 15px;
         }
 
         .list-item-meta {
             font-size: 13px;
-            color: #999;
-        }
-
-        .list-item-expanded {
-            background: #f9f9f9;
-            border-left-color: #B8860B;
+            color: var(--gray-light);
         }
 
         .list-item-details {
             display: none;
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid #e0e0e0;
+            border-top: 1px solid var(--silver);
         }
 
         .list-item-details.show {
@@ -440,20 +531,22 @@
 
         .detail-label {
             font-weight: 600;
-            color: #666;
+            color: var(--gray);
             width: 150px;
         }
 
         .detail-value {
-            color: #333;
+            color: var(--dark);
             flex: 1;
         }
 
-        /* Empty State */
+        /* ============================================
+           EMPTY STATE
+           ============================================ */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: var(--gray-light);
         }
 
         .empty-state-icon {
@@ -465,45 +558,61 @@
         .empty-state-title {
             font-size: 18px;
             font-weight: 600;
-            color: #666;
+            color: var(--gray);
             margin-bottom: 8px;
         }
 
         .empty-state-text {
             font-size: 14px;
-            color: #999;
+            color: var(--gray-light);
         }
 
-        /* Error Messages */
+        /* ============================================
+           ERROR & SUCCESS MESSAGES
+           ============================================ */
         .error-message {
             background: rgba(244, 67, 54, 0.1);
             border: 1px solid rgba(244, 67, 54, 0.3);
             color: #c62828;
             padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-xl);
             font-size: 14px;
         }
 
-        /* Loading State */
+        .success-message {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-xl);
+            font-size: 14px;
+        }
+
+        /* ============================================
+           LOADING STATE
+           ============================================ */
         .loading-spinner {
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 40px;
-            color: #B8860B;
+            color: var(--gold);
         }
 
         .mini-spinner {
             width: 30px;
             height: 30px;
             border: 3px solid rgba(184, 134, 11, 0.3);
-            border-top: 3px solid #B8860B;
+            border-top: 3px solid var(--gold);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
-        /* Quick Links */
+        /* ============================================
+           QUICK LINKS
+           ============================================ */
         .quick-links {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -512,25 +621,177 @@
         }
 
         .quick-link {
-            background: linear-gradient(135deg, #B8860B 0%, #D4A84B 100%);
-            color: #1a1a2e;
+            background: var(--gold);
+            color: var(--white);
             padding: 15px;
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
             text-align: center;
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
             text-decoration: none;
             display: block;
+            border: none;
+            font-family: var(--font-sans);
         }
 
         .quick-link:hover {
+            background: var(--gold-light);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+            box-shadow: var(--shadow-md);
         }
 
-        /* Mobile Responsive */
+        /* ============================================
+           FORMS
+           ============================================ */
+        .form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            color: var(--dark);
+            font-size: 14px;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            border: 1px solid var(--silver);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            transition: all var(--transition-base);
+            color: var(--dark);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: 10px 16px;
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-decoration: none;
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: var(--white);
+        }
+
+        .btn-gold:hover {
+            background: var(--gold-light);
+        }
+
+        .btn-primary {
+            background: var(--dark);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--gray);
+        }
+
+        .btn-secondary {
+            background: var(--off-white);
+            color: var(--dark);
+            border: 1px solid var(--silver);
+        }
+
+        .btn-secondary:hover {
+            background: var(--silver);
+        }
+
+        /* ============================================
+           MODAL
+           ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--silver);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-light);
+        }
+
+        .modal-close:hover {
+            color: var(--dark);
+        }
+
+        /* ============================================
+           MOBILE RESPONSIVE
+           ============================================ */
         @media (max-width: 768px) {
             .header {
                 padding: 0 15px;
@@ -576,7 +837,7 @@
                 display: block;
                 background: none;
                 border: none;
-                color: #1a1a2e;
+                color: var(--dark);
                 font-size: 20px;
                 cursor: pointer;
                 padding: 5px;
@@ -604,8 +865,8 @@
     <div class="header">
         <div class="header-left">
             <button class="toggle-sidebar-btn" id="toggleSidebar">☰</button>
-            <div class="logo-text">CRIMSON & QUILL</div>
-            <div class="portal-badge">CLIENT PORTAL</div>
+            <div class="logo-text">Crimson <span class="logo-amp">&</span> Quill</div>
+            <div class="portal-badge">Client Portal</div>
         </div>
         <div class="header-right">
             <div class="user-info">
@@ -679,13 +940,36 @@
         </div>
     </div>
 
+    <!-- Message Modal -->
+    <div class="modal" id="messageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Send Message</h3>
+                <button class="modal-close" id="closeMessageModal">&times;</button>
+            </div>
+            <form id="messageForm">
+                <div class="form-group">
+                    <label class="form-label" for="msgSubject">Subject</label>
+                    <input class="form-input" id="msgSubject" type="text" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="msgBody">Message</label>
+                    <textarea class="form-textarea" id="msgBody" required></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="cancelMessageBtn">Cancel</button>
+                    <button type="submit" class="btn btn-gold">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // ============================================================================
         // GLOBAL STATE
         // ============================================================================
         let currentTab = 'dashboard';
         let portalData = {};
-        let expandedItems = {};
 
         // ============================================================================
         // UTILITIES
@@ -705,16 +989,6 @@
             const num = parseFloat(value);
             if (isNaN(num)) return '$0.00';
             return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
-        function formatTime(dateString) {
-            if (!dateString) return '';
-            try {
-                const date = new Date(dateString);
-                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-            } catch {
-                return dateString;
-            }
         }
 
         function getInitial(email) {
@@ -741,6 +1015,32 @@
             }
         }
 
+        async function sendMessage(subject, body) {
+            try {
+                const resp = await fetch('/api/sharepoint-write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Messages',
+                        fields: {
+                            Subject: subject,
+                            MessageBody: body,
+                            IsRead: false
+                        }
+                    })
+                });
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}: Failed to send message`);
+                }
+                return await resp.json();
+            } catch (error) {
+                console.error('Error sending message:', error);
+                throw error;
+            }
+        }
+
         function getCookie(name) {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
@@ -753,7 +1053,6 @@
         // ============================================================================
         async function initializePage() {
             try {
-                // Check for user cookie (cq_session is HttpOnly, so check cq_user instead)
                 const userEmail = getCookie('cq_user');
                 if (!userEmail) {
                     window.location.href = '/login?type=client';
@@ -763,7 +1062,6 @@
                 document.getElementById('userName').textContent = decodedEmail;
                 document.getElementById('userAvatar').textContent = getInitial(decodedEmail);
 
-                // Load dashboard data
                 await loadDashboard();
                 hideLoadingOverlay();
             } catch (error) {
@@ -799,10 +1097,14 @@
                 portalData.messages = messages;
                 portalData.events = events;
 
-                const activeMatters = (matters.value || []).filter(m => m.Status === 'Active').length;
-                const totalMatters = (matters.value || []).length;
-                const unreadMessages = (messages.value || []).filter(m => !m.IsRead).length;
-                const upcomingEvents = (events.value || []).length;
+                const mattersItems = matters.items || [];
+                const messagesItems = messages.items || [];
+                const eventsItems = events.items || [];
+
+                const activeMatters = mattersItems.filter(m => m.Status === 'Active').length;
+                const totalMatters = mattersItems.length;
+                const unreadMessages = messagesItems.filter(m => !m.IsRead).length;
+                const upcomingEvents = eventsItems.length;
 
                 let html = `
                     <div class="card welcome-card">
@@ -830,49 +1132,19 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-title">Recent Activity</div>
-                        <div id="recentActivity"></div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-title">Quick Links</div>
+                        <div class="card-title">Quick Actions</div>
                         <div class="quick-links">
-                            <div class="quick-link" onclick="switchTab('matters')">View Matters</div>
-                            <div class="quick-link" onclick="switchTab('documents')">Documents</div>
-                            <div class="quick-link" onclick="switchTab('calendar')">Calendar</div>
-                            <div class="quick-link" onclick="switchTab('billing')">Billing</div>
+                            <button class="quick-link" onclick="switchTab('matters')">View Matters</button>
+                            <button class="quick-link" onclick="switchTab('documents')">Documents</button>
+                            <button class="quick-link" onclick="switchTab('calendar')">Calendar</button>
+                            <button class="quick-link" onclick="switchTab('billing')">Billing</button>
                         </div>
                     </div>
                 `;
 
                 container.innerHTML = html;
-
-                // Load recent activity
-                try {
-                    const activity = await fetchList('Activity Log');
-                    const activityList = activity.value || [];
-                    let activityHtml = '';
-
-                    if (activityList.length === 0) {
-                        activityHtml = '<div class="empty-state"><div class="empty-state-text">No recent activity</div></div>';
-                    } else {
-                        activityList.slice(0, 5).forEach(item => {
-                            activityHtml += `
-                                <div class="list-item">
-                                    <div class="list-item-title">${item.Title || 'Activity'}</div>
-                                    <div class="list-item-meta">${formatDate(item.Created)} - ${item.Description || ''}</div>
-                                </div>
-                            `;
-                        });
-                    }
-
-                    document.getElementById('recentActivity').innerHTML = activityHtml;
-                } catch (error) {
-                    console.warn('Could not load activity:', error);
-                    document.getElementById('recentActivity').innerHTML = '<div class="empty-state"><div class="empty-state-text">Activity data unavailable</div></div>';
-                }
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load dashboard: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load dashboard: ${error.message}</div>`;
             }
         }
 
@@ -884,15 +1156,15 @@
                 const data = portalData.matters || await fetchList('Matters');
                 portalData.matters = data;
 
-                const matters = data.value || [];
+                const matters = data.items || [];
 
                 if (matters.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No Matters Found</div><div class="empty-state-text">You currently have no active matters.</div></div>';
+                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No Matters Found</div><div class="empty-state-text">You currently have no matters.</div></div>';
                     return;
                 }
 
                 let html = '<div class="card"><div class="card-title">Your Matters</div><div class="table-container"><table>';
-                html += '<thead><tr><th>Matter ID</th><th>Title</th><th>Client Name</th><th>Practice Area</th><th>Status</th><th>Priority</th><th>Lead Lawyer</th></tr></thead><tbody>';
+                html += '<thead><tr><th>Matter ID</th><th>Title</th><th>Status</th><th>Priority</th><th>Lead Lawyer</th><th>Practice Area</th></tr></thead><tbody>';
 
                 matters.forEach((matter, index) => {
                     const status = matter.Status || 'Active';
@@ -904,14 +1176,13 @@
                         <tr onclick="toggleMatterDetails(this, ${index})" style="cursor: pointer;">
                             <td>${matter.MatterId || 'N/A'}</td>
                             <td><strong>${matter.Title || 'Untitled'}</strong></td>
-                            <td>${matter.ClientName || 'N/A'}</td>
-                            <td>${matter.PracticeArea || 'N/A'}</td>
                             <td><span class="badge ${statusBadgeClass}">${status}</span></td>
                             <td><span class="badge ${priorityBadgeClass}">${priority}</span></td>
                             <td>${matter.LeadLawyer || 'N/A'}</td>
+                            <td>${matter.PracticeArea || 'N/A'}</td>
                         </tr>
                         <tr class="matter-details-row" style="display: none;">
-                            <td colspan="7">
+                            <td colspan="6">
                                 <div class="detail-row">
                                     <span class="detail-label">Description:</span>
                                     <span class="detail-value">${matter.Description || 'N/A'}</span>
@@ -940,7 +1211,7 @@
                 html += '</tbody></table></div></div>';
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load matters: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load matters: ${error.message}</div>`;
             }
         }
 
@@ -952,7 +1223,7 @@
                 const data = portalData.documents || await fetchList('Client Documents');
                 portalData.documents = data;
 
-                const documents = data.value || [];
+                const documents = data.items || [];
 
                 if (documents.length === 0) {
                     container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">No Documents Found</div><div class="empty-state-text">There are no documents available yet.</div></div>';
@@ -964,7 +1235,7 @@
 
                 documents.forEach(doc => {
                     const size = doc.FileSizeDisplayString || doc.Size || 'N/A';
-                    const downloadLink = doc.WebUrl ? `<a href="${doc.WebUrl}" target="_blank" style="color: #B8860B; text-decoration: none; font-weight: 500;">Download</a>` : 'N/A';
+                    const downloadLink = doc.WebUrl ? `<a href="${doc.WebUrl}" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: 500;">Download</a>` : 'N/A';
 
                     html += `
                         <tr>
@@ -979,7 +1250,7 @@
                 html += '</tbody></table></div></div>';
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load documents: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load documents: ${error.message}</div>`;
             }
         }
 
@@ -991,7 +1262,7 @@
                 const data = portalData.events || await fetchList('Events');
                 portalData.events = data;
 
-                const events = (data.value || []).sort((a, b) => {
+                const events = (data.items || []).sort((a, b) => {
                     const dateA = new Date(a.EventDate || a.Created);
                     const dateB = new Date(b.EventDate || b.Created);
                     return dateA - dateB;
@@ -1006,7 +1277,6 @@
 
                 events.forEach(event => {
                     const category = event.Category || 'Event';
-                    const categoryClass = category.toLowerCase().replace(/\s+/g, '');
 
                     html += `
                         <div class="list-item">
@@ -1017,7 +1287,7 @@
                             <div style="margin-top: 8px;">
                                 <span class="badge badge-normal">${category}</span>
                             </div>
-                            ${event.Description ? `<div style="margin-top: 10px; font-size: 14px; color: #666;">${event.Description}</div>` : ''}
+                            ${event.Description ? `<div style="margin-top: 10px; font-size: 14px; color: var(--gray);">${event.Description}</div>` : ''}
                         </div>
                     `;
                 });
@@ -1025,7 +1295,7 @@
                 html += '</div>';
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load calendar: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load calendar: ${error.message}</div>`;
             }
         }
 
@@ -1037,46 +1307,46 @@
                 const data = portalData.messages || await fetchList('Messages');
                 portalData.messages = data;
 
-                const messages = data.value || [];
-
-                if (messages.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages Found</div><div class="empty-state-text">You have no messages at this time.</div></div>';
-                    return;
-                }
+                const messages = data.items || [];
 
                 let html = '<div class="card"><div class="card-title">Messages</div>';
+                html += '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>';
 
-                messages.forEach((message, index) => {
-                    const priority = message.Priority || 'Normal';
-                    const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-                    const isRead = message.IsRead ? '' : ' style="font-weight: bold; background: rgba(184, 134, 11, 0.05);"';
+                if (messages.length === 0) {
+                    html += '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">You have no messages at this time.</div></div>';
+                } else {
+                    messages.forEach((message, index) => {
+                        const priority = message.Priority || 'Normal';
+                        const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
+                        const isRead = message.IsRead ? '' : ' style="background: rgba(184, 134, 11, 0.05);"';
 
-                    html += `
-                        <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <div class="list-item-title">${message.Subject || message.Title || 'No Subject'}</div>
-                                    <div class="list-item-meta">From: ${message.SenderName || 'Unknown'} • ${formatDate(message.Created)}</div>
+                        html += `
+                            <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
+                                <div style="display: flex; justify-content: space-between; align-items: start;">
+                                    <div>
+                                        <div class="list-item-title">${message.Subject || message.Title || 'No Subject'}</div>
+                                        <div class="list-item-meta">From: ${message.SenderName || 'Unknown'} • ${formatDate(message.Created)}</div>
+                                    </div>
+                                    <span class="badge ${priorityBadgeClass}">${priority}</span>
                                 </div>
-                                <span class="badge ${priorityBadgeClass}">${priority}</span>
-                            </div>
-                            <div class="list-item-details" id="msg-details-${index}">
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0;">
-                                    <div style="color: #555; line-height: 1.6;">${message.MessageBody || message.Description || 'No content'}</div>
-                                    <div style="margin-top: 15px; font-size: 12px; color: #999;">
-                                        ${!message.IsRead ? '<span style="background: #B8860B; color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
-                                        Received: ${formatDate(message.Created)}
+                                <div class="list-item-details" id="msg-details-${index}">
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
+                                        <div style="color: var(--gray); line-height: 1.6;">${message.MessageBody || message.Description || 'No content'}</div>
+                                        <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
+                                            ${!message.IsRead ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                            Received: ${formatDate(message.Created)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
+                }
 
                 html += '</div>';
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load messages: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load messages: ${error.message}</div>`;
             }
         }
 
@@ -1088,7 +1358,7 @@
                 const data = portalData.billing || await fetchList('Billing Records');
                 portalData.billing = data;
 
-                const records = data.value || [];
+                const records = data.items || [];
 
                 let totalBilled = 0;
                 let totalPaid = 0;
@@ -1174,7 +1444,7 @@
 
                 container.innerHTML = html;
             } catch (error) {
-                container.innerHTML = `<div class="error-message">⚠️ Failed to load billing: ${error.message}</div>`;
+                container.innerHTML = `<div class="error-message">Failed to load billing: ${error.message}</div>`;
             }
         }
 
@@ -1184,24 +1454,20 @@
         function switchTab(tabName) {
             currentTab = tabName;
 
-            // Update nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
             document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
-            // Update content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
             document.getElementById(tabName).classList.add('active');
 
-            // Close sidebar on mobile
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('open');
             }
 
-            // Load content
             switch (tabName) {
                 case 'dashboard':
                     loadDashboard();
@@ -1238,6 +1504,33 @@
             }
         }
 
+        function openMessageModal() {
+            document.getElementById('messageModal').classList.add('show');
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').classList.remove('show');
+            document.getElementById('messageForm').reset();
+        }
+
+        async function submitMessage(e) {
+            e.preventDefault();
+            const subject = document.getElementById('msgSubject').value;
+            const body = document.getElementById('msgBody').value;
+
+            try {
+                showLoadingOverlay();
+                await sendMessage(subject, body);
+                closeMessageModal();
+                showSuccess('Message sent successfully!');
+                await loadMessages();
+            } catch (error) {
+                showError(`Failed to send message: ${error.message}`);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
         function logout() {
             document.cookie = 'cq_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
             document.cookie = 'cq_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -1245,9 +1538,21 @@
         }
 
         function showError(message) {
-            const content = document.getElementById('content');
-            const errorHtml = `<div class="error-message">⚠️ ${message}</div>`;
-            content.innerHTML = errorHtml + content.innerHTML;
+            const container = document.getElementById('content');
+            const errorHtml = `<div class="error-message">${message}</div>`;
+            container.insertAdjacentHTML('afterbegin', errorHtml);
+            setTimeout(() => {
+                container.querySelector('.error-message')?.remove();
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.getElementById('content');
+            const successHtml = `<div class="success-message">${message}</div>`;
+            container.insertAdjacentHTML('afterbegin', successHtml);
+            setTimeout(() => {
+                container.querySelector('.success-message')?.remove();
+            }, 5000);
         }
 
         function toggleSidebar() {
@@ -1266,11 +1571,19 @@
 
         document.getElementById('logoutBtn').addEventListener('click', logout);
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+        document.getElementById('messageForm').addEventListener('submit', submitMessage);
+        document.getElementById('closeMessageModal').addEventListener('click', closeMessageModal);
+        document.getElementById('cancelMessageBtn').addEventListener('click', closeMessageModal);
 
-        // Close sidebar when clicking outside on mobile
         document.getElementById('contentWrapper').addEventListener('click', function () {
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+
+        document.getElementById('messageModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeMessageModal();
             }
         });
 

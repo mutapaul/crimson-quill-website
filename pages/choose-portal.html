@@ -3,143 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choose Portal - Crimson &amp; Quill</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <meta name="description" content="Choose your portal to access Crimson & Quill legal services. Client and staff portals available.">
+    <title>Choose Portal - Crimson & Quill</title>
+
+    <!-- Fonts - Match main website exactly -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Main Stylesheet -->
     <link rel="stylesheet" href="../css/styles.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100'/><text x='50' y='70' font-family='Playfair Display, serif' font-size='60' font-weight='700' fill='%23B8860B' text-anchor='middle'>Q</text></svg>">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23000000' width='100' height='100' rx='8'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23B8860B' font-family='Georgia' font-style='italic'>%26</text></svg>">
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; }
+        /* ============================================
+           CHOOSE PORTAL PAGE SPECIFIC STYLES
+           ============================================ */
+
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f9f9f7 0%, #f5f5f3 100%);
-            color: #4A4A4A;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            background: var(--white);
+            padding-top: 80px; /* Account for fixed header */
         }
-        header {
-            background-color: #FFFFFF; border-bottom: 1px solid #eee;
-            padding: 1.5rem 2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .header-content { max-width: 1200px; margin: 0 auto; }
-        .logo { text-decoration: none; display: flex; align-items: center; gap: 0.3rem; }
-        .logo-name {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 400;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: #000000;
-        }
-        .logo-amp {
-            font-family: 'Playfair Display', serif;
-            color: #B8860B;
-            font-style: italic;
-            font-size: 1.3rem;
-            margin: 0 0.1em;
-            font-weight: 700;
-        }
+
         main {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 3rem 2rem;
+            padding: var(--space-4xl) var(--space-lg);
         }
-        .portal-container { max-width: 900px; width: 100%; }
-        .portal-header { text-align: center; margin-bottom: 3rem; }
+
+        .portal-container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .portal-header {
+            text-align: center;
+            margin-bottom: var(--space-4xl);
+        }
+
         .portal-header h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #000000;
-            margin-bottom: 0.75rem;
-            letter-spacing: -0.5px;
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: var(--space-lg);
+            letter-spacing: -0.01em;
         }
-        .portal-header p { font-size: 1.1rem; color: #4A4A4A; font-weight: 400; }
+
+        .portal-header p {
+            font-family: var(--font-sans);
+            font-size: 1.125rem;
+            color: var(--gray);
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* Portal Cards Grid */
         .portal-cards {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-xl);
+            margin-bottom: var(--space-2xl);
         }
+
         @media (max-width: 768px) {
-            .portal-cards { grid-template-columns: 1fr; gap: 1.5rem; }
+            .portal-cards {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
         }
+
+        /* Individual Card Styles */
         .portal-card {
-            background: #FFFFFF;
-            border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: var(--space-xl);
+            box-shadow: var(--shadow-md);
             text-align: center;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(184, 134, 11, 0.1);
+            transition: all var(--transition-base);
+            border: 1px solid var(--silver);
         }
+
         .portal-card:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            box-shadow: var(--shadow-lg);
             transform: translateY(-4px);
+            border-color: var(--gold);
         }
+
+        /* Portal Icon */
         .portal-icon {
-            width: 60px; height: 60px;
-            margin: 0 auto 1.5rem;
-            display: flex; align-items: center; justify-content: center;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto var(--space-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-full);
         }
-        .portal-card.client .portal-icon { background: rgba(184, 134, 11, 0.1); border-radius: 50%; }
-        .portal-card.staff .portal-icon { background: rgba(0, 0, 0, 0.05); border-radius: 50%; }
-        .portal-icon svg { width: 36px; height: 36px; }
-        .portal-card.client .portal-icon svg { stroke: #B8860B; fill: none; stroke-width: 1.5; }
-        .portal-card.staff .portal-icon svg { stroke: #000000; fill: none; stroke-width: 1.5; }
+
+        .portal-card.client .portal-icon {
+            background: rgba(184, 134, 11, 0.1);
+            color: var(--gold);
+        }
+
+        .portal-card.staff .portal-icon {
+            background: var(--primary-light);
+            color: var(--dark);
+        }
+
+        .portal-icon svg {
+            width: 36px;
+            height: 36px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        /* Card Headings */
         .portal-card h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.75rem; font-weight: 700;
-            color: #000000; margin-bottom: 1rem;
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: var(--space-md);
+            letter-spacing: -0.01em;
         }
-        .portal-card p { font-size: 1rem; color: #4A4A4A; margin-bottom: 1.5rem; line-height: 1.6; }
+
+        /* Card Description */
+        .portal-card p {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: var(--space-lg);
+            line-height: 1.6;
+        }
+
+        /* Portal Buttons */
         .portal-btn {
             display: inline-block;
-            padding: 0.875rem 2rem;
-            border-radius: 4px;
+            padding: 0.875rem 1.75rem;
+            border-radius: var(--radius-sm);
             text-decoration: none;
-            font-weight: 500; font-size: 1rem;
+            font-family: var(--font-sans);
+            font-weight: 600;
+            font-size: 0.9375rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            letter-spacing: 0.5px;
+            transition: all var(--transition-base);
+            border: 2px solid transparent;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-        .btn-gold { background-color: #B8860B; color: #FFFFFF; }
-        .btn-gold:hover { background-color: #D4A84B; }
-        .btn-staff { background-color: #000000; color: #FFFFFF; }
-        .btn-staff:hover { background-color: #2A2A2A; }
-        .back-link-container { text-align: center; margin-top: 1rem; }
+
+        .btn-gold {
+            background-color: var(--gold);
+            color: var(--white);
+            border-color: var(--gold);
+        }
+
+        .btn-gold:hover {
+            background-color: var(--gold-light);
+            border-color: var(--gold-light);
+            color: var(--white);
+        }
+
+        .btn-staff {
+            background-color: var(--primary);
+            color: var(--white);
+            border-color: var(--primary);
+        }
+
+        .btn-staff:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            color: var(--white);
+        }
+
+        /* Back Link */
+        .back-link-container {
+            text-align: center;
+            margin-top: var(--space-xl);
+        }
+
         .back-link {
-            display: inline-block; color: #B8860B;
-            text-decoration: none; font-weight: 500;
-            font-size: 0.95rem; transition: color 0.3s ease;
+            display: inline-block;
+            color: var(--gold);
+            text-decoration: none;
+            font-family: var(--font-sans);
+            font-weight: 500;
+            font-size: 0.9375rem;
+            transition: color var(--transition-base);
         }
-        .back-link:hover { color: #D4A84B; }
-        .back-link:before { content: '\2190\00A0'; }
+
+        .back-link:hover {
+            color: var(--gold-light);
+        }
+
+        .back-link::before {
+            content: '\2190\00A0';
+        }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <a href="/" class="logo">
-                <span class="logo-name">Crimson</span>
-                <span class="logo-amp">&amp;</span>
-                <span class="logo-name">Quill</span>
-            </a>
+    <!-- Header - Matches main website exactly -->
+    <header class="header">
+        <div class="container">
+            <div class="header-inner">
+                <a href="/" class="logo">
+                    <span class="logo-name">Crimson <span class="logo-amp">&</span> Quill</span>
+                </a>
+
+                <nav class="nav">
+                    <ul class="nav-links">
+                        <li><a href="/about" class="nav-link">About Us</a></li>
+                        <li class="nav-item has-dropdown">
+                            <a href="/practice-areas" class="nav-link">Practice Areas</a>
+                        </li>
+                        <li><a href="/team" class="nav-link">Our Team</a></li>
+                        <li><a href="/insights" class="nav-link">Insights</a></li>
+                        <li><a href="/careers" class="nav-link">Careers</a></li>
+                        <li><a href="/contact" class="btn btn-primary">Contact Us</a></li>
+                    </ul>
+                    <button class="menu-toggle" aria-label="Toggle menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </nav>
+            </div>
         </div>
     </header>
+
+    <!-- Main Content -->
     <main>
         <div class="portal-container">
+            <!-- Portal Header -->
             <div class="portal-header">
-                <h1>Welcome to the Portal</h1>
-                <p>Select your portal to continue</p>
+                <h1>Choose Your Portal</h1>
+                <p>Select your portal to access Crimson & Quill services</p>
             </div>
+
+            <!-- Portal Cards -->
             <div class="portal-cards">
+                <!-- Client Portal Card -->
                 <div class="portal-card client">
                     <div class="portal-icon">
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -151,9 +263,11 @@
                         </svg>
                     </div>
                     <h2>Client Portal</h2>
-                    <p>Access your matters, documents, and communicate with your legal team</p>
+                    <p>Access your matters, documents, and communicate directly with your legal team</p>
                     <a href="/login?type=client" class="portal-btn btn-gold">Sign In</a>
                 </div>
+
+                <!-- Staff Portal Card -->
                 <div class="portal-card staff">
                     <div class="portal-icon">
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -162,14 +276,19 @@
                         </svg>
                     </div>
                     <h2>Staff Portal</h2>
-                    <p>Manage matters, clients, and firm operations</p>
+                    <p>Manage matters, clients, and firm operations securely</p>
                     <a href="/login?type=staff" class="portal-btn btn-staff">Sign In</a>
                 </div>
             </div>
+
+            <!-- Back Link -->
             <div class="back-link-container">
                 <a href="/" class="back-link">Back to Website</a>
             </div>
         </div>
     </main>
+
+    <!-- Scripts -->
+    <script src="../js/main.js"></script>
 </body>
 </html>
