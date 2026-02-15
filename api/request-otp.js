@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 const { createClient } = require('@vercel/kv');
-const { isEmailInGroup, isFirmEmail } = require('./lib/graph');
+const { isEmailInGroup, isFirmEmail, isRegisteredClient } = require('./lib/graph');
 const { generateOTP, storeOTP, checkRateLimit } = require('./lib/otp');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -67,12 +67,20 @@ module.exports = async function handler(req, res) {
         hasAccess = true;
       }
     } else {
-      // Client portal - check if email is in client security group
+      // Client portal - check multiple sources for access
+      // 1. Check Azure AD security group (if configured)
       if (CLIENT_GROUP_ID) {
         hasAccess = await isEmailInGroup(normalizedEmail, CLIENT_GROUP_ID);
-      } else {
-        // Fallback: also check if it's a firm email (staff can access client portal too)
-        hasAccess = isFirmEmail(normalizedEmail);
+      }
+
+      // 2. Firm emails can always access client portal
+      if (!hasAccess && isFirmEmail(normalizedEmail)) {
+        hasAccess = true;
+      }
+
+      // 3. Check if email is registered in the SharePoint Clients list
+      if (!hasAccess) {
+        hasAccess = await isRegisteredClient(normalizedEmail);
       }
     }
 

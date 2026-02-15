@@ -110,4 +110,67 @@ function isFirmEmail(email) {
   return email.toLowerCase().endsWith('@cqadvocates.com');
 }
 
-module.exports = { getGraphToken, graphGet, isEmailInGroup, isFirmEmail };
+/**
+ * Check if an email is registered in the SharePoint Clients list.
+ * Queries the CQClientPortal site's "Clients" list for a matching Email field.
+ * @param {string} email - Client email address to check
+ * @returns {boolean} True if the email exists in the Clients list with Active status
+ */
+async function isRegisteredClient(email) {
+  try {
+    const token = await getGraphToken();
+    const siteId = await getSiteIdByPath(token, 'cqadvocates.sharepoint.com:/sites/CQClientPortal');
+
+    // Get the Clients list
+    const listsResp = await graphGet(`/sites/${siteId}/lists`);
+    const clientsList = listsResp.value.find(
+      (l) => l.displayName === 'Clients' || l.displayName.toLowerCase() === 'clients'
+    );
+
+    if (!clientsList) {
+      console.error('Clients list not found in CQClientPortal');
+      return false;
+    }
+
+    // Query for the specific email (case-insensitive filter not supported in Graph for SP lists,
+    // so we fetch all and filter in code — the Clients list should be small)
+    const items = await graphGet(
+      `/sites/${siteId}/lists/${clientsList.id}/items?$expand=fields&$top=500`
+    );
+
+    if (!items.value || items.value.length === 0) {
+      return false;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const match = items.value.find((item) => {
+      const itemEmail = (item.fields.Email || '').toLowerCase().trim();
+      const status = (item.fields.Status || '').toLowerCase();
+      return itemEmail === normalizedEmail && status === 'active';
+    });
+
+    return !!match;
+  } catch (error) {
+    console.error('Error checking registered client:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Helper to resolve a SharePoint site ID from its path
+ */
+async function getSiteIdByPath(token, sitePath) {
+  const res = await fetch(`https://graph.microsoft.com/v1.0/sites/${sitePath}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to resolve site: ${res.status} ${err}`);
+  }
+
+  const data = await res.json();
+  return data.id;
+}
+
+module.exports = { getGraphToken, graphGet, isEmailInGroup, isFirmEmail, isRegisteredClient };
