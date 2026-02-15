@@ -5,6 +5,12 @@ const { getOTP, incrementAttempts, deleteOTP } = require('./lib/otp');
 const JWT_SECRET = process.env.JWT_SECRET;
 const SHAREPOINT_URL = process.env.SHAREPOINT_SITE_URL || 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
 
+// Portal URLs on the main website (branded wrappers)
+const PORTAL_URLS = {
+  client: '/client',
+  staff: '/staff',
+};
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -57,7 +63,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // OTP is correct â clean up
+    // OTP is correct â clean up
     await deleteOTP(kv, normalizedEmail);
 
     // Generate JWT session token
@@ -88,7 +94,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      redirectUrl: SHAREPOINT_URL,
+      redirectUrl: PORTAL_URLS[portalType] || '/client',
     });
   } catch (error) {
     console.error('verify-otp error:', error);
