@@ -1733,7 +1733,7 @@
                 return `
                     <tr>
                         <td>${escapeHtml(matter.Matter_x0020_ID || '—')}</td>
-                        <td><a href="#" onclick="viewMatterDetail(${matter.id}); return false;" style="color: var(--gold); text-decoration: none; font-weight: 700;">${escapeHtml(matter.Title || '—')}</a></td>
+                        <td><a href="javascript:void(0)" onclick="viewMatterDetail(${matter.id})" style="color: var(--gold); text-decoration: none; font-weight: 700; cursor: pointer;">${escapeHtml(matter.Title || '—')}</a></td>
                         <td>${escapeHtml(matter.Client_x0020_Name || '—')}</td>
                         <td>${escapeHtml(matter.Practice_x0020_Area || '—')}</td>
                         <td><span class="badge ${statusClass}">${escapeHtml(matter.Matter_x0020_Status || 'Unknown')}</span></td>
