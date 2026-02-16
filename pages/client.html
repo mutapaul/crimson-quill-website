@@ -1855,7 +1855,7 @@
                             const icon = ext === 'pdf' ? '📕' : (ext === 'docx' || ext === 'doc') ? '📘' : (ext === 'xlsx' || ext === 'xls') ? '📗' : ['png','jpg','jpeg','gif','svg','webp'].includes(ext) ? '🖼️' : '📄';
                             const sizeKB = (file.size / 1024).toFixed(1);
 
-                            html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm);" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewLocalDoc(\'' + file.dataUrl.replace(/'/g, "\\'") + '\', \'' + (file.name || 'Untitled').replace(/'/g, "\\'") + '\', \'' + sizeKB.replace(/'/g, "\\'") + ' KB\')">';
+                            html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm);" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewLocalDoc(\'' + file.dataUrl.replace(/'/g, "\\'") + '\', \'' + (file.name || 'Untitled').replace(/'/g, "\\'") + '\', \'' + String(sizeKB).replace(/'/g, "\\'") + ' KB\')">';
                             html += '<div style="display: flex; align-items: center; gap: 10px;">';
                             html += '<span style="font-size: 18px;">' + icon + '</span>';
                             html += '<div>';
