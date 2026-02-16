@@ -2932,14 +2932,14 @@
             const invoiceMattersSelect = document.getElementById('invoiceMatterSelect');
             if (invoiceMattersSelect) {
                 invoiceMattersSelect.innerHTML = '<option value="">Select a matter...</option>' +
-                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || '')}">${escapeHtml(m.Title || '')}</option>`).join('');
+                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || m.Title || '')}">${escapeHtml(m.Title || '')}${m.Matter_x0020_ID ? ' (' + escapeHtml(m.Matter_x0020_ID) + ')' : ''}</option>`).join('');
             }
 
             // For message modal
             const messageMattersSelect = document.getElementById('messageMattersSelect');
             if (messageMattersSelect) {
                 messageMattersSelect.innerHTML = '<option value="">Select a matter...</option>' +
-                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || '')}">${escapeHtml(m.Title || '')}</option>`).join('');
+                    portalData.matters.map(m => `<option value="${escapeHtml(m.Matter_x0020_ID || m.Title || '')}">${escapeHtml(m.Title || '')}${m.Matter_x0020_ID ? ' (' + escapeHtml(m.Matter_x0020_ID) + ')' : ''}</option>`).join('');
             }
 
             // For invoice client select
