@@ -129,11 +129,49 @@ async function graphApi(path, token, method = 'GET', body = null) {
 }
 
 /**
+ * Find a Teams-licensed user in the organization to use as meeting organizer
+ */
+async function findTeamsOrganizer(token, preferredEmail) {
+  // First try the preferred email
+  if (preferredEmail) {
+    try {
+      const user = await graphApi(`/users/${encodeURIComponent(preferredEmail)}?$select=id,userPrincipalName,assignedLicenses`, token);
+      if (user && user.id) {
+        return user.userPrincipalName || preferredEmail;
+      }
+    } catch (e) {
+      console.warn(`Preferred organizer ${preferredEmail} not found in Azure AD:`, e.message);
+    }
+  }
+
+  // Fallback: find any licensed user
+  try {
+    const users = await graphApi('/users?$top=5&$select=id,userPrincipalName,assignedLicenses&$filter=accountEnabled eq true', token);
+    if (users.value && users.value.length > 0) {
+      // Prefer users with licenses (likely Teams-licensed)
+      const licensedUser = users.value.find(u => u.assignedLicenses && u.assignedLicenses.length > 0);
+      return licensedUser ? licensedUser.userPrincipalName : users.value[0].userPrincipalName;
+    }
+  } catch (e) {
+    console.warn('Could not find any organizer user:', e.message);
+  }
+
+  return null;
+}
+
+/**
  * Create Teams online meeting
  */
 async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDuration) {
   try {
     const token = await getAccessToken();
+
+    // Find a valid organizer
+    const organizer = await findTeamsOrganizer(token, organizerEmail);
+    if (!organizer) {
+      console.warn('No valid Teams organizer found. Skipping meeting creation.');
+      return null;
+    }
 
     // Parse the ISO datetime
     const startTime = new Date(eventDate);
@@ -143,12 +181,15 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
       startDateTime: startTime.toISOString(),
       endDateTime: endTime.toISOString(),
       subject: eventTitle,
-      isOnlineMeeting: true,
-      onlineMeetingProvider: 'teamsForBusiness',
+      lobbyBypassSettings: {
+        scope: 'organization',
+        isDialInBypassEnabled: true,
+      },
+      autoAdmittedUsers: 'organizationAndFederated',
     };
 
     const result = await graphApi(
-      `/users/${organizerEmail}/onlineMeetings`,
+      `/users/${encodeURIComponent(organizer)}/onlineMeetings`,
       token,
       'POST',
       meetingBody
@@ -157,7 +198,7 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
     return result.joinWebUrl || null;
   } catch (error) {
     // Gracefully skip Teams meeting creation if permissions are missing
-    console.error(`Teams meeting creation failed for ${organizerEmail}:`, error.message);
+    console.error(`Teams meeting creation failed:`, error.message);
     return null;
   }
 }
@@ -441,9 +482,9 @@ module.exports = async function handler(req, res) {
     } = req.body;
 
     // Validate required fields
-    if (!eventTitle || !eventDate || !location || !matterId || !matterNumber) {
+    if (!eventTitle || !eventDate || !matterId || !matterNumber) {
       return res.status(400).json({
-        error: 'Missing required fields: eventTitle, eventDate, location, matterId, matterNumber.',
+        error: 'Missing required fields: eventTitle, eventDate, matterId, matterNumber.',
       });
     }
 
@@ -484,7 +525,8 @@ module.exports = async function handler(req, res) {
     const matterReference = `${matterNumber}${matterTitle ? ` - ${matterTitle}` : ''}`;
 
     // Attempt to create Teams meeting
-    const organizerEmail = session.email || process.env.TEAMS_ORGANIZER_EMAIL;
+    // Prefer the configured organizer (a known Teams-licensed user), fallback to session user
+    const organizerEmail = process.env.TEAMS_ORGANIZER_EMAIL || session.email;
     let teamsLink = null;
 
     if (organizerEmail) {

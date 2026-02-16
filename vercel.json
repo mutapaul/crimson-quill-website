@@ -7,6 +7,9 @@
         },
         "api/download-document.js": {
             "maxDuration": 60
+        },
+        "api/send-event-invite.js": {
+            "maxDuration": 60
         }
     },
     "rewrites": [
