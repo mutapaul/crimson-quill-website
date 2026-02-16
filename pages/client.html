@@ -2232,7 +2232,7 @@
             matters.forEach(matter => {
                 const option = document.createElement('option');
                 option.value = matter.Matter_x0020_ID || matter.Title || '';
-                option.textContent = matter.Matter_x0020_ID || matter.Title || '';
+                option.textContent = `${matter.Title || 'Untitled'}${matter.Matter_x0020_ID ? ' (' + matter.Matter_x0020_ID + ')' : ''}`;
                 matterSelect.appendChild(option);
             });
         }
@@ -2360,8 +2360,8 @@
                 const matters = data.items || [];
                 matters.forEach(matter => {
                     const option = document.createElement('option');
-                    option.value = matter.Matter_x0020_ID || '';
-                    option.textContent = `${matter.Matter_x0020_ID || 'N/A'} - ${matter.Title || 'Untitled'}`;
+                    option.value = matter.Matter_x0020_ID || matter.Title || '';
+                    option.textContent = `${matter.Title || 'Untitled'}${matter.Matter_x0020_ID ? ' (' + matter.Matter_x0020_ID + ')' : ''}`;
                     matterSelect.appendChild(option);
                 });
             } catch (error) {

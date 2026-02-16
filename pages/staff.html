@@ -2468,7 +2468,10 @@
             }
 
             container.innerHTML = portalData.messages.map((msg, idx) => `
-                <div class="card">
+                <div class="card" style="cursor: pointer; transition: background 0.15s;"
+                     onmouseenter="this.style.background='#f8f6f0'"
+                     onmouseleave="this.style.background=''"
+                     onclick="viewMessageDetail(${idx})">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
                             <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">${escapeHtml(msg.Title || '(No subject)')}</div>
@@ -2478,6 +2481,90 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function viewMessageDetail(idx) {
+            const msg = portalData.messages[idx];
+            if (!msg) return;
+
+            const container = document.getElementById('messagesContainer');
+            const priority = msg.Priority || 'Normal';
+            const priorityClass = priority === 'High' ? 'badge-high' : priority === 'Urgent' ? 'badge-urgent' : 'badge-normal';
+            const matterId = msg.Matter_x0020_ID || 'N/A';
+            const readStatus = msg.Read ? 'Read' : 'Unread';
+
+            container.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-secondary" onclick="renderMessages()" style="padding: 6px 16px; font-size: 13px;">← Back to Messages</button>
+                </div>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <h2 style="font-size: 20px; font-weight: 600; margin: 0 0 8px 0;">${escapeHtml(msg.Title || '(No subject)')}</h2>
+                            <div style="color: #888; font-size: 13px;">
+                                Matter: <strong>${escapeHtml(matterId)}</strong> · ${formatDatetime(msg.Created)}
+                                · <span style="background: ${msg.Read ? '#e8e8e8' : 'var(--gold)'}; color: ${msg.Read ? '#666' : 'white'}; padding: 2px 8px; border-radius: 3px; font-size: 11px;">${readStatus}</span>
+                            </div>
+                        </div>
+                        <span class="badge ${priorityClass}">${priority}</span>
+                    </div>
+                    <div style="border-top: 1px solid #eee; padding-top: 16px; line-height: 1.8; color: #333; white-space: pre-wrap;">${escapeHtml(msg.Message_x0020_Body || 'No content')}</div>
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                        <button class="btn btn-gold" onclick="replyToMessage('${escapeHtml(msg.Title || '').replace(/'/g, "\\'")}', '${escapeHtml(matterId).replace(/'/g, "\\'")}')">Reply</button>
+                        ${!msg.Read ? '<button class="btn btn-secondary" onclick="markMessageRead(' + msg.id + ', ' + idx + ')">Mark as Read</button>' : ''}
+                    </div>
+                </div>
+            `;
+
+            // Auto-mark as read if unread
+            if (!msg.Read && msg.id) {
+                markMessageRead(msg.id, idx);
+            }
+        }
+
+        function replyToMessage(subject, matterId) {
+            openNewMessageModal();
+            // Pre-fill subject
+            const subjectInput = document.querySelector('#messageForm input[name="subject"]');
+            if (subjectInput) {
+                subjectInput.value = subject.startsWith('Re: ') ? subject : 'Re: ' + subject;
+            }
+            // Pre-select matter
+            const matterSelect = document.getElementById('messageMattersSelect');
+            if (matterSelect && matterId && matterId !== 'N/A') {
+                for (let opt of matterSelect.options) {
+                    if (opt.value === matterId) {
+                        matterSelect.value = matterId;
+                        break;
+                    }
+                }
+            }
+            // Focus body
+            setTimeout(() => {
+                const bodyTextarea = document.querySelector('#messageForm textarea[name="body"]');
+                if (bodyTextarea) bodyTextarea.focus();
+            }, 100);
+        }
+
+        async function markMessageRead(itemId, idx) {
+            try {
+                await fetch('/api/sharepoint-write', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Messages',
+                        itemId: String(itemId),
+                        fields: { Read: true }
+                    })
+                });
+                if (portalData.messages[idx]) {
+                    portalData.messages[idx].Read = true;
+                }
+            } catch (error) {
+                console.error('Failed to mark message as read:', error);
+            }
         }
 
         function renderStaff() {
