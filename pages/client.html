@@ -1463,6 +1463,7 @@
         // ============================================================================
         let currentTab = 'dashboard';
         let portalData = {};
+        let clientProfile = { name: null, email: null, matterNames: [], matterIds: [] };
 
         // ============================================================================
         // UTILITIES
@@ -1564,15 +1565,110 @@
                     return;
                 }
                 const decodedEmail = decodeURIComponent(userEmail);
-                document.getElementById('userName').textContent = decodedEmail;
-                document.getElementById('userAvatar').textContent = getInitial(decodedEmail);
+                clientProfile.email = decodedEmail.toLowerCase().trim();
 
+                // Step 1: Resolve client identity from SharePoint Clients list
+                await resolveClientProfile();
+
+                // Display the client's name (or email as fallback)
+                const displayName = clientProfile.name || decodedEmail;
+                document.getElementById('userName').textContent = displayName;
+                document.getElementById('userAvatar').textContent = getInitial(displayName);
+
+                // Step 2: Pre-fetch all data and filter to this client
+                await loadClientData();
+
+                // Step 3: Render the dashboard with filtered data
                 await loadDashboard();
                 hideLoadingOverlay();
             } catch (error) {
                 console.error('Initialization error:', error);
                 hideLoadingOverlay();
                 showError('Failed to initialize portal');
+            }
+        }
+
+        /**
+         * Resolve the logged-in user's email to a client profile from SharePoint.
+         * Sets clientProfile.name and determines which matters belong to this client.
+         */
+        async function resolveClientProfile() {
+            try {
+                const clientsData = await fetchList('Clients');
+                const clients = clientsData.items || [];
+
+                const match = clients.find(c =>
+                    (c.Email || '').toLowerCase().trim() === clientProfile.email
+                );
+
+                if (match) {
+                    clientProfile.name = match.Title;
+                    console.log('Client profile resolved:', clientProfile.name);
+                } else {
+                    console.warn('No matching client found for:', clientProfile.email);
+                }
+            } catch (error) {
+                console.error('Failed to resolve client profile:', error);
+            }
+        }
+
+        /**
+         * Pre-fetch all SharePoint data and filter to only this client's records.
+         * Uses the chain: Client Name → Matters → Matter IDs → Messages/Events
+         */
+        async function loadClientData() {
+            try {
+                // Fetch all lists in parallel
+                const [mattersData, messagesData, eventsData] = await Promise.all([
+                    fetchList('Matters'),
+                    fetchList('Messages'),
+                    fetchList('Events')
+                ]);
+
+                const allMatters = mattersData.items || [];
+                const allMessages = messagesData.items || [];
+                const allEvents = eventsData.items || [];
+
+                // Filter matters by client name
+                const myMatters = clientProfile.name
+                    ? allMatters.filter(m =>
+                        (m.Client_x0020_Name || '').toLowerCase().trim() === clientProfile.name.toLowerCase().trim()
+                    )
+                    : [];
+
+                // Build set of this client's matter identifiers for cross-filtering
+                const myMatterTitles = new Set(myMatters.map(m => m.Title));
+                const myMatterIds = new Set(myMatters.map(m => m.Matter_x0020_ID).filter(Boolean));
+                // Also add matter titles as IDs since some records use Title as the reference
+                myMatters.forEach(m => {
+                    if (m.Title) myMatterIds.add(m.Title);
+                    if (m.Matter_x0020_ID) myMatterIds.add(m.Matter_x0020_ID);
+                });
+
+                clientProfile.matterIds = [...myMatterIds];
+                clientProfile.matterNames = [...myMatterTitles];
+
+                // Filter messages by this client's matters
+                const myMessages = allMessages.filter(msg => {
+                    const msgMatter = msg.Matter_x0020_ID || '';
+                    return myMatterIds.has(msgMatter);
+                });
+
+                // Filter events by this client's matters
+                const myEvents = allEvents.filter(evt => {
+                    const evtMatter = evt.Matter_x0020_ID || '';
+                    return myMatterIds.has(evtMatter);
+                });
+
+                // Store filtered data
+                portalData.matters = { items: myMatters, listName: 'Matters' };
+                portalData.messages = { items: myMessages, listName: 'Messages' };
+                portalData.events = { items: myEvents, listName: 'Events' };
+
+                console.log(`Client data loaded: ${myMatters.length} matters, ${myMessages.length} messages, ${myEvents.length} events`);
+            } catch (error) {
+                console.error('Failed to load client data:', error);
+                // Fallback: portalData stays empty, sections will show empty states
             }
         }
 
@@ -1592,28 +1688,21 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const [matters, messages, events] = await Promise.all([
-                    portalData.matters || fetchList('Matters'),
-                    portalData.messages || fetchList('Messages'),
-                    portalData.events || fetchList('Events')
-                ]);
-
-                portalData.matters = matters;
-                portalData.messages = messages;
-                portalData.events = events;
-
-                const mattersItems = matters.items || [];
-                const messagesItems = messages.items || [];
-                const eventsItems = events.items || [];
+                // Use pre-filtered client-specific data from loadClientData()
+                const mattersItems = (portalData.matters && portalData.matters.items) || [];
+                const messagesItems = (portalData.messages && portalData.messages.items) || [];
+                const eventsItems = (portalData.events && portalData.events.items) || [];
 
                 const activeMatters = mattersItems.filter(m => m.Matter_x0020_Status === 'Active').length;
                 const totalMatters = mattersItems.length;
                 const unreadMessages = messagesItems.filter(m => !m.Read).length;
                 const upcomingEvents = eventsItems.length;
 
+                const welcomeName = clientProfile.name || 'Client';
+
                 let html = `
                     <div class="card welcome-card">
-                        <div class="card-title">Welcome to Your Client Portal</div>
+                        <div class="card-title">Welcome, ${welcomeName}</div>
                         <p>Stay updated on your matters, documents, and billing information. Access all your legal matters in one secure location.</p>
                     </div>
 
@@ -1683,7 +1772,7 @@
                             <td><strong>${matter.Title || 'Untitled'}</strong></td>
                             <td><span class="badge ${statusBadgeClass}">${status}</span></td>
                             <td><span class="badge ${priorityBadgeClass}">${priority}</span></td>
-                            <td>${matter.Client_x0020_Name || 'N/A'}</td>
+                            <td>${matter.Lead_x0020_Lawyer || matter.Client_x0020_Name || 'N/A'}</td>
                             <td>${matter.Practice_x0020_Area || 'N/A'}</td>
                         </tr>
                         <tr class="matter-details-row" style="display: none;">
@@ -1755,9 +1844,11 @@
                     html += '</div>';
                 });
 
-                // Add local uploaded files
-                const currentUserEmail = getCookie('cq_user') ? decodeURIComponent(getCookie('cq_user')) : '';
+                // Add local uploaded files (filtered to this client's matters)
+                const myMatterIds = new Set(clientProfile.matterIds || []);
                 for (const [matterId, files] of Object.entries(localFiles)) {
+                    // Only show files for matters belonging to this client
+                    if (clientProfile.name && !myMatterIds.has(matterId)) continue;
                     if (Array.isArray(files)) {
                         files.forEach((file, idx) => {
                             const ext = (file.name || '').split('.').pop().toLowerCase();
@@ -1930,9 +2021,15 @@
 
             try {
                 const data = portalData.billing || await fetchList('Billing');
-                portalData.billing = data;
 
-                const records = data.items || [];
+                // Filter billing records to only this client's matters
+                const allRecords = data.items || [];
+                const myMatterIds = new Set(clientProfile.matterIds || []);
+                const records = clientProfile.name
+                    ? allRecords.filter(r => myMatterIds.has(r.MatterId || ''))
+                    : allRecords;
+
+                portalData.billing = { items: records, listName: 'Billing' };
 
                 let totalBilled = 0;
                 let totalPaid = 0;
