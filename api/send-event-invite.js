@@ -468,6 +468,11 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Handle special actions: setup and diagnostics
+    if (req.body.action === 'setup') {
+      return await handleSetup(req, res, session);
+    }
+
     const {
       eventTitle,
       eventDate,
@@ -607,3 +612,141 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+
+/**
+ * Handle setup action: create missing columns + check Teams permissions
+ */
+async function handleSetup(req, res, session) {
+  const results = { columns: [], teamsCheck: {}, appPermissions: [], envVars: {} };
+
+  try {
+    const token = await getAccessToken();
+
+    // Get site and list IDs
+    const siteId = await getSiteId('client');
+    const graphToken = token;
+
+    // Find Events list
+    const listsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists`,
+      { headers: { Authorization: `Bearer ${graphToken}` } }
+    );
+    if (!listsResp.ok) throw new Error(`Lists lookup failed: ${listsResp.status}`);
+    const listsData = await listsResp.json();
+    const eventsList = listsData.value.find(l => l.displayName === 'Events');
+    if (!eventsList) throw new Error('Events list not found');
+
+    // Get existing columns
+    const colsResp = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${eventsList.id}/columns`,
+      { headers: { Authorization: `Bearer ${graphToken}` } }
+    );
+    const colsData = await colsResp.json();
+    const existingCols = (colsData.value || []).map(c => c.name);
+
+    // Create missing columns
+    const columnsNeeded = [
+      { name: 'Teams Link', displayName: 'Teams Link', text: { maxLength: 500 } },
+      { name: 'Category', displayName: 'Category', text: { maxLength: 255 } },
+      { name: 'Description', displayName: 'Description', text: { allowMultipleLines: true, maxLength: 5000 } },
+      { name: 'Matter ID', displayName: 'Matter ID', text: { maxLength: 100 } },
+    ];
+
+    for (const col of columnsNeeded) {
+      const internalName = col.name.replace(/ /g, '_x0020_');
+      if (existingCols.includes(col.name) || existingCols.includes(internalName) || existingCols.includes(col.name.replace(/ /g, ''))) {
+        results.columns.push({ name: col.name, status: 'exists' });
+        continue;
+      }
+      try {
+        const createResp = await fetch(
+          `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${eventsList.id}/columns`,
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(col),
+          }
+        );
+        if (createResp.ok) {
+          const created = await createResp.json();
+          results.columns.push({ name: col.name, status: 'created', internalName: created.name });
+        } else {
+          const errText = await createResp.text();
+          results.columns.push({ name: col.name, status: 'failed', error: errText.substring(0, 200) });
+        }
+      } catch (e) {
+        results.columns.push({ name: col.name, status: 'error', error: e.message });
+      }
+    }
+
+    // Check Teams permissions
+    try {
+      const usersResp = await fetch(
+        'https://graph.microsoft.com/v1.0/users?$top=5&$select=id,userPrincipalName,displayName,assignedLicenses&$filter=accountEnabled eq true',
+        { headers: { Authorization: `Bearer ${graphToken}` } }
+      );
+      if (usersResp.ok) {
+        const usersData = await usersResp.json();
+        results.teamsCheck.canListUsers = true;
+        results.teamsCheck.users = (usersData.value || []).map(u => ({
+          email: u.userPrincipalName,
+          name: u.displayName,
+          licensed: !!(u.assignedLicenses && u.assignedLicenses.length > 0),
+        }));
+
+        // Try to create a test meeting
+        const licensedUser = results.teamsCheck.users.find(u => u.licensed);
+        if (licensedUser) {
+          const now = new Date();
+          const later = new Date(now.getTime() + 3600000);
+          const meetResp = await fetch(
+            `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(licensedUser.email)}/onlineMeetings`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${graphToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                startDateTime: now.toISOString(),
+                endDateTime: later.toISOString(),
+                subject: 'CQ Setup Test (can be ignored)',
+              }),
+            }
+          );
+          if (meetResp.ok) {
+            const meetData = await meetResp.json();
+            results.teamsCheck.canCreateMeetings = true;
+            results.teamsCheck.testMeetingLink = meetData.joinWebUrl;
+            results.teamsCheck.recommendedOrganizer = licensedUser.email;
+          } else {
+            const errText = await meetResp.text();
+            results.teamsCheck.canCreateMeetings = false;
+            results.teamsCheck.meetingError = errText.substring(0, 300);
+          }
+        }
+      } else {
+        results.teamsCheck.canListUsers = false;
+        results.teamsCheck.error = (await usersResp.text()).substring(0, 200);
+      }
+    } catch (e) {
+      results.teamsCheck.error = e.message;
+    }
+
+    // Decode token to see app permissions
+    try {
+      const parts = graphToken.split('.');
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+      results.appPermissions = payload.roles || [];
+    } catch { results.appPermissions = []; }
+
+    results.envVars = {
+      TEAMS_ORGANIZER_EMAIL: process.env.TEAMS_ORGANIZER_EMAIL || '(not set)',
+      AZURE_TENANT_ID: !!process.env.AZURE_TENANT_ID,
+      AZURE_CLIENT_ID: !!process.env.AZURE_CLIENT_ID,
+      AZURE_CLIENT_SECRET: !!process.env.AZURE_CLIENT_SECRET,
+      RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    };
+
+    return res.status(200).json(results);
+  } catch (error) {
+    return res.status(500).json({ error: error.message, partialResults: results });
+  }
+}
