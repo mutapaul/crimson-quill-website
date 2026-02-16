@@ -271,7 +271,7 @@ async function updateSharePointItem(siteId, listId, itemId, teamsLink) {
     const token = await getAccessToken();
 
     const fields = {
-      Teams_x0020_Link: teamsLink,
+      TeamsLink: teamsLink,
     };
 
     const resp = await fetch(
@@ -646,7 +646,7 @@ async function handleSetup(req, res, session) {
 
     // Create missing columns
     const columnsNeeded = [
-      { name: 'Teams Link', displayName: 'Teams Link', text: { maxLength: 500 } },
+      { name: 'TeamsLink', displayName: 'Teams Link', text: { maxLength: 500 } },
       { name: 'Category', displayName: 'Category', text: { maxLength: 255 } },
       { name: 'Description', displayName: 'Description', text: { allowMultipleLines: true, maxLength: 5000 } },
       { name: 'Matter ID', displayName: 'Matter ID', text: { maxLength: 100 } },

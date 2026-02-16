@@ -3037,10 +3037,10 @@
                                     <div style="font-size: 13px;">${escapeHtml(event.Location || 'TBD')}</div>
                                 </div>
                             </div>
-                            ${event.Teams_x0020_Link ? `
+                            ${event.TeamsLink ? `
                             <div style="margin-top: 15px;">
                                 <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Teams Meeting</div>
-                                <a href="${escapeHtml(event.Teams_x0020_Link)}" target="_blank" style="font-size: 13px; color: var(--gold);">Join Teams Meeting</a>
+                                <a href="${escapeHtml(event.TeamsLink)}" target="_blank" style="font-size: 13px; color: var(--gold);">Join Teams Meeting</a>
                             </div>
                             ` : ''}
                             ${event.Matter_x0020_ID ? `
