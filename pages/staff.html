@@ -71,8 +71,8 @@
         }
 
         .sidebar-logo {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.2rem;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.5rem;
             font-weight: 400;
             color: var(--primary);
             letter-spacing: 0.15em;
@@ -82,7 +82,7 @@
 
         .sidebar-logo-amp {
             color: var(--gold);
-            font-family: 'Playfair Display', Georgia, serif;
+            font-family: 'Times New Roman', Georgia, serif;
             font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
@@ -197,8 +197,8 @@
         }
 
         .header-logo {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.2rem;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 1.5rem;
             font-weight: 400;
             color: var(--primary);
             letter-spacing: 0.15em;
@@ -209,7 +209,7 @@
 
         .header-logo-amp {
             color: var(--gold);
-            font-family: 'Playfair Display', Georgia, serif;
+            font-family: 'Times New Roman', Georgia, serif;
             font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
@@ -1536,6 +1536,16 @@
                         <input type="datetime-local" name="date" class="form-input" required>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Duration (minutes)</label>
+                        <select name="duration" class="form-select">
+                            <option value="30">30 minutes</option>
+                            <option value="60" selected>1 hour</option>
+                            <option value="90">1.5 hours</option>
+                            <option value="120">2 hours</option>
+                            <option value="180">3 hours</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Location</label>
                         <input type="text" name="location" class="form-input">
                     </div>
@@ -1544,8 +1554,8 @@
                         <input type="text" name="category" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Matter</label>
-                        <select name="matter" class="form-select" id="eventMattersSelect">
+                        <label class="form-label">Matter *</label>
+                        <select name="matter" class="form-select" id="eventMattersSelect" required>
                             <option value="">Select a matter...</option>
                         </select>
                     </div>
@@ -3027,6 +3037,18 @@
                                     <div style="font-size: 13px;">${escapeHtml(event.Location || 'TBD')}</div>
                                 </div>
                             </div>
+                            ${event.Teams_x0020_Link ? `
+                            <div style="margin-top: 15px;">
+                                <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Teams Meeting</div>
+                                <a href="${escapeHtml(event.Teams_x0020_Link)}" target="_blank" style="font-size: 13px; color: var(--gold);">Join Teams Meeting</a>
+                            </div>
+                            ` : ''}
+                            ${event.Matter_x0020_ID ? `
+                            <div style="margin-top: 15px;">
+                                <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Matter</div>
+                                <div style="font-size: 13px;">${escapeHtml(event.Matter_x0020_ID)}</div>
+                            </div>
+                            ` : ''}
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button class="btn btn-sm btn-secondary" onclick="editEvent(${event.id})">Edit</button>
@@ -3965,11 +3987,85 @@
                 });
 
                 if (resp.ok) {
-                    document.getElementById('eventFormMessages').innerHTML = '<div class="success-message">Event saved successfully!</div>';
-                    setTimeout(() => {
-                        closeEventModal();
-                        loadAllData();
-                    }, 1000);
+                    // Parse the response to get the event ID
+                    const responseData = await resp.json();
+                    const createdEventId = responseData.id;
+
+                    // Look up the matter and client information
+                    const matter = portalData.matters.find(m => m.Matter_x0020_ID === payload.Matter_x0020_ID);
+                    let client = null;
+                    if (matter) {
+                        client = portalData.clients.find(c => c.Title === matter.Client_x0020_Name || c.Client_x0020_Name === matter.Client_x0020_Name);
+                    }
+
+                    // Build attendees array
+                    const attendees = [];
+                    const clientEmail = client ? (client.Client_x0020_Email || client.Email || client.email) : null;
+                    if (client && clientEmail) {
+                        attendees.push({
+                            email: clientEmail,
+                            name: client.Title || client.Client_x0020_Name || 'Client'
+                        });
+                    }
+                    if (matter) {
+                        const matterStaff = portalData.staff.filter(s => {
+                            const staffMatters = s.Matters_x0020_x002F_x0020_Areas ? (typeof s.Matters_x0020_x002F_x0020_Areas === 'string' ? s.Matters_x0020_x002F_x0020_Areas.split(',') : [s.Matters_x0020_x002F_x0020_Areas]) : [];
+                            return staffMatters.some(sm => sm.toLowerCase().trim() === matter.Matter_x0020_ID.toLowerCase().trim());
+                        });
+                        matterStaff.forEach(staff => {
+                            if (staff.email || staff.Email) {
+                                attendees.push({
+                                    email: staff.email || staff.Email,
+                                    name: staff.name || staff.Title || 'Staff'
+                                });
+                            }
+                        });
+                    }
+
+                    // Send event invites
+                    if (!eventId && attendees.length > 0) {
+                        const inviteBody = {
+                            eventTitle: payload.Title,
+                            eventDate: payload.EventDate,
+                            eventDuration: formData.get('duration'),
+                            location: payload.Location,
+                            description: payload.Description,
+                            matterId: payload.Matter_x0020_ID,
+                            matterTitle: matter ? matter.Title : '',
+                            matterNumber: matter ? matter.Matter_x0020_ID : '',
+                            attendees: attendees,
+                            eventItemId: createdEventId
+                        };
+
+                        fetchWithRetry('/api/send-event-invite', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(inviteBody),
+                            credentials: 'include'
+                        }).then(inviteResp => {
+                            if (inviteResp.ok) {
+                                document.getElementById('eventFormMessages').innerHTML = `<div class="success-message">Event saved! Invites sent to ${attendees.length} attendees.</div>`;
+                            } else {
+                                document.getElementById('eventFormMessages').innerHTML = '<div class="success-message">Event saved! Could not send invites.</div>';
+                            }
+                            setTimeout(() => {
+                                closeEventModal();
+                                loadAllData();
+                            }, 1000);
+                        }).catch(() => {
+                            document.getElementById('eventFormMessages').innerHTML = '<div class="success-message">Event saved! Could not send invites.</div>';
+                            setTimeout(() => {
+                                closeEventModal();
+                                loadAllData();
+                            }, 1000);
+                        });
+                    } else {
+                        document.getElementById('eventFormMessages').innerHTML = '<div class="success-message">Event saved successfully!</div>';
+                        setTimeout(() => {
+                            closeEventModal();
+                            loadAllData();
+                        }, 1000);
+                    }
                 } else {
                     const error = await resp.json();
                     document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save event'}</div>`;
