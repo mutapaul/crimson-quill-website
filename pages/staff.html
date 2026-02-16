@@ -1465,7 +1465,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeMatterModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('matterForm').dispatchEvent(new Event('submit'))">Save Matter</button>
+                <button class="btn btn-gold" onclick="document.getElementById('matterForm').requestSubmit()">Save Matter</button>
             </div>
         </div>
     </div>
@@ -1512,7 +1512,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeClientModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('clientForm').dispatchEvent(new Event('submit'))">Save Client</button>
+                <button class="btn btn-gold" onclick="document.getElementById('clientForm').requestSubmit()">Save Client</button>
             </div>
         </div>
     </div>
@@ -1558,7 +1558,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('eventForm').dispatchEvent(new Event('submit'))">Save Event</button>
+                <button class="btn btn-gold" onclick="document.getElementById('eventForm').requestSubmit()">Save Event</button>
             </div>
         </div>
     </div>
@@ -1600,7 +1600,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeMessageModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('messageForm').dispatchEvent(new Event('submit'))">Send Message</button>
+                <button class="btn btn-gold" onclick="document.getElementById('messageForm').requestSubmit()">Send Message</button>
             </div>
         </div>
     </div>
@@ -1649,7 +1649,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeStaffModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('staffForm').dispatchEvent(new Event('submit'))">Save Staff Member</button>
+                <button class="btn btn-gold" onclick="document.getElementById('staffForm').requestSubmit()">Save Staff Member</button>
             </div>
         </div>
     </div>
@@ -1745,7 +1745,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeInvoiceModal()">Cancel</button>
-                <button class="btn btn-gold" onclick="document.getElementById('invoiceForm').dispatchEvent(new Event('submit'))">Save Invoice</button>
+                <button class="btn btn-gold" onclick="document.getElementById('invoiceForm').requestSubmit()">Save Invoice</button>
                 <button class="btn btn-primary" onclick="generateInvoicePDF()" id="generatePdfBtn" style="display: none;">Generate PDF</button>
                 <button class="btn btn-primary" onclick="sendInvoiceToClient()" id="sendInvoiceBtn" style="display: none;">Send to Client</button>
             </div>
