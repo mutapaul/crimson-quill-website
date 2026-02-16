@@ -82,14 +82,14 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: 'Forbidden. Only staff members can send notifications.' });
     }
 
-    const { email, clientName, portalType } = req.body;
+    const { email, clientName, portalType, staffRole } = req.body;
 
     // Validate input
     if (!email || !clientName || !portalType) {
-      return res.status(400).json({ error: 'Email, client name, and portal type are required.' });
+      return res.status(400).json({ error: 'Email, name, and portal type are required.' });
     }
 
-    if (portalType !== 'welcome') {
+    if (portalType !== 'welcome' && portalType !== 'staff-invite') {
       return res.status(400).json({ error: 'Invalid portal type.' });
     }
 
@@ -111,16 +111,89 @@ module.exports = async function handler(req, res) {
     const allowed = await checkEmailRateLimit(kv, normalizedEmail);
     if (!allowed) {
       return res.status(429).json({
-        error: 'Rate limit exceeded. Maximum 10 emails per hour per client email.',
+        error: 'Rate limit exceeded. Maximum 10 emails per hour per email address.',
       });
     }
 
-    // Send welcome email via Resend
-    const { error: sendError } = await resend.emails.send({
-      from: 'Crimson & Quill <portal@cqadvocates.com>',
-      to: [normalizedEmail],
-      subject: 'Welcome to the Crimson & Quill Client Portal',
-      html: `
+    // Build email content based on portal type
+    let emailSubject, emailHtml;
+
+    if (portalType === 'staff-invite') {
+      const role = staffRole || 'Team Member';
+      emailSubject = 'You Have Been Added to the Crimson & Quill Staff Portal';
+      emailHtml = `
+        <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #FAFAFA;">
+          <!-- Header -->
+          <div style="background: #000000; padding: 40px 30px; text-align: center;">
+            <span style="font-family: Georgia, serif; font-size: 28px; font-weight: 600; color: #FFFFFF;">
+              Crimson <span style="color: #B8860B; font-style: italic;">&</span> Quill
+            </span>
+            <div style="margin-top: 8px;">
+              <span style="display: inline-block; background: #B8860B; color: #FFFFFF; padding: 4px 14px; border-radius: 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Staff Portal</span>
+            </div>
+          </div>
+
+          <!-- Main Content -->
+          <div style="padding: 40px 30px; background: #FFFFFF;">
+            <p style="font-size: 16px; color: #000000; line-height: 1.6; margin: 0 0 24px;">
+              Dear <strong>${clientName}</strong>,
+            </p>
+
+            <p style="font-size: 15px; color: #333333; line-height: 1.6; margin: 0 0 24px;">
+              You have been added to the <strong>Crimson & Quill Staff Portal</strong> as <strong>${role}</strong>. The portal is your central hub for managing client matters, documents, communications, billing, and firm operations.
+            </p>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://www.cqadvocates.com/login?type=staff" style="display: inline-block; background: #B8860B; color: #FFFFFF; padding: 14px 40px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                Access Staff Portal
+              </a>
+            </div>
+
+            <div style="border-left: 3px solid #B8860B; padding-left: 20px; margin: 32px 0; background: #F5F5F5; padding: 16px 20px;">
+              <h3 style="font-size: 14px; font-weight: 600; color: #000000; margin: 0 0 12px;">How to Login</h3>
+              <ol style="font-size: 13px; color: #555555; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Click the <strong>Access Staff Portal</strong> button above</li>
+                <li>Enter your email address (<strong>${normalizedEmail}</strong>)</li>
+                <li>You will receive a secure one-time verification code</li>
+                <li>Enter the code to access the staff portal</li>
+              </ol>
+            </div>
+
+            <h3 style="font-size: 14px; font-weight: 600; color: #000000; margin: 24px 0 12px;">Your Role: ${role}</h3>
+            <p style="font-size: 13px; color: #555555; line-height: 1.6; margin: 0 0 16px;">
+              As a member of the Crimson & Quill team, you have access to:
+            </p>
+            <ul style="font-size: 13px; color: #555555; line-height: 1.8; margin: 0; padding-left: 20px;">
+              <li>Manage client matters and case files</li>
+              <li>Upload, organise, and share legal documents</li>
+              <li>Communicate with clients through secure messaging</li>
+              <li>Create and send invoices</li>
+              <li>Schedule events and manage the firm calendar</li>
+              <li>View reports and firm analytics</li>
+            </ul>
+
+            <p style="font-size: 13px; color: #777777; line-height: 1.6; margin: 24px 0 0;">
+              If you have any questions about your access or need support, please contact the firm administrator.
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="border-top: 1px solid #E0E0E0; padding: 24px 30px; background: #FAFAFA; text-align: center;">
+            <p style="font-size: 12px; color: #999999; margin: 0 0 8px;">
+              <strong>Crimson & Quill</strong>
+            </p>
+            <p style="font-size: 11px; color: #AAAAAA; margin: 0;">
+              Kampala, Uganda<br/>
+              Professional Legal Services
+            </p>
+          </div>
+        </div>
+      `;
+    } else {
+      // Client welcome email
+      emailSubject = 'Welcome to the Crimson & Quill Client Portal';
+      emailHtml = `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #FAFAFA;">
           <!-- Header -->
           <div style="background: #000000; padding: 40px 30px; text-align: center;">
@@ -181,17 +254,25 @@ module.exports = async function handler(req, res) {
             </p>
           </div>
         </div>
-      `,
+      `;
+    }
+
+    // Send email via Resend
+    const { error: sendError } = await resend.emails.send({
+      from: 'Crimson & Quill <portal@cqadvocates.com>',
+      to: [normalizedEmail],
+      subject: emailSubject,
+      html: emailHtml,
     });
 
     if (sendError) {
       console.error('Resend error:', sendError);
-      return res.status(500).json({ error: 'Failed to send welcome email. Please try again.' });
+      return res.status(500).json({ error: 'Failed to send email. Please try again.' });
     }
 
     return res.status(200).json({
       success: true,
-      message: `Welcome email sent to ${normalizedEmail}`,
+      message: `${portalType === 'staff-invite' ? 'Staff invite' : 'Welcome'} email sent to ${normalizedEmail}`,
     });
   } catch (error) {
     console.error('notify-client error:', error);

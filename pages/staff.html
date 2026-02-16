@@ -2674,6 +2674,7 @@
                         <td>
                             <button class="btn btn-sm btn-secondary" onclick="editStaff(${staff.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteStaff(${staff.id})">Delete</button>
+                            ${staff.email ? `<button class="btn btn-sm" style="background: var(--gold); color: white; border: none; margin-left: 4px;" onclick="sendStaffInvite(${staff.id})" title="Send portal invite email">Invite</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -3303,7 +3304,7 @@
             document.getElementById('staffModal').classList.add('active');
         }
 
-        function saveStaff(e) {
+        async function saveStaff(e) {
             e.preventDefault();
             const form = document.getElementById('staffForm');
             const formData = new FormData(form);
@@ -3335,6 +3336,39 @@
 
             localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
             document.getElementById('staffFormMessages').innerHTML = '<div class="success-message">Staff member saved successfully!</div>';
+
+            // Send invite email for new staff members
+            if (!staffId) {
+                const staffEmail = formData.get('email');
+                const staffName = formData.get('name');
+                const staffRole = formData.get('role');
+
+                if (staffEmail) {
+                    try {
+                        const notifyResp = await fetch('/api/notify-client', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: staffEmail,
+                                clientName: staffName,
+                                portalType: 'staff-invite',
+                                staffRole: staffRole
+                            }),
+                            credentials: 'include'
+                        });
+
+                        if (notifyResp.ok) {
+                            showToast('Invite email sent to ' + staffEmail, 'success');
+                        } else {
+                            showToast('Staff added but invite email failed to send', 'warning');
+                        }
+                    } catch (emailError) {
+                        console.error('Staff invite email error:', emailError);
+                        showToast('Staff added but invite email failed to send', 'warning');
+                    }
+                }
+            }
+
             setTimeout(() => {
                 closeStaffModal();
                 renderStaff();
@@ -3347,6 +3381,39 @@
                 localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
                 renderStaff();
             });
+        }
+
+        async function sendStaffInvite(staffId) {
+            const staff = portalData.staff.find(s => s.id === staffId);
+            if (!staff || !staff.email) {
+                showToast('No email address found for this staff member', 'error');
+                return;
+            }
+
+            try {
+                showToast('Sending invite to ' + staff.email + '...', 'info');
+                const resp = await fetch('/api/notify-client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: staff.email,
+                        clientName: staff.name,
+                        portalType: 'staff-invite',
+                        staffRole: staff.role
+                    }),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    showToast('Invite email sent to ' + staff.email, 'success');
+                } else {
+                    const err = await resp.json();
+                    showToast('Failed: ' + (err.error || 'Could not send invite'), 'error');
+                }
+            } catch (error) {
+                console.error('Send invite error:', error);
+                showToast('Failed to send invite email', 'error');
+            }
         }
 
         function editInvoice(invoiceId) {
