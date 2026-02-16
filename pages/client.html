@@ -1822,7 +1822,6 @@
                 portalData.documents = data;
 
                 const documents = data.items || [];
-                const localFiles = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
 
                 let html = '<div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><div class="card-title" style="margin: 0;">Documents</div><button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 16px; font-size: 13px;">+ Upload Document</button></div>';
                 html += '<p style="color: var(--gray-light); font-size: 13px; margin-bottom: 16px;">Click on any document to preview it</p><div style="display: flex; flex-direction: column; gap: 2px;">';
@@ -1845,31 +1844,7 @@
                     html += '</div>';
                 });
 
-                // Add local uploaded files (filtered to this client's matters)
-                const myMatterIds = new Set(clientProfile.matterIds || []);
-                for (const [matterId, files] of Object.entries(localFiles)) {
-                    // Only show files for matters belonging to this client
-                    if (clientProfile.name && !myMatterIds.has(matterId)) continue;
-                    if (Array.isArray(files)) {
-                        files.forEach((file, idx) => {
-                            const ext = (file.name || '').split('.').pop().toLowerCase();
-                            const icon = ext === 'pdf' ? '📕' : (ext === 'docx' || ext === 'doc') ? '📘' : (ext === 'xlsx' || ext === 'xls') ? '📗' : ['png','jpg','jpeg','gif','svg','webp'].includes(ext) ? '🖼️' : '📄';
-                            const sizeKB = (file.size / 1024).toFixed(1);
-
-                            html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm);" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewLocalDoc(\'' + file.dataUrl.replace(/'/g, "\\'") + '\', \'' + (file.name || 'Untitled').replace(/'/g, "\\'") + '\', \'' + String(sizeKB).replace(/'/g, "\\'") + ' KB\')">';
-                            html += '<div style="display: flex; align-items: center; gap: 10px;">';
-                            html += '<span style="font-size: 18px;">' + icon + '</span>';
-                            html += '<div>';
-                            html += '<div style="font-size: 14px; font-weight: 500;">' + (file.name || 'Untitled') + ' <span style="color: var(--gold); font-size: 11px;">[Uploaded]</span></div>';
-                            html += '<div style="font-size: 11px; color: var(--gray-light);">Matter: ' + matterId + ' · ' + sizeKB + ' KB</div>';
-                            html += '</div></div>';
-                            html += '<span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>';
-                            html += '</div>';
-                        });
-                    }
-                }
-
-                if (documents.length === 0 && Object.keys(localFiles).length === 0) {
+                if (documents.length === 0) {
                     html = '<div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><div class="card-title" style="margin: 0;">Documents</div><button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 16px; font-size: 13px;">+ Upload Document</button></div><div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">No Documents Found</div><div class="empty-state-text">There are no documents available yet. Upload your first document to get started.</div></div></div>';
                 } else {
                     html += '</div></div>';
@@ -2311,6 +2286,13 @@
             window.location.href = '/';
         }
 
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         function showError(message) {
             const container = document.getElementById('content');
             const errorHtml = `<div class="error-message">${message}</div>`;
@@ -2360,11 +2342,11 @@
 
             // Render based on file type
             if (['png','jpg','jpeg','gif','svg','webp','bmp'].includes(ext) && url && url !== '#') {
-                content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 300px; background: #f8f8f8;"><img src="' + url + '" alt="' + (name || 'Image') + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);" onerror="this.parentElement.innerHTML=\'<div style=\\\'text-align:center;color:#888;padding:40px;\\\'>Unable to load image preview.<br><a href=\\\'' + url + '\\\' target=\\\'_blank\\\' style=\\\'color:var(--gold);\\\'>Open in new tab</a></div>\'"></div>';
+                content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 300px; background: #f8f8f8;"><img src="' + escapeHtml(url) + '" alt="' + escapeHtml(name || 'Image') + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);" onerror="this.parentElement.innerHTML=\'<div style=\\\'text-align:center;color:#888;padding:40px;\\\'>Unable to load image preview.<br><a href=\\\'' + escapeHtml(url) + '\\\' target=\\\'_blank\\\' style=\\\'color:var(--gold);\\\'>Open in new tab</a></div>\'"></div>';
             } else if (ext === 'pdf' && url && url !== '#') {
-                content.innerHTML = '<iframe src="' + url + '" style="width: 100%; height: 70vh; border: none;"></iframe><div style="text-align: center; padding: 8px; background: #e8e8e8; font-size: 12px; color: #666;">If the PDF doesn\'t load, <a href="' + url + '" target="_blank" style="color: var(--gold);">open it in a new tab</a></div>';
+                content.innerHTML = '<iframe src="' + escapeHtml(url) + '" style="width: 100%; height: 70vh; border: none;"></iframe><div style="text-align: center; padding: 8px; background: #e8e8e8; font-size: 12px; color: #666;">If the PDF doesn\'t load, <a href="' + escapeHtml(url) + '" target="_blank" style="color: var(--gold);">open it in a new tab</a></div>';
             } else {
-                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + (name || 'Document') + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">This document is stored on SharePoint.</p><a href="' + (url || '#') + '" target="_blank" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Open in SharePoint</a></div>';
+                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(name || 'Document') + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">This document is stored on SharePoint.</p><a href="' + escapeHtml(url || '#') + '" target="_blank" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Open in SharePoint</a></div>';
             }
 
             modal.classList.add('show');
@@ -2456,66 +2438,93 @@
         }
 
         function handleFileSelect(file) {
-            const maxSize = 10 * 1024 * 1024; // 10 MB
-
-            if (file.size > maxSize) {
-                showToast('File size exceeds 10 MB limit', 'error');
-                return;
-            }
-
             selectedFile = file;
             document.getElementById('fileName').textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
             document.getElementById('uploadArea').style.borderColor = 'var(--gold)';
         }
 
         async function submitUpload(e) {
-            e.preventDefault();
-
-            const matter = document.getElementById('uploadMatter').value;
-            if (!matter) {
-                showToast('Please select a matter', 'error');
-                return;
-            }
+            if (e && e.preventDefault) e.preventDefault();
 
             if (!selectedFile) {
                 showToast('Please select a file', 'error');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const dataUrl = event.target.result;
+            const matterSelect = document.getElementById('uploadMatter');
+            const matterId = matterSelect ? matterSelect.value : '';
+            if (!matterId) {
+                showToast('Please select a matter', 'error');
+                return;
+            }
 
-                    // Store in localStorage
-                    let matterFiles = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
-                    if (!matterFiles[matter]) {
-                        matterFiles[matter] = [];
-                    }
+            // Find matter title
+            const matter = (portalData.matters?.items || []).find(m =>
+                (m.Matter_x0020_ID || m.Title || '') === matterId
+            );
+            const matterTitle = matter ? (matter.Title || matterId) : matterId;
 
-                    matterFiles[matter].push({
-                        name: selectedFile.name,
-                        size: selectedFile.size,
-                        dataUrl: dataUrl,
-                        uploadedAt: new Date().toISOString()
-                    });
+            // Validate file type
+            const allowedTypes = ['pdf','docx','xlsx','png','jpg','jpeg','txt','csv','msg'];
+            const ext = selectedFile.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(ext)) {
+                showToast('File type not allowed. Accepted: ' + allowedTypes.join(', '), 'error');
+                return;
+            }
 
-                    localStorage.setItem('cq_matter_files', JSON.stringify(matterFiles));
+            // Show uploading state
+            const uploadBtn = document.querySelector('#uploadModal button[type="submit"], #uploadModal .btn-gold');
+            const originalText = uploadBtn ? uploadBtn.textContent : '';
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Uploading...';
+            }
 
-                    showToast('Document uploaded successfully!', 'success');
+            try {
+                // Read file as base64
+                const fileData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const base64 = reader.result.split(',')[1]; // Remove data:...;base64, prefix
+                        resolve(base64);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(selectedFile);
+                });
+
+                const resp = await fetch('/api/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: selectedFile.name,
+                        fileData: fileData,
+                        matterId: matterId,
+                        matterTitle: matterTitle
+                    }),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    const result = await resp.json();
+                    showToast('Document uploaded successfully to SharePoint', 'success');
                     closeUploadModal();
                     selectedFile = null;
-                    await loadDocuments();
-                } catch (error) {
-                    showToast('Error uploading document: ' + error.message, 'error');
+                    // Refresh documents
+                    await loadClientData();
+                    switchTab('documents');
+                } else {
+                    const err = await resp.json();
+                    showToast('Upload failed: ' + (err.error || 'Unknown error'), 'error');
                 }
-            };
-
-            reader.onerror = () => {
-                showToast('Error reading file', 'error');
-            };
-
-            reader.readAsDataURL(selectedFile);
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Upload failed: ' + error.message, 'error');
+            } finally {
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = originalText;
+                }
+            }
         }
 
         function previewLocalDoc(dataUrl, name, size) {

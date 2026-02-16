@@ -1675,6 +1675,9 @@
         }
 
         function logout() {
+            localStorage.removeItem('cq_staff');
+            localStorage.removeItem('cq_invoices');
+            localStorage.removeItem('cq_matter_teams');
             document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
             document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
             window.location.href = '/';
@@ -2082,113 +2085,69 @@
         }
 
         // ===== MATTER FILE MANAGEMENT =====
-        function getMatterFileStore(matterId) {
-            const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
-            const matterKey = String(matterId);
+        async function uploadFileToSharePoint(file, matterId) {
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+            const matterTitle = matter ? (matter.Title || matter.Matter_x0020_ID || String(matterId)) : String(matterId);
 
-            // Try to find the matter to get alternate keys
-            const matter = portalData.matters.find(m => String(m.id) === matterKey);
-            const matterIdKey = matter ? (matter.Matter_x0020_ID || '') : '';
-            const titleKey = matter ? (matter.Title || '') : '';
-
-            // Check all possible keys - numeric id, Matter_x0020_ID, and Title
-            let data = store[matterKey] || store[matterIdKey] || store[titleKey];
-            if (!data) {
-                data = { folders: [], files: [] };
-                store[matterKey] = data;
-            } else {
-                // Normalize: if data is an array (client portal format), convert to staff format
-                if (Array.isArray(data)) {
-                    data = {
-                        folders: [],
-                        files: data.map(f => ({
-                            name: f.name,
-                            size: f.size || 0,
-                            dataUrl: f.dataUrl,
-                            uploadedAt: f.uploadedAt,
-                            type: f.type || '',
-                            folder: f.folder || null,
-                            uploaded: f.uploadedAt || new Date().toISOString()
-                        }))
-                    };
-                    store[matterKey] = data;
-                }
+            // Validate file type
+            const allowedTypes = ['pdf','docx','xlsx','png','jpg','jpeg','txt','csv','msg'];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!allowedTypes.includes(ext)) {
+                showToast('File type not allowed. Accepted: ' + allowedTypes.join(', '), 'error');
+                return false;
             }
-            return data;
+
+            // Read file as base64
+            const fileData = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const resp = await fetch('/api/upload-document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileData: fileData,
+                    matterId: String(matterId),
+                    matterTitle: matterTitle
+                }),
+                credentials: 'include'
+            });
+
+            if (resp.ok) {
+                return true;
+            } else {
+                const err = await resp.json();
+                throw new Error(err.error || 'Upload failed');
+            }
+        }
+
+        function getMatterFileStore(matterId) {
+            return { folders: [], files: [] };
         }
 
         function saveMatterFileStore(matterId, data) {
-            const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
-            const matterKey = String(matterId);
-
-            // Try to find the matter to get alternate keys
-            const matter = portalData.matters.find(m => String(m.id) === matterKey);
-            const matterIdKey = matter ? (matter.Matter_x0020_ID || '') : '';
-            const titleKey = matter ? (matter.Title || '') : '';
-
-            // Save under all keys so both client and staff portals can access
-            store[matterKey] = data;
-            if (matterIdKey) store[matterIdKey] = data;
-            if (titleKey) store[titleKey] = data;
-
-            localStorage.setItem('cq_matter_files', JSON.stringify(store));
+            // No-op: documents now stored in SharePoint
         }
 
         function renderMatterFiles(matterId, spDocs) {
-            const store = getMatterFileStore(matterId);
-            const folders = store.folders || [];
-            const files = store.files || [];
-            const hasContent = folders.length > 0 || files.length > 0 || (spDocs && spDocs.length > 0);
+            const hasContent = spDocs && spDocs.length > 0;
 
             if (!hasContent) {
-                return '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents or folders yet. Create a folder or upload a file to get started.</div>';
+                return '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents yet. Upload files to get started.</div>';
             }
 
             let html = '<div style="display: flex; flex-direction: column; gap: 2px;">';
 
-            // Render folders
-            folders.forEach((folder, idx) => {
-                const folderFiles = files.filter(f => f.folder === folder.name);
-                html += `
-                <div style="border: 1px solid var(--silver); border-radius: var(--radius-sm); margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: var(--off-white); cursor: pointer;" onclick="toggleMatterFolder(this)">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">📁</span>
-                            <strong style="font-size: 14px;">${escapeHtml(folder.name)}</strong>
-                            <span style="color: #888; font-size: 12px;">(${folderFiles.length} files)</span>
-                        </div>
-                        <div style="display: flex; gap: 6px; align-items: center;" onclick="return false;">
-                            <button class="btn btn-sm btn-gold" onclick="uploadMatterFileToFolder(${matterId}, '${escapeHtml(folder.name)}'); return false;" style="padding: 3px 8px; font-size: 11px;">Upload</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteMatterFolder(${matterId}, ${idx}); return false;" style="padding: 3px 8px; font-size: 11px;">Delete</button>
-                        </div>
-                    </div>
-                    <div style="display: none; padding: 8px 15px;">`;
-                if (folderFiles.length === 0) {
-                    html += '<div style="color: #888; font-size: 12px; padding: 10px 0;">Empty folder</div>';
-                } else {
-                    folderFiles.forEach((file, fileIdx) => {
-                        const globalIdx = files.indexOf(file);
-                        html += renderFileRow(file, matterId, globalIdx);
-                    });
-                }
-                html += '</div></div>';
-            });
-
-            // Render root-level files (no folder)
-            const rootFiles = files.filter(f => !f.folder);
-            rootFiles.forEach((file, idx) => {
-                const globalIdx = files.indexOf(file);
-                html += renderFileRow(file, matterId, globalIdx);
-            });
-
-            // Render SharePoint documents
+            // Render SharePoint documents only
             if (spDocs && spDocs.length > 0) {
-                html += '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--silver);">';
-                html += '<div style="color: #888; font-size: 11px; margin-bottom: 6px;">From SharePoint:</div>';
                 spDocs.forEach(doc => {
                     const ext = (doc.Name || '').split('.').pop().toLowerCase();
-                    const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : '📄';
-                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewSharePointDoc('${doc.webUrl || '#'}', '${escapeHtml(doc.Name || 'Unnamed')}')">
+                    const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
+                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewSharePointDoc('${escapeHtml(doc.webUrl || '#')}', '${escapeHtml(doc.Name || 'Unnamed')}')">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span>${icon}</span>
                             <span style="font-size: 13px;">${escapeHtml(doc.Name || 'Unnamed')}</span>
@@ -2197,7 +2156,6 @@
                         <span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>
                     </div>`;
                 });
-                html += '</div>';
             }
 
             html += '</div>';
@@ -2227,28 +2185,11 @@
         }
 
         function createMatterFolder(matterId) {
-            showPromptModal('New Folder', 'Enter folder name:', function(folderName) {
-                const store = getMatterFileStore(matterId);
-                if (store.folders.some(f => f.name === folderName)) {
-                    showToast('A folder with this name already exists', 'warning');
-                    return;
-                }
-                store.folders.push({ name: folderName, created: new Date().toISOString() });
-                saveMatterFileStore(matterId, store);
-                showToast('Folder "' + folderName + '" created', 'success');
-                viewMatterDetail(matterId);
-            });
+            showToast('Folders are no longer supported. Upload files directly to SharePoint.', 'info');
         }
 
         function deleteMatterFolder(matterId, folderIdx) {
-            showConfirmDelete('Delete this folder and all its files?', () => {
-                const store = getMatterFileStore(matterId);
-                const folderName = store.folders[folderIdx].name;
-                store.files = store.files.filter(f => f.folder !== folderName);
-                store.folders.splice(folderIdx, 1);
-                saveMatterFileStore(matterId, store);
-                viewMatterDetail(matterId);
-            });
+            showToast('Folders are no longer supported. Delete files from SharePoint directly.', 'info');
         }
 
         function uploadMatterFile(matterId) {
@@ -2259,96 +2200,40 @@
             const input = document.createElement('input');
             input.type = 'file';
             input.multiple = true;
-            input.onchange = (e) => {
+            input.onchange = async (e) => {
                 const files = Array.from(e.target.files);
-                const store = getMatterFileStore(matterId);
                 let processed = 0;
                 files.forEach(file => {
                     if (file.size > 5 * 1024 * 1024) {
                         showToast('File too large. Maximum 5MB allowed.', 'warning');
                         return;
                     }
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        store.files.push({
-                            name: file.name,
-                            size: (file.size / 1024).toFixed(1) + ' KB',
-                            type: file.type,
-                            folder: folderName,
-                            uploaded: new Date().toISOString(),
-                            dataUrl: ev.target.result
-                        });
+                    uploadFileToSharePoint(file, matterId).then(success => {
                         processed++;
+                        if (success) {
+                            showToast('File "' + file.name + '" uploaded to SharePoint', 'success');
+                        }
                         if (processed === files.length) {
-                            saveMatterFileStore(matterId, store);
                             viewMatterDetail(matterId);
                         }
-                    };
-                    reader.readAsDataURL(file);
+                    }).catch(err => {
+                        showToast('Upload failed: ' + err.message, 'error');
+                        processed++;
+                        if (processed === files.length) {
+                            viewMatterDetail(matterId);
+                        }
+                    });
                 });
             };
             input.click();
         }
 
         function deleteMatterFile(matterId, fileIdx) {
-            showConfirmDelete('Delete this file?', () => {
-                const store = getMatterFileStore(matterId);
-                store.files.splice(fileIdx, 1);
-                saveMatterFileStore(matterId, store);
-                viewMatterDetail(matterId);
-            });
+            showToast('File deletion must be done from SharePoint directly.', 'info');
         }
 
         function previewMatterFile(matterId, fileIdx) {
-            const store = getMatterFileStore(matterId);
-            const file = store.files[fileIdx];
-            if (!file) { showToast('File not found', 'error'); return; }
-
-            const ext = (file.name || '').split('.').pop().toLowerCase();
-            const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
-            const modal = document.getElementById('docViewerModal');
-            const content = document.getElementById('docViewerContent');
-            const downloadBtn = document.getElementById('docViewerDownload');
-
-            document.getElementById('docViewerIcon').textContent = icon;
-            document.getElementById('docViewerTitle').textContent = file.name;
-            document.getElementById('docViewerMeta').textContent = file.size || '';
-
-            if (file.dataUrl) {
-                downloadBtn.href = file.dataUrl;
-                downloadBtn.download = file.name;
-                downloadBtn.style.display = 'inline-block';
-            } else {
-                downloadBtn.style.display = 'none';
-            }
-
-            // Render content based on file type
-            if (['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) && file.dataUrl) {
-                content.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 300px; background: #f8f8f8;"><img src="' + file.dataUrl + '" alt="' + escapeHtml(file.name) + '" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);"></div>';
-            } else if (ext === 'pdf' && file.dataUrl) {
-                content.innerHTML = '<iframe src="' + file.dataUrl + '" style="width: 100%; height: 70vh; border: none;"></iframe>';
-            } else if (['txt','csv','json','xml','html','css','js','md','log','py','sql','yml','yaml','env','sh','bat'].includes(ext) && file.dataUrl) {
-                // Decode Base64 text content
-                try {
-                    const base64Data = file.dataUrl.split(',')[1] || '';
-                    const decoded = atob(base64Data);
-                    const escaped = decoded.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    const lineCount = decoded.split('\n').length;
-                    const lines = escaped.split('\n').map((line, i) => '<span style="color: #999; display: inline-block; width: 40px; text-align: right; padding-right: 12px; user-select: none; border-right: 1px solid #e0e0e0; margin-right: 12px;">' + (i + 1) + '</span>' + line).join('\n');
-                    content.innerHTML = '<div style="padding: 4px 0;"><div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: #e8e8e8; border-bottom: 1px solid #ddd;"><span style="font-size: 12px; color: #666;">' + ext.toUpperCase() + ' &middot; ' + lineCount + ' lines</span></div><pre style="margin: 0; padding: 16px; font-family: \'SF Mono\', \'Fira Code\', \'Consolas\', monospace; font-size: 13px; line-height: 1.6; overflow-x: auto; background: #fafafa; white-space: pre-wrap; word-wrap: break-word;">' + lines + '</pre></div>';
-                } catch (e) {
-                    content.innerHTML = '<div style="padding: 40px; text-align: center; color: #888;"><div style="font-size: 36px; margin-bottom: 12px;">📄</div><p style="font-size: 14px;">Unable to decode file content</p><p style="font-size: 12px; margin-top: 8px;">Try downloading the file to view it</p></div>';
-                }
-            } else if (['docx','doc','xlsx','xls','pptx','ppt'].includes(ext)) {
-                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(file.name) + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">Microsoft Office files cannot be previewed in the browser.<br>Download the file to open it in the appropriate application.</p><a href="' + (file.dataUrl || '#') + '" download="' + escapeHtml(file.name) + '" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Download to Open</a></div>';
-            } else if (file.dataUrl) {
-                // Unknown type — offer download
-                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #555;"><div style="font-size: 48px; margin-bottom: 16px;">' + icon + '</div><h4 style="font-size: 16px; margin-bottom: 8px;">' + escapeHtml(file.name) + '</h4><p style="font-size: 13px; color: #888; margin-bottom: 20px;">Preview is not available for this file type.</p><a href="' + file.dataUrl + '" download="' + escapeHtml(file.name) + '" class="btn btn-gold" style="text-decoration: none; padding: 10px 24px;">Download File</a></div>';
-            } else {
-                content.innerHTML = '<div style="padding: 60px 40px; text-align: center; color: #888;"><div style="font-size: 48px; margin-bottom: 16px;">📄</div><p style="font-size: 14px;">No file data available for preview</p></div>';
-            }
-
-            modal.classList.add('active');
+            showToast('Files are now stored in SharePoint. View them from the documents section.', 'info');
         }
 
         function previewSharePointDoc(url, name) {
@@ -2437,49 +2322,21 @@
 
         function renderDocuments() {
             const container = document.getElementById('documentsOverview');
-            const allFileStore = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
 
             let html = '';
             portalData.matters.forEach(matter => {
-                const matterKey = String(matter.id);
-                const matterIdKey = matter.Matter_x0020_ID || '';
-                const matterTitleKey = matter.Title || '';
-
-                // Check all possible keys - numeric id, Matter_x0020_ID, and Title
-                let store = allFileStore[matterKey] || allFileStore[matterIdKey] || allFileStore[matterTitleKey];
-                if (!store) store = { folders: [], files: [] };
-
-                // Normalize: if store is an array (client portal format), convert
-                if (Array.isArray(store)) {
-                    store = {
-                        folders: [],
-                        files: store.map(f => ({
-                            name: f.name,
-                            size: f.size || 0,
-                            dataUrl: f.dataUrl,
-                            uploadedAt: f.uploadedAt,
-                            type: f.type || '',
-                            folder: f.folder || null,
-                            uploaded: f.uploadedAt || new Date().toISOString()
-                        }))
-                    };
-                }
-
-                const folderCount = store.folders.length;
-                const fileCount = store.files.length;
-
                 // Count SharePoint docs for this matter
                 const spDocs = portalData.documents.filter(d =>
                     (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase())
                 );
-                const totalFiles = fileCount + spDocs.length;
+                const totalFiles = spDocs.length;
 
                 html += `
                 <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="switchTab('matters'); setTimeout(() => viewMatterDetail(${matter.id}), 100);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="font-weight: 600; font-size: 14px;">📂 ${escapeHtml(matter.Matter_x0020_ID || '')} — ${escapeHtml(matter.Title || 'Untitled')}</div>
-                            <div style="color: #888; font-size: 12px; margin-top: 4px;">${folderCount} folder${folderCount !== 1 ? 's' : ''}, ${totalFiles} file${totalFiles !== 1 ? 's' : ''}</div>
+                            <div style="color: #888; font-size: 12px; margin-top: 4px;">${totalFiles} file${totalFiles !== 1 ? 's' : ''}</div>
                         </div>
                         <div style="color: var(--gold); font-size: 13px; font-weight: 600;">View Files &rarr;</div>
                     </div>
@@ -2561,8 +2418,9 @@
                 const senderLabel = senderEmail ? '<span style="font-size:11px;padding:1px 6px;border-radius:3px;background:rgba(184,134,11,0.15);color:var(--gold-dark);margin-right:6px;">CLIENT</span>' : '';
                 return `
                 <div class="card" style="cursor: pointer; transition: background 0.15s; ${borderStyle} ${bgStyle}"
+                     data-bg="${isUnread ? 'rgba(184,134,11,0.08)' : ''}"
                      onmouseenter="this.style.background='#f8f6f0'"
-                     onmouseleave="this.style.background='${isUnread ? 'rgba(184,134,11,0.08)' : ''}'"
+                     onmouseleave="this.style.background=this.dataset.bg||''"
                      onclick="viewMessageDetail(${idx})">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
