@@ -188,6 +188,9 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
       autoAdmittedUsers: 'organizationAndFederated',
     };
 
+    console.log(`Creating Teams meeting for organizer: "${organizer}", URL: /users/${encodeURIComponent(organizer)}/onlineMeetings`);
+    console.log(`Meeting body:`, JSON.stringify(meetingBody));
+
     const result = await graphApi(
       `/users/${encodeURIComponent(organizer)}/onlineMeetings`,
       token,
@@ -195,6 +198,7 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
       meetingBody
     );
 
+    console.log(`Teams meeting created successfully. joinWebUrl: ${result.joinWebUrl}`);
     return result.joinWebUrl || null;
   } catch (error) {
     // Gracefully skip Teams meeting creation if permissions are missing
