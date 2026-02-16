@@ -646,10 +646,10 @@ async function handleSetup(req, res, session) {
 
     // Create missing columns
     const columnsNeeded = [
-      { name: 'TeamsLink', displayName: 'Teams Link', text: { maxLength: 500 } },
-      { name: 'Category', displayName: 'Category', text: { maxLength: 255 } },
-      { name: 'Description', displayName: 'Description', text: { allowMultipleLines: true, maxLength: 5000 } },
-      { name: 'Matter ID', displayName: 'Matter ID', text: { maxLength: 100 } },
+      { name: 'TeamsLink', displayName: 'Teams Link', text: {} },
+      { name: 'Category', displayName: 'Category', text: {} },
+      { name: 'Description', displayName: 'Description', text: { allowMultipleLines: true } },
+      { name: 'MatterID', displayName: 'Matter ID', text: {} },
     ];
 
     for (const col of columnsNeeded) {
