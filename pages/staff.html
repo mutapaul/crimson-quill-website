@@ -71,7 +71,7 @@
         }
 
         .sidebar-logo {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-size: 1.2rem;
             font-weight: 400;
             color: var(--primary);
@@ -82,7 +82,7 @@
 
         .sidebar-logo-amp {
             color: var(--gold);
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
@@ -197,7 +197,7 @@
         }
 
         .header-logo {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-size: 1.2rem;
             font-weight: 400;
             color: var(--primary);
@@ -209,7 +209,7 @@
 
         .header-logo-amp {
             color: var(--gold);
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-weight: 400;
             font-style: italic;
             margin: 0 0.1em;
@@ -1072,7 +1072,7 @@
                 <div class="header-right">
                     <div class="user-info">
                         <div class="user-email" id="userEmail">user@crimson-quill.com</div>
-                        <div class="user-role">Administrator</div>
+                        <div class="user-role" id="userRole">Loading...</div>
                     </div>
                     <button class="btn btn-gold btn-sm" id="logoutBtn">Logout</button>
                 </div>
@@ -1116,8 +1116,8 @@
                             <div class="card-title">Quick Actions</div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-                            <button class="btn btn-gold" onclick="openNewMatterModal()">+ New Matter</button>
-                            <button class="btn btn-gold" onclick="openNewClientModal()">+ New Client</button>
+                            <button class="btn btn-gold" id="newMatterBtnDash" onclick="requirePermission('matters', 'create', openNewMatterModal)">+ New Matter</button>
+                            <button class="btn btn-gold" id="newClientBtnDash" onclick="requirePermission('clients', 'create', openNewClientModal)">+ New Client</button>
                             <button class="btn btn-secondary" onclick="switchTab('messages')">View Messages</button>
                             <button class="btn btn-secondary" onclick="switchTab('reports')">View Reports</button>
                         </div>
@@ -1138,7 +1138,7 @@
                         <button class="filter-btn" data-filter="on-hold">On Hold</button>
                         <button class="filter-btn" data-filter="closed">Closed</button>
                         <div style="flex: 1;"></div>
-                        <button class="btn btn-gold" onclick="openNewMatterModal()">+ New Matter</button>
+                        <button class="btn btn-gold" id="newMatterBtn" onclick="requirePermission('matters', 'create', openNewMatterModal)">+ New Matter</button>
                     </div>
 
                     <!-- Matters List View -->
@@ -1179,7 +1179,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <button class="btn btn-gold" onclick="openNewClientModal()">+ New Client</button>
+                        <button class="btn btn-gold" id="newClientBtn" onclick="requirePermission('clients', 'create', openNewClientModal)">+ New Client</button>
                     </div>
 
                     <div id="clientsContainer">
@@ -1198,7 +1198,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <button class="btn btn-gold" onclick="openNewStaffModal()">+ Add Staff Member</button>
+                        <button class="btn btn-gold" id="newStaffBtn" onclick="requirePermission('staff', 'create', openNewStaffModal)">+ Add Staff Member</button>
                     </div>
 
                     <div class="card">
@@ -1240,7 +1240,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <button class="btn btn-gold" onclick="openNewEventModal()">+ New Event</button>
+                        <button class="btn btn-gold" id="newEventBtn" onclick="requirePermission('calendar', 'create', openNewEventModal)">+ New Event</button>
                     </div>
 
                     <div id="calendarContainer">
@@ -1259,7 +1259,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <button class="btn btn-gold" onclick="openNewMessageModal()">+ New Message</button>
+                        <button class="btn btn-gold" id="newMessageBtn" onclick="requirePermission('messages', 'create', openNewMessageModal)">+ New Message</button>
                     </div>
 
                     <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
@@ -1291,7 +1291,7 @@
                     </div>
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                        <button class="btn btn-gold" onclick="openNewInvoiceModal()">+ New Invoice</button>
+                        <button class="btn btn-gold" id="newInvoiceBtn" onclick="requirePermission('billing', 'create', openNewInvoiceModal)">+ New Invoice</button>
                     </div>
 
                     <div class="card">
@@ -1381,6 +1381,24 @@
                         <div class="card-title" style="margin-bottom: 20px;">Connected SharePoint Lists</div>
                         <div id="sharePointLists">
                             <div style="text-align: center; color: #888; padding: 20px;">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom: 20px;">Access & Permissions</div>
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div>
+                                <div style="color: #888; font-size: 13px; margin-bottom: 8px;">Your Current Role</div>
+                                <div style="font-weight: 600; font-size: 16px; color: var(--gold);" id="currentRoleDisplay">Loading...</div>
+                            </div>
+                            <div>
+                                <div style="color: #888; font-size: 13px; margin-bottom: 8px;">Your Permissions</div>
+                                <div id="permissionsDisplay" style="font-size: 13px; line-height: 1.6;"></div>
+                            </div>
+                            <div>
+                                <div style="color: #888; font-size: 13px; margin-bottom: 12px; border-top: 1px solid var(--silver); padding-top: 16px;">Role Hierarchy & Permissions</div>
+                                <div id="rolesMatrix" style="font-size: 12px; overflow-x: auto;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1963,6 +1981,88 @@
             setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
+        // ===== RBAC PERMISSIONS =====
+        const ROLES = {
+            'Administrator': { level: 100, label: 'Administrator' },
+            'Managing Partner': { level: 90, label: 'Managing Partner' },
+            'Partner': { level: 80, label: 'Partner' },
+            'Senior Associate': { level: 70, label: 'Senior Associate' },
+            'Associate': { level: 60, label: 'Associate' },
+            'Paralegal': { level: 40, label: 'Paralegal' },
+            'Legal Secretary': { level: 30, label: 'Legal Secretary' },
+            'Intern': { level: 20, label: 'Intern' },
+            'Read-Only': { level: 10, label: 'Read-Only' },
+            'Office Manager': { level: 35, label: 'Office Manager' },
+            'Legal Assistant': { level: 25, label: 'Legal Assistant' }
+        };
+
+        const PERMISSIONS = {
+            // Resource: { action: minimum_level }
+            matters: { view: 10, create: 60, edit: 60, delete: 80 },
+            clients: { view: 10, create: 60, edit: 60, delete: 90 },
+            messages: { view: 10, create: 20, edit: 60, delete: 80 },
+            documents: { view: 10, upload: 20, delete: 70, categorize: 40 },
+            calendar: { view: 10, create: 40, edit: 40, delete: 70 },
+            billing: { view: 40, create: 70, edit: 70, delete: 90, sendInvoice: 70 },
+            staff: { view: 60, create: 90, edit: 90, delete: 100 },
+            reports: { view: 40 },
+            settings: { view: 80, edit: 100 }
+        };
+
+        function getCurrentUserRole() {
+            const userEmail = decodeURIComponent(document.cookie.split('cq_user=')[1]?.split(';')[0] || '');
+            const staffList = JSON.parse(localStorage.getItem('cq_staff') || '[]');
+            const currentUser = staffList.find(s => s.email === userEmail);
+            return currentUser?.role || 'Read-Only';
+        }
+
+        function getUserPermissionLevel() {
+            const role = getCurrentUserRole();
+            return ROLES[role]?.level || 10;
+        }
+
+        function hasPermission(resource, action) {
+            const level = getUserPermissionLevel();
+            const required = PERMISSIONS[resource]?.[action];
+            if (required === undefined) return false;
+            return level >= required;
+        }
+
+        function requirePermission(resource, action, callback) {
+            if (hasPermission(resource, action)) {
+                if (callback) callback();
+                return true;
+            } else {
+                showToast(`You don't have permission to ${action} ${resource}. Required role: ${getMinRoleForPermission(resource, action)}`, 'error');
+                return false;
+            }
+        }
+
+        function getMinRoleForPermission(resource, action) {
+            const minLevel = PERMISSIONS[resource]?.[action] || 100;
+            const entries = Object.entries(ROLES).sort((a, b) => a[1].level - b[1].level);
+            for (const [name, info] of entries) {
+                if (info.level >= minLevel) return name;
+            }
+            return 'Administrator';
+        }
+
+        function applyRoleBasedNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                const section = item.textContent.trim().toLowerCase();
+                let resource = null;
+                if (section.includes('staff')) resource = 'staff';
+                else if (section.includes('billing')) resource = 'billing';
+                else if (section.includes('report')) resource = 'reports';
+                else if (section.includes('setting')) resource = 'settings';
+
+                if (resource && !hasPermission(resource, 'view')) {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
         // ===== AUTHENTICATION =====
         function checkAuth() {
             const userCookie = getCookie('cq_user');
@@ -1971,6 +2071,8 @@
                 return false;
             }
             document.getElementById('userEmail').textContent = userCookie;
+            const role = getCurrentUserRole();
+            document.getElementById('userRole').textContent = role;
             return true;
         }
 
@@ -2059,6 +2161,7 @@
                 renderMessages();
                 renderStaff();
                 renderInvoices();
+                applyRoleBasedNavigation();
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -2516,7 +2619,7 @@
         }
 
         // ===== MATTER FILE MANAGEMENT =====
-        async function uploadFileToSharePoint(file, matterId) {
+        async function uploadFileToSharePoint(file, matterId, category) {
             const matter = portalData.matters.find(m => String(m.id) === String(matterId));
             const matterTitle = matter ? (matter.Title || matter.Matter_x0020_ID || String(matterId)) : String(matterId);
 
@@ -2543,7 +2646,8 @@
                     fileName: file.name,
                     fileData: fileData,
                     matterId: String(matterId),
-                    matterTitle: matterTitle
+                    matterTitle: matterTitle,
+                    category: category || 'Other'
                 }),
                 credentials: 'include'
             });
@@ -2571,20 +2675,31 @@
                 return '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents yet. Upload files to get started.</div>';
             }
 
-            let html = '<div style="display: flex; flex-direction: column; gap: 2px;">';
+            let html = '<div style="display: flex; flex-direction: column; gap: 0;">';
 
             // Render SharePoint documents only
             if (spDocs && spDocs.length > 0) {
-                spDocs.forEach(doc => {
+                spDocs.forEach((doc, idx) => {
                     const ext = (doc.Name || '').split('.').pop().toLowerCase();
                     const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
-                    html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewSharePointDoc('${escapeHtml(doc.webUrl || '#')}', '${escapeHtml(doc.Name || 'Unnamed')}')">
-                        <div style="display: flex; align-items: center; gap: 8px;">
+                    const category = doc.category || 'Other';
+                    const categoryColor = getCategoryColor(category);
+                    const modifiedTime = doc.lastModifiedDateTime ? timeAgo(doc.lastModifiedDateTime) : 'Unknown';
+                    html += `<div class="doc-row" data-doc-id="${doc.id}" data-category="${category}" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="previewSharePointDoc('${escapeHtml(doc.webUrl || '#')}', '${escapeHtml(doc.Name || 'Unnamed')}')">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                            <input type="checkbox" class="doc-checkbox" data-download-url="${doc.webUrl}" onclick="event.stopPropagation(); toggleDocSelect('${doc.id}'); updateBulkDownloadButton();" style="cursor: pointer;">
                             <span>${icon}</span>
-                            <span style="font-size: 13px;">${escapeHtml(doc.Name || 'Unnamed')}</span>
-                            <span style="color: #888; font-size: 11px;">${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : ''}</span>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(doc.Name || 'Unnamed')}</div>
+                                <div style="color: #888; font-size: 11px; margin-top: 2px;">Modified ${modifiedTime}</div>
+                            </div>
+                            <span style="background: ${categoryColor}; color: white; padding: 2px 8px; border-radius: 3px; font-size: 10px; white-space: nowrap; margin-left: 8px;">${escapeHtml(category)}</span>
+                            <span style="color: #888; font-size: 11px; white-space: nowrap;">${doc.Size ? (doc.Size / 1024 / 1024).toFixed(2) + ' MB' : ''}</span>
                         </div>
-                        <span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>
+                        <div style="display: flex; gap: 6px; align-items: center; margin-left: 12px;" onclick="event.stopPropagation();">
+                            <button class="btn btn-sm" style="background:#0066cc;color:white;border:none;padding:4px 10px;font-size:11px;border-radius:3px;cursor:pointer;" onclick="downloadSharePointDoc('${escapeHtml(doc.webUrl || '#')}', '${escapeHtml(doc.Name || 'Document')}')" title="Download document">⬇</button>
+                            <button class="btn btn-sm" style="background:#dc3545;color:white;border:none;padding:4px 10px;font-size:11px;border-radius:3px;cursor:pointer;" onclick="deleteDocument('${doc.id}', '${escapeHtml(doc.Name || 'Document')}')" title="Delete document">✕</button>
+                        </div>
                     </div>`;
                 });
             }
@@ -2633,28 +2748,72 @@
             input.multiple = true;
             input.onchange = async (e) => {
                 const files = Array.from(e.target.files);
-                let processed = 0;
-                files.forEach(file => {
-                    if (file.size > 5 * 1024 * 1024) {
-                        showToast('File too large. Maximum 5MB allowed.', 'warning');
-                        return;
-                    }
-                    uploadFileToSharePoint(file, matterId).then(success => {
-                        processed++;
-                        if (success) {
-                            showToast('File "' + file.name + '" uploaded to SharePoint', 'success');
+                
+                // Show category selection dialog
+                const categoryDialog = document.createElement('div');
+                categoryDialog.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:30px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.3);z-index:10000;min-width:400px;';
+                categoryDialog.innerHTML = `
+                    <h3 style="margin:0 0 20px 0;font-size:18px;font-weight:600;">Select Document Category</h3>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;font-weight:600;margin-bottom:8px;">Category</label>
+                        <select id="uploadCategory" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                            <option value="Other">Other</option>
+                            <option value="Engagement Letter">Engagement Letter</option>
+                            <option value="Court Filing">Court Filing</option>
+                            <option value="Correspondence">Correspondence</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Evidence">Evidence</option>
+                            <option value="Legal Opinion">Legal Opinion</option>
+                            <option value="Invoice">Invoice</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button id="cancelCategoryBtn" style="padding:10px 20px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;">Cancel</button>
+                        <button id="confirmCategoryBtn" style="padding:10px 20px;border:none;background:#B8860B;color:white;border-radius:4px;cursor:pointer;font-weight:600;">Upload</button>
+                    </div>
+                `;
+                
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;';
+                
+                document.body.appendChild(overlay);
+                document.body.appendChild(categoryDialog);
+                
+                const category = document.getElementById('uploadCategory').value;
+                
+                document.getElementById('confirmCategoryBtn').onclick = async () => {
+                    const selectedCategory = document.getElementById('uploadCategory').value;
+                    overlay.remove();
+                    categoryDialog.remove();
+                    
+                    let processed = 0;
+                    files.forEach(file => {
+                        if (file.size > 5 * 1024 * 1024) {
+                            showToast('File too large. Maximum 5MB allowed.', 'warning');
+                            return;
                         }
-                        if (processed === files.length) {
-                            viewMatterDetail(matterId);
-                        }
-                    }).catch(err => {
-                        showToast('Upload failed: ' + err.message, 'error');
-                        processed++;
-                        if (processed === files.length) {
-                            viewMatterDetail(matterId);
-                        }
+                        uploadFileToSharePoint(file, matterId, selectedCategory).then(success => {
+                            processed++;
+                            if (success) {
+                                showToast('File "' + file.name + '" uploaded to SharePoint', 'success');
+                            }
+                            if (processed === files.length) {
+                                viewMatterDetail(matterId);
+                            }
+                        }).catch(err => {
+                            showToast('Upload failed: ' + err.message, 'error');
+                            processed++;
+                            if (processed === files.length) {
+                                viewMatterDetail(matterId);
+                            }
+                        });
                     });
-                });
+                };
+                
+                document.getElementById('cancelCategoryBtn').onclick = () => {
+                    overlay.remove();
+                    categoryDialog.remove();
+                };
             };
             input.click();
         }
@@ -2755,6 +2914,27 @@
             const container = document.getElementById('documentsOverview');
 
             let html = '';
+            
+            // Add search and filter controls
+            html += `<div style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
+                <input type="text" id="docSearchInput" placeholder="Search documents by name..." 
+                    style="flex:1;padding:10px 14px;border:1px solid var(--silver);border-radius:var(--radius-sm);font-size:14px;"
+                    oninput="filterDocumentsOverview()">
+                <select id="docCategoryFilter" style="padding:10px;border:1px solid var(--silver);border-radius:var(--radius-sm);"
+                    onchange="filterDocumentsOverview()">
+                    <option value="">All Categories</option>
+                    <option value="Engagement Letter">Engagement Letter</option>
+                    <option value="Court Filing">Court Filing</option>
+                    <option value="Correspondence">Correspondence</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Evidence">Evidence</option>
+                    <option value="Legal Opinion">Legal Opinion</option>
+                    <option value="Invoice">Invoice</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div id="mattersList">`;
+
             portalData.matters.forEach(matter => {
                 // Count SharePoint docs for this matter
                 const spDocs = portalData.documents.filter(d =>
@@ -2763,6 +2943,7 @@
                 const totalFiles = spDocs.length;
 
                 html += `
+                <div class="matter-item" data-matter-id="${matter.id}" style="display:initial;">
                 <div class="card" style="margin-bottom: 12px; cursor: pointer;" onclick="switchTab('matters'); setTimeout(() => viewMatterDetail(${matter.id}), 100);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
@@ -2771,14 +2952,49 @@
                         </div>
                         <div style="color: var(--gold); font-size: 13px; font-weight: 600;">View Files &rarr;</div>
                     </div>
+                </div>
                 </div>`;
             });
+            
+            html += '</div>';
 
-            if (!html) {
+            if (html.indexOf('<div class="card"') === -1) {
                 html = '<div style="text-align: center; padding: 40px; color: #888;">No matters found. Create a matter first to start managing documents.</div>';
             }
 
             container.innerHTML = html;
+        }
+
+        function filterDocumentsOverview() {
+            const searchInput = document.getElementById('docSearchInput');
+            const categoryFilter = document.getElementById('docCategoryFilter');
+            const mattersList = document.getElementById('mattersList');
+
+            if (!searchInput || !mattersList) return;
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+
+            const matters = mattersList.querySelectorAll('.matter-item');
+            matters.forEach(matterItem => {
+                const matterId = matterItem.getAttribute('data-matter-id');
+                const matter = portalData.matters.find(m => String(m.id) === matterId);
+                
+                if (!matter) return;
+                
+                const matterText = (matter.Matter_x0020_ID || '' + ' ' + matter.Title || '').toLowerCase();
+                const spDocs = portalData.documents.filter(d =>
+                    (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase())
+                );
+
+                const matchesSearch = !searchTerm || matterText.includes(searchTerm) || 
+                    spDocs.some(d => (d.Name || '').toLowerCase().includes(searchTerm));
+                
+                const matchesCategory = !selectedCategory || 
+                    spDocs.some(d => (d.category || 'Other') === selectedCategory);
+
+                matterItem.style.display = (matchesSearch && matchesCategory) ? 'initial' : 'none';
+            });
         }
 
         function renderCalendar() {
@@ -2987,7 +3203,7 @@
             const tbody = document.getElementById('invoicesTableBody');
 
             if (portalData.invoices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #888;">No invoices found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #888;">No invoices found</td></tr>';
                 return;
             }
 
@@ -2999,7 +3215,35 @@
                 const invTotal = invoice.totalAmount || invoice.Total_x0020_Amount || 0;
                 const invStatus = invoice.status || invoice.Status || 'Draft';
                 const invId = invoice.id;
-                const statusClass = invStatus === 'Paid' ? 'badge-active' : invStatus === 'Sent' ? 'badge-pending' : invStatus === 'Overdue' ? 'badge-high' : 'badge-medium';
+
+                // Determine status badge with payment info
+                let statusClass = 'badge-medium';
+                let statusDisplay = invStatus;
+                const paidAmount = invoice.amountPaid || 0;
+                const unpaidAmount = invTotal - paidAmount;
+
+                if (invStatus === 'Paid' || paidAmount >= invTotal) {
+                    statusClass = 'badge-active';
+                    statusDisplay = 'Paid';
+                } else if (paidAmount > 0) {
+                    statusClass = 'badge-medium';
+                    statusDisplay = 'Partial';
+                } else if (invStatus === 'Overdue') {
+                    statusClass = 'badge-high';
+                    statusDisplay = 'Overdue';
+                } else if (invStatus === 'Sent') {
+                    statusClass = 'badge-pending';
+                    statusDisplay = 'Sent';
+                }
+
+                // Check if overdue
+                if (invoice.dueDate && new Date(invoice.dueDate) < new Date() && statusDisplay !== 'Paid') {
+                    statusClass = 'badge-high';
+                    statusDisplay = 'Overdue';
+                }
+
+                const recordPaymentBtn = statusDisplay !== 'Paid' ? `<button class="btn btn-sm" style="background:#B8860B;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:12px;" onclick="openPaymentModal('${invId}')">Record Payment</button>` : '';
+
                 return `
                     <tr>
                         <td><strong>${escapeHtml(invNumber)}</strong></td>
@@ -3007,10 +3251,12 @@
                         <td>${escapeHtml(invClient)}</td>
                         <td>${formatDate(invDate)}</td>
                         <td style="text-align: right; font-weight: 600;">UGX ${parseInt(invTotal).toLocaleString()}</td>
-                        <td><span class="badge ${statusClass}">${escapeHtml(invStatus)}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editInvoice('${invId}')">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteInvoice('${invId}')">Delete</button>
+                        <td style="text-align: right; font-size: 12px; color: #666;">UGX ${parseInt(unpaidAmount).toLocaleString()}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(statusDisplay)}</span></td>
+                        <td style="white-space: nowrap;">
+                            <button class="btn btn-sm btn-secondary" onclick="editInvoice('${invId}')" title="Edit">✎</button>
+                            ${recordPaymentBtn}
+                            <button class="btn btn-sm btn-secondary" onclick="deleteInvoice('${invId}')" title="Delete">×</button>
                         </td>
                     </tr>
                 `;
@@ -3109,15 +3355,143 @@
                     </div>
                 `).join('') || '<div style="text-align: center; color: #888; padding: 20px;">No data</div>';
 
-            // Billing summary (placeholder since these fields don't exist)
-            document.getElementById('reportBilling').innerHTML = `
-                <div style="text-align: center; color: #888; padding: 20px;">Billing data not available in current fields</div>
-            `;
+            // Billing summary
+            const billingHtml = renderBillingSummary();
+            document.getElementById('reportBilling').innerHTML = billingHtml;
 
             // Team workload (placeholder since Lead Lawyer field doesn't exist)
             document.getElementById('reportWorkload').innerHTML = `
                 <div style="text-align: center; color: #888; padding: 20px;">Workload data not available in current fields</div>
             `;
+        }
+
+        function renderBillingSummary() {
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const totalBilled = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+            const totalPaid = invoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
+            const totalOutstanding = totalBilled - totalPaid;
+            const paidCount = invoices.filter(inv => inv.status === 'Paid' || (inv.amountPaid >= inv.totalAmount)).length;
+            const pendingCount = invoices.filter(inv => inv.status !== 'Paid' && (inv.amountPaid < inv.totalAmount)).length;
+            const overdueCount = invoices.filter(inv => {
+                if (inv.status === 'Paid' || inv.amountPaid >= inv.totalAmount) return false;
+                if (!inv.dueDate) return false;
+                return new Date(inv.dueDate) < new Date();
+            }).length;
+
+            return `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+                    <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e0e0e0;text-align:center;">
+                        <div style="font-size:24px;font-weight:700;color:#B8860B;">UGX ${totalBilled.toLocaleString()}</div>
+                        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Total Billed</div>
+                    </div>
+                    <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e0e0e0;text-align:center;">
+                        <div style="font-size:24px;font-weight:700;color:#28a745;">UGX ${totalPaid.toLocaleString()}</div>
+                        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Total Received</div>
+                    </div>
+                    <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e0e0e0;text-align:center;">
+                        <div style="font-size:24px;font-weight:700;color:${totalOutstanding > 0 ? '#dc3545' : '#28a745'};">UGX ${totalOutstanding.toLocaleString()}</div>
+                        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Outstanding</div>
+                    </div>
+                    <div style="background:white;padding:20px;border-radius:8px;border:1px solid #e0e0e0;text-align:center;">
+                        <div style="font-size:24px;font-weight:700;color:#dc3545;">${overdueCount}</div>
+                        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;">Overdue Invoices</div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+                    <div style="text-align:center;padding:12px;background:#f8f9fa;border-radius:6px;">
+                        <div style="font-size:20px;font-weight:600;">${invoices.length}</div>
+                        <div style="font-size:12px;color:#666;">Total Invoices</div>
+                    </div>
+                    <div style="text-align:center;padding:12px;background:#d4edda;border-radius:6px;">
+                        <div style="font-size:20px;font-weight:600;color:#155724;">${paidCount}</div>
+                        <div style="font-size:12px;color:#155724;">Paid</div>
+                    </div>
+                    <div style="text-align:center;padding:12px;background:#fff3cd;border-radius:6px;">
+                        <div style="font-size:20px;font-weight:600;color:#856404;">${pendingCount}</div>
+                        <div style="font-size:12px;color:#856404;">Pending</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openPaymentModal(invoiceId) {
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoice = invoices.find(inv => inv.id === invoiceId);
+            if (!invoice) return;
+
+            const modalHtml = `
+                <div id="paymentModal" class="modal-overlay" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+                    <div style="background:white;border-radius:8px;padding:30px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                        <h3 style="margin-bottom:20px;font-family:'Playfair Display',serif;font-size:20px;">Record Payment</h3>
+                        <p style="margin-bottom:15px;color:#666;">Invoice: <strong>${invoice.invoiceNumber || 'N/A'}</strong></p>
+                        <p style="margin-bottom:15px;color:#666;">Total: <strong>UGX ${Number(invoice.totalAmount || 0).toLocaleString()}</strong></p>
+                        <p style="margin-bottom:20px;color:#666;padding:10px;background:#f0f0f0;border-radius:4px;">Outstanding: <strong>UGX ${Number((invoice.totalAmount || 0) - (invoice.amountPaid || 0)).toLocaleString()}</strong></p>
+                        <form id="paymentForm" onsubmit="recordPayment(event, '${invoiceId}')">
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;font-weight:600;margin-bottom:5px;font-size:14px;">Amount Paid (UGX)</label>
+                                <input type="number" id="paymentAmount" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;"
+                                    value="${(invoice.totalAmount || 0) - (invoice.amountPaid || 0)}" min="1">
+                            </div>
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;font-weight:600;margin-bottom:5px;font-size:14px;">Payment Method</label>
+                                <select id="paymentMethod" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Mobile Money">Mobile Money</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom:15px;">
+                                <label style="display:block;font-weight:600;margin-bottom:5px;font-size:14px;">Payment Date</label>
+                                <input type="date" id="paymentDate" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;"
+                                    value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                            <div style="margin-bottom:20px;">
+                                <label style="display:block;font-weight:600;margin-bottom:5px;font-size:14px;">Reference/Notes</label>
+                                <input type="text" id="paymentRef" placeholder="Transaction reference..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                            </div>
+                            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                                <button type="button" onclick="document.getElementById('paymentModal').remove()" style="padding:10px 20px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;font-size:14px;transition:background 0.2s;">Cancel</button>
+                                <button type="submit" style="padding:10px 20px;background:#B8860B;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;transition:background 0.2s;">Record Payment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function recordPayment(e, invoiceId) {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const method = document.getElementById('paymentMethod').value;
+            const date = document.getElementById('paymentDate').value;
+            const ref = document.getElementById('paymentRef').value;
+
+            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoice = invoices.find(inv => inv.id === invoiceId);
+            if (!invoice) return;
+
+            // Initialize payments array
+            if (!invoice.payments) invoice.payments = [];
+            invoice.payments.push({ amount, method, date, reference: ref, recordedAt: new Date().toISOString() });
+
+            // Update paid amount
+            invoice.amountPaid = (invoice.amountPaid || 0) + amount;
+
+            // Update status
+            const total = invoice.totalAmount || 0;
+            if (invoice.amountPaid >= total) {
+                invoice.status = 'Paid';
+            } else if (invoice.amountPaid > 0) {
+                invoice.status = 'Partial';
+            }
+
+            localStorage.setItem('cq_invoices', JSON.stringify(invoices));
+            document.getElementById('paymentModal').remove();
+            showToast(`Payment of UGX ${amount.toLocaleString()} recorded successfully`, 'success');
+            renderInvoices();
         }
 
         function renderSettings() {
@@ -3138,6 +3512,68 @@
             `).join('');
 
             document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            renderAccessPermissions();
+        }
+
+        function renderAccessPermissions() {
+            // Render Access & Permissions
+            const currentRole = getCurrentUserRole();
+            document.getElementById('currentRoleDisplay').textContent = currentRole;
+
+            // Build permissions list
+            const resourcePermissions = [];
+            for (const [resource, actions] of Object.entries(PERMISSIONS)) {
+                for (const [action, required] of Object.entries(actions)) {
+                    if (hasPermission(resource, action)) {
+                        resourcePermissions.push(`${action} ${resource}`);
+                    }
+                }
+            }
+            document.getElementById('permissionsDisplay').innerHTML = resourcePermissions.length > 0
+                ? resourcePermissions.map(p => `<div style="padding: 4px 0;">✓ ${escapeHtml(p)}</div>`).join('')
+                : '<div style="color: #888;">No permissions granted</div>';
+
+            // Build role hierarchy matrix
+            const roleEntries = Object.entries(ROLES).sort((a, b) => b[1].level - a[1].level);
+            let matrixHtml = `
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid var(--silver);">
+                    <thead>
+                        <tr style="background-color: #f5f5f5;">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--silver); font-weight: 600;">Role</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--silver); font-weight: 600;">Level</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid var(--silver); font-weight: 600;">Key Permissions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            roleEntries.forEach(([roleName, roleInfo]) => {
+                const perms = [];
+                for (const [resource, actions] of Object.entries(PERMISSIONS)) {
+                    for (const [action, required] of Object.entries(actions)) {
+                        if (roleInfo.level >= required) {
+                            perms.push(`${action} ${resource}`);
+                            if (perms.length >= 3) break;
+                        }
+                    }
+                    if (perms.length >= 3) break;
+                }
+                const isCurrentRole = roleName === currentRole ? 'background-color: #fef9f3;' : '';
+                matrixHtml += `
+                    <tr style="${isCurrentRole}border-bottom: 1px solid var(--silver);">
+                        <td style="padding: 8px; border-right: 1px solid var(--silver);">${escapeHtml(roleName)}</td>
+                        <td style="padding: 8px; border-right: 1px solid var(--silver); text-align: center; color: var(--gold); font-weight: 600;">${roleInfo.level}</td>
+                        <td style="padding: 8px; font-size: 11px; color: #666;">${perms.slice(0, 3).join(', ')}...</td>
+                    </tr>
+                `;
+            });
+
+            matrixHtml += `
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('rolesMatrix').innerHTML = matrixHtml;
         }
 
         // ===== MODAL FUNCTIONS =====
@@ -3330,12 +3766,16 @@
         // ===== CRUD OPERATIONS =====
         async function saveMatter(e) {
             e.preventDefault();
+            const matterId = document.getElementById('matterIdField').value;
+            if (!hasPermission('matters', matterId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${matterId ? 'edit' : 'create'} matters. Required role: ${getMinRoleForPermission('matters', matterId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#matterModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
 
             const form = document.getElementById('matterForm');
             const formData = new FormData(form);
-            const matterId = document.getElementById('matterIdField').value;
 
             const payload = {
                 Title: formData.get('title'),
@@ -3395,12 +3835,16 @@
 
         async function saveClient(e) {
             e.preventDefault();
+            const clientId = document.getElementById('clientIdField').value;
+            if (!hasPermission('clients', clientId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${clientId ? 'edit' : 'create'} clients. Required role: ${getMinRoleForPermission('clients', clientId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#clientModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
 
             const form = document.getElementById('clientForm');
             const formData = new FormData(form);
-            const clientId = document.getElementById('clientIdField').value;
 
             const payload = {
                 Title: formData.get('name'),
@@ -3483,12 +3927,16 @@
 
         async function saveEvent(e) {
             e.preventDefault();
+            const eventId = document.getElementById('eventIdField').value;
+            if (!hasPermission('calendar', eventId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${eventId ? 'edit' : 'create'} calendar events. Required role: ${getMinRoleForPermission('calendar', eventId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#eventModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
 
             const form = document.getElementById('eventForm');
             const formData = new FormData(form);
-            const eventId = document.getElementById('eventIdField').value;
 
             const payload = {
                 Title: formData.get('title'),
@@ -3630,12 +4078,16 @@
 
         async function saveStaff(e) {
             e.preventDefault();
+            const staffId = document.getElementById('staffIdField').value;
+            if (!hasPermission('staff', staffId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${staffId ? 'edit' : 'create'} staff members. Required role: ${getMinRoleForPermission('staff', staffId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#staffModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
 
             const form = document.getElementById('staffForm');
             const formData = new FormData(form);
-            const staffId = document.getElementById('staffIdField').value;
 
             const newStaff = {
                 name: formData.get('name'),
@@ -3780,11 +4232,15 @@
 
         async function saveInvoice(e) {
             e.preventDefault();
+            const invoiceId = document.getElementById('invoiceIdField').value;
+            if (!hasPermission('billing', invoiceId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${invoiceId ? 'edit' : 'create'} invoices. Required role: ${getMinRoleForPermission('billing', invoiceId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#invoiceModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
             const form = document.getElementById('invoiceForm');
             const formData = new FormData(form);
-            const invoiceId = document.getElementById('invoiceIdField').value;
 
             // Get matter number for invoice numbering
             const matterId = formData.get('matter');
@@ -3906,11 +4362,15 @@
 
         async function saveMessage(e) {
             e.preventDefault();
+            const messageId = document.getElementById('messageIdField').value;
+            if (!hasPermission('messages', messageId ? 'edit' : 'create')) {
+                showToast(`You don't have permission to ${messageId ? 'edit' : 'create'} messages. Required role: ${getMinRoleForPermission('messages', messageId ? 'edit' : 'create')}`, 'error');
+                return;
+            }
             const btn = document.querySelector('#messageModal .modal-footer .btn-gold');
             setButtonLoading(btn, true);
             const form = document.getElementById('messageForm');
             const formData = new FormData(form);
-            const messageId = document.getElementById('messageIdField').value;
 
             const payload = {
                 Title: formData.get('subject'),
@@ -4041,9 +4501,9 @@
             const htmlContent = `<!DOCTYPE html>
 <html><head><style>
     @page { margin: 30mm 20mm; }
-    body { font-family: 'Times New Roman', Georgia, serif; margin: 0; padding: 40px; color: #000; font-size: 13px; }
+    body { font-family: 'Playfair Display', Georgia, serif; margin: 0; padding: 40px; color: #000; font-size: 13px; }
     .logo-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #B8860B; padding-bottom: 20px; }
-    .logo-text { font-family: 'Times New Roman', Georgia, serif; font-size: 28px; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; }
+    .logo-text { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; }
     .logo-amp { color: #B8860B; font-style: italic; }
     .firm-subtitle { font-size: 11px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
     .firm-contact { font-size: 11px; color: #444; text-align: right; line-height: 1.8; }
@@ -4222,6 +4682,112 @@
                 renderMatters();
             });
         });
+
+        // ===== DOCUMENT MANAGEMENT FUNCTIONS =====
+        function getCategoryColor(category) {
+            const colors = {
+                'Engagement Letter': '#0066cc',
+                'Court Filing': '#dc3545',
+                'Correspondence': '#6f42c1',
+                'Contract': '#fd7e14',
+                'Evidence': '#28a745',
+                'Legal Opinion': '#20c997',
+                'Invoice': '#17a2b8',
+                'Other': '#6c757d'
+            };
+            return colors[category] || colors['Other'];
+        }
+
+        function downloadSharePointDoc(url, name) {
+            if (!url || url === '#') {
+                showToast('Document URL not available', 'warning');
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function deleteDocument(docId, docName) {
+            if (!confirm(`Are you sure you want to delete "${docName}"? This action cannot be undone.`)) {
+                return;
+            }
+            showToast('Deleting document...', 'info');
+            try {
+                const resp = await fetch(`/api/download-document?itemId=${encodeURIComponent(docId)}&action=delete`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    showToast('Document deleted successfully', 'success');
+                    const matterDetailView = document.getElementById('matterDetailView');
+                    if (matterDetailView && matterDetailView.style.display !== 'none') {
+                        const matterIdMatch = document.querySelector('[data-matter-id]');
+                        if (matterIdMatch) {
+                            const matterId = matterIdMatch.getAttribute('data-matter-id');
+                            viewMatterDetail(matterId);
+                        }
+                    }
+                } else {
+                    const err = await resp.json().catch(() => ({}));
+                    showToast('Failed to delete: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch(e) {
+                showToast('Error deleting document: ' + e.message, 'error');
+            }
+        }
+
+        function toggleDocSelect(itemId) {
+            updateBulkDownloadButton();
+        }
+
+        function toggleAllDocs(checked) {
+            document.querySelectorAll('.doc-checkbox').forEach(cb => cb.checked = checked);
+            updateBulkDownloadButton();
+        }
+
+        function updateBulkDownloadButton() {
+            const selected = document.querySelectorAll('.doc-checkbox:checked');
+            const btn = document.getElementById('bulkDownloadBtn');
+            if (btn) {
+                btn.style.display = selected.length > 0 ? 'inline-flex' : 'none';
+                btn.textContent = `Download ${selected.length} file${selected.length !== 1 ? 's' : ''}`;
+            }
+        }
+
+        function bulkDownloadDocs() {
+            const selected = document.querySelectorAll('.doc-checkbox:checked');
+            selected.forEach(cb => {
+                const url = cb.dataset.downloadUrl;
+                if (url) window.open(url, '_blank');
+            });
+            showToast(`Downloading ${selected.length} file${selected.length !== 1 ? 's' : ''}...`, 'info');
+        }
+
+        function filterDocuments() {
+            const searchInput = document.getElementById('docSearchInput');
+            const categoryFilter = document.getElementById('docCategoryFilter');
+
+            if (!searchInput || !categoryFilter) return;
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+
+            const docRows = document.querySelectorAll('.doc-row');
+            docRows.forEach(row => {
+                const docName = row.querySelector('div:nth-child(2) > div:first-child')?.textContent.toLowerCase() || '';
+                const docCategory = row.getAttribute('data-category') || '';
+
+                const matchesSearch = !searchTerm || docName.includes(searchTerm);
+                const matchesCategory = !selectedCategory || docCategory === selectedCategory;
+
+                row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
+            });
+        }
 
         // ===== KEYBOARD SHORTCUTS =====
         document.addEventListener('keydown', function(e) {

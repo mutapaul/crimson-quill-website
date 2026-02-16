@@ -144,7 +144,7 @@
         }
 
         .logo-text {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-size: 1.5rem;
             font-weight: 400;
             color: var(--dark);
@@ -154,7 +154,7 @@
         }
 
         .logo-amp {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             color: var(--gold);
             font-weight: 400;
             font-style: italic;
@@ -1045,7 +1045,7 @@
         }
 
         .invoice-title {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-size: 28px;
             font-weight: 600;
             color: var(--dark);
@@ -1195,7 +1195,7 @@
             margin-bottom: 3rem;
         }
         .footer-brand .footer-logo {
-            font-family: 'Times New Roman', Georgia, serif;
+            font-family: 'Playfair Display', Georgia, serif;
             font-size: 1.5rem;
             letter-spacing: 0.15em;
             text-transform: uppercase;
@@ -1433,6 +1433,10 @@
             <div class="portal-badge">Client Portal</div>
         </div>
         <div class="header-right">
+            <div style="position:relative;cursor:pointer;" onclick="switchTab('tasks')" title="View tasks">
+                <span style="font-size:20px;">🔔</span>
+                <span id="notifBadge" style="position:absolute;top:-6px;right:-8px;background:#dc3545;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;">0</span>
+            </div>
             <div class="user-info">
                 <div class="user-avatar" id="userAvatar">C</div>
                 <div id="userName">Welcome</div>
@@ -1458,6 +1462,10 @@
         <div class="nav-item" data-tab="calendar">
             <div class="nav-icon">📅</div>
             <div>Calendar</div>
+        </div>
+        <div class="nav-item" data-tab="tasks">
+            <div class="nav-icon">📋</div>
+            <div>Tasks<span id="tasksBadge" class="nav-badge"></span></div>
         </div>
         <div class="nav-item" data-tab="messages">
             <div class="nav-icon">💬</div>
@@ -1489,6 +1497,11 @@
 
             <!-- Calendar Tab -->
             <div class="tab-content" id="calendar">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <!-- Tasks Tab -->
+            <div class="tab-content" id="tasks">
                 <!-- Will be populated by JS -->
             </div>
 
@@ -1762,6 +1775,41 @@
             if (badge) {
                 badge.textContent = unreadCount > 0 ? unreadCount : '';
             }
+        }
+
+        function getCategoryColorClient(category) {
+            const colors = {
+                'Engagement Letter': '#0066cc',
+                'Court Filing': '#dc3545',
+                'Correspondence': '#6f42c1',
+                'Contract': '#fd7e14',
+                'Evidence': '#28a745',
+                'Legal Opinion': '#20c997',
+                'Invoice': '#17a2b8',
+                'Other': '#6c757d'
+            };
+            return colors[category] || colors['Other'];
+        }
+
+        function filterClientDocuments() {
+            const searchInput = document.getElementById('docSearchInput');
+            const categoryFilter = document.getElementById('docCategoryFilter');
+
+            if (!searchInput || !categoryFilter) return;
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+
+            const docRows = document.querySelectorAll('.client-doc-row');
+            docRows.forEach(row => {
+                const docName = row.querySelector('div:nth-child(1) > div:nth-child(2) > div:first-child')?.textContent.toLowerCase() || '';
+                const docCategory = row.getAttribute('data-category') || '';
+
+                const matchesSearch = !searchTerm || docName.includes(searchTerm);
+                const matchesCategory = !selectedCategory || docCategory === selectedCategory;
+
+                row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
+            });
         }
 
         function filterMessages() {
@@ -2046,15 +2094,17 @@
         async function loadClientData() {
             try {
                 // Fetch all lists in parallel
-                const [mattersData, messagesData, eventsData] = await Promise.all([
+                const [mattersData, messagesData, eventsData, billingData] = await Promise.all([
                     fetchList('Matters'),
                     fetchList('Messages'),
-                    fetchList('Events')
+                    fetchList('Events'),
+                    fetchList('Billing').catch(e => ({ items: [] }))
                 ]);
 
                 const allMatters = mattersData.items || [];
                 const allMessages = messagesData.items || [];
                 const allEvents = eventsData.items || [];
+                const allBilling = billingData.items || [];
 
                 // Filter matters by client name
                 const myMatters = clientProfile.name
@@ -2087,14 +2137,20 @@
                     return myMatterIds.has(evtMatter);
                 });
 
+                // Filter billing by this client's matters
+                const myBilling = allBilling.filter(b => myMatterIds.has(b.MatterId || ''));
+
                 // Store filtered data
                 portalData.matters = { items: myMatters, listName: 'Matters' };
                 portalData.messages = { items: myMessages, listName: 'Messages' };
                 portalData.events = { items: myEvents, listName: 'Events' };
+                portalData.billing = { items: myBilling, listName: 'Billing' };
 
-                console.log(`Client data loaded: ${myMatters.length} matters, ${myMessages.length} messages, ${myEvents.length} events`);
+                updateNotificationBadge();
+                console.log(`Client data loaded: ${myMatters.length} matters, ${myMessages.length} messages, ${myEvents.length} events, ${myBilling.length} billing records`);
             } catch (error) {
                 console.error('Failed to load client data:', error);
+                updateNotificationBadge();
                 // Fallback: portalData stays empty, sections will show empty states
             }
         }
@@ -2204,6 +2260,7 @@
                         </tr>
                         <tr class="matter-details-row" style="display: none;">
                             <td colspan="6">
+                                ${renderMatterTimeline(status)}
                                 <div class="detail-row">
                                     <span class="detail-label">Description:</span>
                                     <span class="detail-value">${matter.Matter_x0020_Description || 'N/A'}</span>
@@ -2323,6 +2380,8 @@
                 events.forEach(event => {
                     const category = event.Category || 'Event';
                     const matterRef = event.Matter_x0020_ID || '';
+                    const eventId = event.ID || event.Title + event.EventDate;
+                    const rsvpStatus = getRsvpStatus(eventId);
 
                     html += `
                         <div class="list-item event-item" data-matter="${matterRef}">
@@ -2337,6 +2396,20 @@
                                 <span class="badge badge-normal">${category}</span>
                             </div>
                             ${event.Description ? `<div style="margin-top: 10px; font-size: 14px; color: var(--gray);">${event.Description}</div>` : ''}
+                            <div style="margin-top:10px;display:flex;gap:8px;">
+                                <button onclick="submitRsvp('${eventId}', 'attending')"
+                                    style="padding:6px 14px;background:${rsvpStatus==='attending'?'#28a745':'white'};color:${rsvpStatus==='attending'?'white':'#333'};border:1px solid ${rsvpStatus==='attending'?'#28a745':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
+                                    ✓ Attending
+                                </button>
+                                <button onclick="submitRsvp('${eventId}', 'maybe')"
+                                    style="padding:6px 14px;background:${rsvpStatus==='maybe'?'#ffc107':'white'};color:${rsvpStatus==='maybe'?'white':'#333'};border:1px solid ${rsvpStatus==='maybe'?'#ffc107':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
+                                    ? Maybe
+                                </button>
+                                <button onclick="submitRsvp('${eventId}', 'declined')"
+                                    style="padding:6px 14px;background:${rsvpStatus==='declined'?'#dc3545':'white'};color:${rsvpStatus==='declined'?'white':'#333'};border:1px solid ${rsvpStatus==='declined'?'#dc3545':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
+                                    ✕ Decline
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
@@ -2358,6 +2431,168 @@
                     event.style.display = 'none';
                 }
             });
+        }
+
+        function renderMatterTimeline(status) {
+            const stages = ['Filed', 'In Progress', 'Under Review', 'Hearing', 'Resolved'];
+            const currentIndex = stages.findIndex(s => s.toLowerCase() === (status || '').toLowerCase());
+            const activeIndex = currentIndex >= 0 ? currentIndex : 1; // Default to "In Progress"
+
+            return `
+                <div style="display:flex;align-items:center;gap:0;margin:16px 0;padding:0 10px;">
+                    ${stages.map((stage, i) => `
+                        <div style="display:flex;align-items:center;flex:1;">
+                            <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+                                <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;
+                                    ${i <= activeIndex ? 'background:#B8860B;color:white;' : 'background:#e0e0e0;color:#888;'}">
+                                    ${i < activeIndex ? '✓' : (i + 1)}
+                                </div>
+                                <div style="font-size:10px;margin-top:4px;color:${i <= activeIndex ? '#B8860B' : '#888'};font-weight:${i === activeIndex ? '600' : '400'};text-align:center;white-space:nowrap;">
+                                    ${stage}
+                                </div>
+                            </div>
+                            ${i < stages.length - 1 ? `<div style="flex:1;height:2px;background:${i < activeIndex ? '#B8860B' : '#e0e0e0'};margin:0 4px;margin-bottom:18px;"></div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function updateNotificationBadge() {
+            const unreadMsgs = portalData.messages?.items?.filter(m => m.Read !== 'true' && m.Read !== true).length || 0;
+            const upcomingEvents = portalData.events?.items?.filter(e => {
+                const d = new Date(e.EventDate || '');
+                return d >= new Date() && d <= new Date(Date.now() + 7*86400000);
+            }).length || 0;
+            const unpaidInvoices = portalData.billing?.items?.filter(b => (b.PaymentStatus || b.Status || '') !== 'Paid').length || 0;
+
+            const total = unreadMsgs + upcomingEvents + unpaidInvoices;
+            const badge = document.getElementById('notifBadge');
+            if (badge) {
+                badge.textContent = total;
+                badge.style.display = total > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function submitRsvp(eventId, response) {
+            const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
+            rsvps[eventId] = { response, updatedAt: new Date().toISOString() };
+            localStorage.setItem('cq_rsvps', JSON.stringify(rsvps));
+            showToast(`RSVP updated: ${response}`, 'success');
+            loadCalendar();
+        }
+
+        function getRsvpStatus(eventId) {
+            const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
+            return rsvps[eventId]?.response || null;
+        }
+
+        async function loadTasks() {
+            const container = document.getElementById('tasks');
+            if (!container) return;
+
+            const tasks = [];
+
+            // Generate tasks based on matters
+            if (portalData.matters?.items?.length) {
+                portalData.matters.items.forEach(m => {
+                    const status = m.Matter_x0020_Status || m.Status || '';
+                    const title = m.Title || m.Matter_x0020_ID || '';
+
+                    // If matter is new, suggest uploading documents
+                    if (status.toLowerCase().includes('active') || status.toLowerCase().includes('progress')) {
+                        tasks.push({
+                            icon: '📄',
+                            title: 'Upload supporting documents',
+                            detail: `Matter: ${title} — Upload any relevant documents to support your case.`,
+                            action: "switchTab('documents')",
+                            actionLabel: 'Go to Documents',
+                            priority: 'medium'
+                        });
+                    }
+                });
+            }
+
+            // Check for unread messages
+            const unreadCount = portalData.messages?.items?.filter(m => {
+                const read = m.Read;
+                return read !== 'true' && read !== true && read !== 'Yes';
+            }).length || 0;
+
+            if (unreadCount > 0) {
+                tasks.push({
+                    icon: '💬',
+                    title: `${unreadCount} unread message${unreadCount > 1 ? 's' : ''}`,
+                    detail: 'You have messages from your legal team that need your attention.',
+                    action: "switchTab('messages')",
+                    actionLabel: 'View Messages',
+                    priority: 'high'
+                });
+            }
+
+            // Check for upcoming events
+            const upcomingEvents = portalData.events?.items?.filter(e => {
+                const date = new Date(e.EventDate || e.Start_x0020_Date || '');
+                const now = new Date();
+                const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                return date >= now && date <= weekFromNow;
+            }) || [];
+
+            if (upcomingEvents.length > 0) {
+                tasks.push({
+                    icon: '📅',
+                    title: `${upcomingEvents.length} upcoming event${upcomingEvents.length > 1 ? 's' : ''} this week`,
+                    detail: 'Review your upcoming court dates, meetings, or hearings.',
+                    action: "switchTab('calendar')",
+                    actionLabel: 'View Calendar',
+                    priority: 'high'
+                });
+            }
+
+            // Outstanding billing
+            const unpaidInvoices = portalData.billing?.items?.filter(b => {
+                const status = b.PaymentStatus || b.Status || '';
+                return status !== 'Paid';
+            }) || [];
+
+            if (unpaidInvoices.length > 0) {
+                tasks.push({
+                    icon: '💰',
+                    title: `${unpaidInvoices.length} outstanding invoice${unpaidInvoices.length > 1 ? 's' : ''}`,
+                    detail: 'Please review and arrange payment for pending invoices.',
+                    action: "switchTab('billing')",
+                    actionLabel: 'View Billing',
+                    priority: 'high'
+                });
+            }
+
+            // Always show a general task
+            if (tasks.length === 0) {
+                tasks.push({
+                    icon: '✅',
+                    title: 'All caught up!',
+                    detail: 'You have no pending tasks at this time. Check back later for updates.',
+                    priority: 'low'
+                });
+            }
+
+            const priorityOrder = { high: 0, medium: 1, low: 2 };
+            tasks.sort((a, b) => (priorityOrder[a.priority] || 2) - (priorityOrder[b.priority] || 2));
+
+            let html = '<div class="card"><div class="card-title">Your Tasks</div><p style="color:#888;margin-bottom:20px;">Actions required from you for your legal matters.</p>';
+            html += tasks.map(task => `
+                <div style="display:flex;align-items:flex-start;gap:16px;padding:16px 20px;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:12px;
+                    ${task.priority === 'high' ? 'border-left:4px solid #B8860B;' : task.priority === 'medium' ? 'border-left:4px solid #ffc107;' : ''}">
+                    <div style="font-size:24px;flex-shrink:0;">${task.icon}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;margin-bottom:4px;">${task.title}</div>
+                        <div style="font-size:14px;color:#666;">${task.detail}</div>
+                    </div>
+                    ${task.action ? `<button onclick="${task.action}" style="flex-shrink:0;padding:8px 16px;background:#B8860B;color:white;border:none;border-radius:4px;cursor:pointer;font-size:13px;white-space:nowrap;">${task.actionLabel}</button>` : ''}
+                </div>
+            `).join('');
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         async function loadMessages() {
@@ -2480,7 +2715,24 @@
                     }
                 });
 
-                let html = `
+                // Add outstanding balance alert banner if there are unpaid invoices
+                const outstanding = records.filter(rec => rec.PaymentStatus !== 'Paid');
+                let outstandingAlert = '';
+                if (outstanding.length > 0) {
+                    const totalDue = outstanding.reduce((sum, rec) => sum + (parseFloat(rec.Amount) || 0), 0);
+                    const currency = outstanding[0]?.Currency || defaultCurrency;
+                    outstandingAlert = `
+                        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+                            <span style="font-size:24px;">⚠️</span>
+                            <div>
+                                <div style="font-weight:600;color:#856404;">Outstanding Balance</div>
+                                <div style="color:#856404;font-size:14px;">You have ${outstanding.length} unpaid invoice${outstanding.length > 1 ? 's' : ''} totaling ${formatCurrency(totalDue, currency)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let html = outstandingAlert + `
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-value">${formatCurrency(totalBilled, defaultCurrency)}</div>
@@ -2622,6 +2874,9 @@
                     break;
                 case 'calendar':
                     loadCalendar();
+                    break;
+                case 'tasks':
+                    loadTasks();
                     break;
                 case 'messages':
                     loadMessages();
