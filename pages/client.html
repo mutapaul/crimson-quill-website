@@ -1533,7 +1533,8 @@
                             Message_x0020_Body: body,
                             Matter_x0020_ID: matterID,
                             Priority: 'Normal',
-                            Read: false
+                            Read: false,
+                            SenderEmail: clientProfile.email
                         }
                     })
                 });
@@ -1965,7 +1966,10 @@
                 const data = portalData.messages || await fetchList('Messages');
                 portalData.messages = data;
 
-                const messages = data.items || [];
+                let messages = data.items || [];
+
+                // FIX 1: Sort messages by Created date descending (newest first)
+                messages.sort((a, b) => new Date(b.Created) - new Date(a.Created));
 
                 let html = '<div class="card"><div class="card-title">Messages</div>';
                 html += '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>';
@@ -1976,18 +1980,28 @@
                     messages.forEach((message, index) => {
                         const priority = message.Priority || 'Normal';
                         const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-                        const isRead = message.Read ? '' : ' style="background: rgba(184, 134, 11, 0.05);"';
-                        const sender = message.Sender || 'Staff';
-                        const senderBadgeClass = sender === 'Client' ? 'sender-badge-client' : 'sender-badge-staff';
-                        const senderEmail = message.SenderEmail || message.Author ? message.Author.substring(0, message.Author.indexOf('@') + 1).substring(0, 15) : 'Staff';
+
+                        // FIX 3: Improve unread message styling
+                        const unreadStyle = message.Read
+                            ? ''
+                            : 'border-left: 4px solid var(--gold); background: rgba(184, 134, 11, 0.12);';
+                        const titleWeight = message.Read ? '500' : '700';
+
+                        // FIX 2: Determine sender by checking SenderEmail field or comparing author email with client email
+                        const clientEmail = clientProfile.email || '';
+                        const senderEmail = message.SenderEmail || message.Author_x0020_Email || '';
+                        const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
+                        const sender = isClientMessage ? 'You' : 'Staff';
+                        const senderBadgeClass = isClientMessage ? 'sender-badge-client' : 'sender-badge-staff';
 
                         html += `
-                            <div class="list-item" onclick="toggleMessageDetails(this, ${index})" ${isRead}>
+                            <div class="list-item" onclick="toggleMessageDetails(this, ${index})" style="${unreadStyle}">
                                 <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div>
-                                        <div class="list-item-title">
+                                    <div style="flex: 1;">
+                                        <div class="list-item-title" style="font-weight: ${titleWeight};">
                                             <span class="sender-badge ${senderBadgeClass}">${sender}</span>
                                             ${message.Title || 'No Subject'}
+                                            ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
                                         </div>
                                         <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • ${formatDate(message.Created)}</div>
                                     </div>
@@ -1998,10 +2012,10 @@
                                         <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
                                         <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
                                             ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
-                                            ${sender === 'Client' ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
+                                            ${isClientMessage ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
                                             Received: ${formatDate(message.Created)}
                                         </div>
-                                        ${sender !== 'Client' ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\\'")}')">Reply</button>` : ''}
+                                        ${!isClientMessage ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\\'")}')">Reply</button>` : ''}
                                     </div>
                                 </div>
                             </div>

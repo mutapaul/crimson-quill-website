@@ -2536,20 +2536,33 @@
                 return;
             }
 
-            container.innerHTML = portalData.messages.map((msg, idx) => `
-                <div class="card" style="cursor: pointer; transition: background 0.15s;"
+            // Sort newest first
+            const sortedMessages = [...portalData.messages].sort((a, b) => new Date(b.Created) - new Date(a.Created));
+            // Update portalData indices to match sorted order
+            portalData.messages = sortedMessages;
+
+            container.innerHTML = sortedMessages.map((msg, idx) => {
+                const isUnread = !msg.Read;
+                const borderStyle = isUnread ? 'border-left: 4px solid var(--gold);' : '';
+                const bgStyle = isUnread ? 'background: rgba(184, 134, 11, 0.08);' : '';
+                const titleWeight = isUnread ? '700' : '600';
+                const unreadDot = isUnread ? '<span style="display:inline-block;width:8px;height:8px;background:var(--gold);border-radius:50%;margin-right:6px;"></span>' : '';
+                const senderEmail = msg.SenderEmail || '';
+                const senderLabel = senderEmail ? '<span style="font-size:11px;padding:1px 6px;border-radius:3px;background:rgba(184,134,11,0.15);color:var(--gold-dark);margin-right:6px;">CLIENT</span>' : '';
+                return `
+                <div class="card" style="cursor: pointer; transition: background 0.15s; ${borderStyle} ${bgStyle}"
                      onmouseenter="this.style.background='#f8f6f0'"
-                     onmouseleave="this.style.background=''"
+                     onmouseleave="this.style.background='${isUnread ? 'rgba(184,134,11,0.08)' : ''}'"
                      onclick="viewMessageDetail(${idx})">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
-                            <div style="color: var(--gold); font-weight: 600; margin-bottom: 8px;">${escapeHtml(msg.Title || '(No subject)')}</div>
+                            <div style="color: var(--gold); font-weight: ${titleWeight}; margin-bottom: 8px;">${unreadDot}${senderLabel}${escapeHtml(msg.Title || '(No subject)')}</div>
                             <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
                             <div style="color: #888; font-size: 12px;">${formatDatetime(msg.Created)}</div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function viewMessageDetail(idx) {
