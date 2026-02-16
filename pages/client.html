@@ -1,3 +1,65 @@
+
+        // ============================================================================
+        // ERROR HANDLING UTILITIES
+        // ============================================================================
+        function renderErrorState(containerId, title, detail, retryFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">${title || 'Something went wrong'}</div>
+                    <div class="error-detail">${detail || 'Please try again or refresh the page.'}</div>
+                    ${retryFn ? `<button class="btn-retry" onclick="${retryFn}">↻ Try Again</button>` : ''}
+                </div>
+            `;
+        }
+
+        function getContextualErrorMessage(error, context) {
+            const msg = error.message || String(error);
+            if (msg.includes('429') || msg.includes('rate limit') || msg.includes('throttl')) {
+                return { title: 'Too Many Requests', detail: 'The server is busy. Please wait a moment and try again.' };
+            }
+            if (msg.includes('401') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+                return { title: 'Session Expired', detail: 'Your login session has expired. Please log in again.' };
+            }
+            if (msg.includes('404') || msg.includes('not found')) {
+                return { title: 'Not Found', detail: `The requested ${context || 'resource'} could not be found.` };
+            }
+            if (msg.includes('500') || msg.includes('server error')) {
+                return { title: 'Server Error', detail: 'Something went wrong on the server. Please try again shortly.' };
+            }
+            if (msg.includes('network') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+                return { title: 'Connection Error', detail: 'Unable to connect to the server. Check your internet connection.' };
+            }
+            return { title: `Error ${context ? 'with ' + context : ''}`, detail: msg };
+        }
+
+        // ===== RETRY WITH EXPONENTIAL BACKOFF =====
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let lastError;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const resp = await fetch(url, options);
+                    if (resp.status === 429 && attempt < maxRetries) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        showToast(`Rate limited. Retrying in ${waitMs/1000}s...`, 'info');
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    return resp;
+                } catch(err) {
+                    lastError = err;
+                    if (attempt < maxRetries && (err.message.includes('network') || err.message.includes('Failed to fetch'))) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+            throw lastError;
+        }
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -260,6 +322,25 @@
             font-weight: 600;
         }
 
+        .nav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--gold);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .nav-badge:empty {
+            display: none;
+        }
+
         .nav-icon {
             width: 20px;
             height: 20px;
@@ -394,7 +475,7 @@
         /* ============================================
            TABLES
            ============================================ */
-        .table-container {
+        .table-responsive {
             overflow-x: auto;
         }
 
@@ -425,6 +506,30 @@
         td {
             padding: 12px;
             color: var(--gray);
+        }
+
+        .table-responsive {
+            position: relative;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 16px;
+        }
+
+        .table-responsive::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .table-responsive.has-overflow::after {
+            opacity: 1;
         }
 
         /* ============================================
@@ -759,8 +864,9 @@
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-lg);
             max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
+            width: 95%;
+            margin: 20px auto;
+            max-height: 90vh;
             overflow-y: auto;
         }
 
@@ -848,6 +954,59 @@
             .quick-links {
                 grid-template-columns: 1fr;
             }
+
+            .invoice-modal-content {
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+                max-height: 100vh;
+                min-height: 100vh;
+            }
+
+            .modal-content {
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+                max-height: 100vh;
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .modal input, .modal select, .modal textarea {
+                font-size: 16px !important;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .main-content, .content-body {
+                padding: 15px;
+                overflow-x: hidden;
+            }
+
+            .stat-cards, .stats-grid, .dashboard-stats {
+                flex-wrap: wrap;
+            }
+
+            .stat-cards > div, .stat-card {
+                min-width: calc(50% - 8px);
+                flex: 1 1 calc(50% - 8px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stat-cards > div, .stat-card {
+                min-width: 100%;
+                flex: 1 1 100%;
+            }
         }
 
         @media (min-width: 769px) {
@@ -932,6 +1091,10 @@
            ============================================ */
         .invoice-modal-content {
             max-width: 800px;
+            width: 95%;
+            margin: 20px auto;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .invoice-header {
@@ -1222,6 +1385,100 @@
             background: var(--white);
             color: var(--dark);
         }
+
+        /* Error state with retry */
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+        .error-state .error-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .error-state .error-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .error-state .error-detail {
+            font-size: 14px;
+            color: var(--gray-light);
+            margin-bottom: 16px;
+        }
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            background: var(--gold);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-retry:hover {
+            background: var(--gold-dark);
+        }
+
+        /* ===== LOADING BUTTON STATES ===== */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: btn-spin 0.6s linear infinite;
+        }
+        @keyframes btn-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== SKELETON LOADING ===== */
+        .skeleton-loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            border-radius: 4px;
+            min-height: 20px;
+        }
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-card {
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+        .skeleton-card .skeleton-line {
+            height: 14px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e8e8e8 25%, #d8d8d8 50%, #e8e8e8 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+        }
+        .skeleton-line.short { width: 40%; }
+        .skeleton-line.medium { width: 65%; }
+        .skeleton-line.long { width: 90%; }
     </style>
 </head>
 <body>
@@ -1266,7 +1523,7 @@
         </div>
         <div class="nav-item" data-tab="messages">
             <div class="nav-icon">💬</div>
-            <div>Messages</div>
+            <div>Messages<span id="messagesBadge" class="nav-badge"></span></div>
         </div>
         <div class="nav-item" data-tab="billing">
             <div class="nav-icon">💰</div>
@@ -1459,6 +1716,33 @@
 
     <script>
         // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
+        function setButtonLoading(btn, loading, originalText) {
+            if (!btn) return;
+            if (loading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.textContent = 'Processing...';
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+            } else {
+                btn.textContent = btn.dataset.originalText || originalText || 'Save';
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            }
+        }
+
+        function showSkeletonLoading(containerId, count) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            let html = '';
+            for (let i = 0; i < (count || 3); i++) {
+                html += '<div class="skeleton-card"><div class="skeleton-line long"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ============================================================================
         // GLOBAL STATE
         // ============================================================================
         let currentTab = 'dashboard';
@@ -1499,13 +1783,217 @@
             if (!email) return 'C';
             return email.charAt(0).toUpperCase();
         }
+        function timeAgo(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+            if (seconds < 2592000) return Math.floor(seconds / 604800) + 'w ago';
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.indexOf(nameEQ) === 0) {
+                    return decodeURIComponent(cookie.substring(nameEQ.length));
+                }
+            }
+            return '';
+        }
+
+        function updateUnreadBadge() {
+            const messagesData = portalData.messages || { items: [] };
+            const messages = messagesData.items || [];
+            const clientEmail = clientProfile.email || '';
+            const unreadCount = messages.filter(m => {
+                const isRead = m.Read === 'true' || m.Read === true;
+                const senderEmail = m.SenderEmail || m.Author_x0020_Email || '';
+                const isFromClient = senderEmail.toLowerCase() === clientEmail.toLowerCase();
+                return !isRead && !isFromClient;
+            }).length;
+            
+            const badge = document.getElementById('messagesBadge');
+            if (badge) {
+                badge.textContent = unreadCount > 0 ? unreadCount : '';
+            }
+        }
+
+        function filterMessages() {
+            const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
+            const priority = document.getElementById('messagePriorityFilter')?.value || '';
+            
+            const messagesData = portalData.messages || { items: [] };
+            const messages = messagesData.items || [];
+            const filtered = messages.filter(m => {
+                const matchesSearch = !search || 
+                    (m.Title || '').toLowerCase().includes(search) ||
+                    (m.Message_x0020_Body || '').toLowerCase().includes(search) ||
+                    (m.SenderEmail || m.Author_x0020_Email || '').toLowerCase().includes(search);
+                const matchesPriority = !priority || (m.Priority || '').toLowerCase() === priority.toLowerCase();
+                return matchesSearch && matchesPriority;
+            });
+            
+            renderFilteredMessages(filtered);
+        }
+
+        function renderFilteredMessages(filtered) {
+            const clientEmail = clientProfile.email || '';
+            let html = '';
+            
+            if (filtered.length === 0) {
+                html = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">No messages match your search.</div></div>';
+            } else {
+                filtered.forEach((message, index) => {
+                    const priority = message.Priority || 'Normal';
+                    const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
+                    const unreadStyle = message.Read
+                        ? ''
+                        : 'border-left: 4px solid var(--gold); background: rgba(184, 134, 11, 0.12);';
+                    const titleWeight = message.Read ? '500' : '700';
+                    
+                    const senderEmail = message.SenderEmail || message.Author_x0020_Email || '';
+                    const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
+                    const sender = isClientMessage ? 'You' : 'Staff';
+                    const senderBadgeClass = isClientMessage ? 'sender-badge-client' : 'sender-badge-staff';
+                    
+                    // Find original index in full messages array
+                    const messagesData = portalData.messages || { items: [] };
+                    const originalIdx = (messagesData.items || []).findIndex(m => m === message);
+                    
+                    html += `
+                        <div class="list-item" onclick="toggleMessageDetails(this, ${originalIdx})" style="${unreadStyle}">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <div class="list-item-title" style="font-weight: ${titleWeight};">
+                                        <span class="sender-badge ${senderBadgeClass}">${sender}</span>
+                                        ${message.Title || 'No Subject'}
+                                        ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
+                                    </div>
+                                    <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
+                                </div>
+                                <span class="badge ${priorityBadgeClass}">${priority}</span>
+                            </div>
+                            <div class="list-item-details" id="msg-details-${originalIdx}">
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
+                                    <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
+                                    <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
+                                        ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                        ${isClientMessage ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
+                                        Received: ${formatDate(message.Created)}
+                                    </div>
+                                    ${!isClientMessage ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\'")}')">Reply</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            const container = document.getElementById('messages');
+            container.innerHTML = '<div class="card"><div class="card-title">Messages</div>' + 
+                '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>' +
+                '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">' +
+                '<input type="text" id="messageSearch" placeholder="Search messages..." ' +
+                'style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" ' +
+                'oninput="filterMessages()">' +
+                '<select id="messagePriorityFilter" onchange="filterMessages()" ' +
+                'style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;">' +
+                '<option value="">All Priorities</option>' +
+                '<option value="High">High</option>' +
+                '<option value="Medium">Medium</option>' +
+                '<option value="Low">Low</option>' +
+                '</select></div>' + html + '</div>';
+        }
+
+
+        function checkTableOverflow() {
+            document.querySelectorAll('.table-responsive').forEach(el => {
+                if (el.scrollWidth > el.clientWidth) {
+                    el.classList.add('has-overflow');
+                } else {
+                    el.classList.remove('has-overflow');
+                }
+            });
+        }
+        window.addEventListener('resize', checkTableOverflow);
 
         // ============================================================================
+
+        // ============================================================================
+        // ERROR HANDLING UTILITIES
+        // ============================================================================
+        function renderErrorState(containerId, title, detail, retryFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">${title || 'Something went wrong'}</div>
+                    <div class="error-detail">${detail || 'Please try again or refresh the page.'}</div>
+                    ${retryFn ? `<button class="btn-retry" onclick="${retryFn}">↻ Try Again</button>` : ''}
+                </div>
+            `;
+        }
+
+        function getContextualErrorMessage(error, context) {
+            const msg = error.message || String(error);
+            if (msg.includes('429') || msg.includes('rate limit') || msg.includes('throttl')) {
+                return { title: 'Too Many Requests', detail: 'The server is busy. Please wait a moment and try again.' };
+            }
+            if (msg.includes('401') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+                return { title: 'Session Expired', detail: 'Your login session has expired. Please log in again.' };
+            }
+            if (msg.includes('404') || msg.includes('not found')) {
+                return { title: 'Not Found', detail: `The requested ${context || 'resource'} could not be found.` };
+            }
+            if (msg.includes('500') || msg.includes('server error')) {
+                return { title: 'Server Error', detail: 'Something went wrong on the server. Please try again shortly.' };
+            }
+            if (msg.includes('network') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+                return { title: 'Connection Error', detail: 'Unable to connect to the server. Check your internet connection.' };
+            }
+            return { title: `Error ${context ? 'with ' + context : ''}`, detail: msg };
+        }
+
+        // ===== RETRY WITH EXPONENTIAL BACKOFF =====
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let lastError;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const resp = await fetch(url, options);
+                    if (resp.status === 429 && attempt < maxRetries) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        showToast(`Rate limited. Retrying in ${waitMs/1000}s...`, 'info');
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    return resp;
+                } catch(err) {
+                    lastError = err;
+                    if (attempt < maxRetries && (err.message.includes('network') || err.message.includes('Failed to fetch'))) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+            throw lastError;
+        }
+
         // API FUNCTIONS
         // ============================================================================
         async function fetchList(listName) {
             try {
-                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
+                const resp = await fetchWithRetry(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
                     credentials: 'include'
                 });
                 if (!resp.ok) {
@@ -1521,7 +2009,7 @@
 
         async function sendMessage(subject, body, matterID) {
             try {
-                const resp = await fetch('/api/sharepoint-write', {
+                const resp = await fetchWithRetry('/api/sharepoint-write', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1758,7 +2246,7 @@
                     return;
                 }
 
-                let html = '<div class="card"><div class="card-title">Your Matters</div><div class="table-container"><table>';
+                let html = '<div class="card"><div class="card-title">Your Matters</div><div class="table-responsive"><table>';
                 html += '<thead><tr><th>Matter ID</th><th>Title</th><th>Status</th><th>Priority</th><th>Lead Lawyer</th><th>Practice Area</th></tr></thead><tbody>';
 
                 matters.forEach((matter, index) => {
@@ -1808,6 +2296,7 @@
 
                 html += '</tbody></table></div></div>';
                 container.innerHTML = html;
+                checkTableOverflow();
             } catch (error) {
                 container.innerHTML = `<div class="error-message">Failed to load matters: ${error.message}</div>`;
             }
@@ -1948,6 +2437,10 @@
 
                 let html = '<div class="card"><div class="card-title">Messages</div>';
                 html += '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>';
+                html += '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">';
+                html += '<input type="text" id="messageSearch" placeholder="Search messages..." style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" oninput="filterMessages()">';
+                html += '<select id="messagePriorityFilter" onchange="filterMessages()" style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;"><option value="">All Priorities</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>';
+                html += '</div>';
 
                 if (messages.length === 0) {
                     html += '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">You have no messages at this time.</div></div>';
@@ -1978,7 +2471,7 @@
                                             ${message.Title || 'No Subject'}
                                             ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
                                         </div>
-                                        <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • ${formatDate(message.Created)}</div>
+                                        <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
                                     </div>
                                     <span class="badge ${priorityBadgeClass}">${priority}</span>
                                 </div>
@@ -2000,8 +2493,10 @@
 
                 html += '</div>';
                 container.innerHTML = html;
+                updateUnreadBadge();
             } catch (error) {
                 container.innerHTML = `<div class="error-message">Failed to load messages: ${error.message}</div>`;
+                updateUnreadBadge();
             }
         }
 
@@ -2069,7 +2564,7 @@
 
                     <div class="card">
                         <div class="card-title">Billing Records</div>
-                        <div class="table-container">
+                        <div class="table-responsive">
                             <table>
                                 <thead>
                                     <tr>
@@ -2136,7 +2631,7 @@
                     </div>
                     <div class="card">
                         <div class="card-title">Billing Records</div>
-                        <div class="table-container">
+                        <div class="table-responsive">
                             <table>
                                 <thead>
                                     <tr>
@@ -2263,6 +2758,9 @@
 
         async function submitMessage(e) {
             e.preventDefault();
+            const btn = document.querySelector('#messageModal button[type="submit"], #messageModal .btn-gold');
+            setButtonLoading(btn, true);
+
             const subject = document.getElementById('msgSubject').value;
             const matterID = document.getElementById('msgMatter').value || document.getElementById('msgMatter').value;
             const body = document.getElementById('msgBody').value;
@@ -2274,9 +2772,11 @@
                 showToast('Message sent successfully!', 'success');
                 await loadMessages();
             } catch (error) {
-                showToast(`Failed to send message: ${error.message}`, 'error');
+                const errInfo = getContextualErrorMessage(error, 'message');
+                showToast(`${errInfo.title}: ${errInfo.detail}`, 'error');
             } finally {
                 hideLoadingOverlay();
+                setButtonLoading(btn, false);
             }
         }
 
@@ -2446,8 +2946,12 @@
         async function submitUpload(e) {
             if (e && e.preventDefault) e.preventDefault();
 
+            const btn = document.querySelector('#uploadModal button[type="submit"], #uploadModal .btn-gold');
+            setButtonLoading(btn, true);
+
             if (!selectedFile) {
                 showToast('Please select a file', 'error');
+                setButtonLoading(btn, false);
                 return;
             }
 
@@ -2455,6 +2959,7 @@
             const matterId = matterSelect ? matterSelect.value : '';
             if (!matterId) {
                 showToast('Please select a matter', 'error');
+                setButtonLoading(btn, false);
                 return;
             }
 
@@ -2469,15 +2974,8 @@
             const ext = selectedFile.name.split('.').pop().toLowerCase();
             if (!allowedTypes.includes(ext)) {
                 showToast('File type not allowed. Accepted: ' + allowedTypes.join(', '), 'error');
+                setButtonLoading(btn, false);
                 return;
-            }
-
-            // Show uploading state
-            const uploadBtn = document.querySelector('#uploadModal button[type="submit"], #uploadModal .btn-gold');
-            const originalText = uploadBtn ? uploadBtn.textContent : '';
-            if (uploadBtn) {
-                uploadBtn.disabled = true;
-                uploadBtn.textContent = 'Uploading...';
             }
 
             try {
@@ -2492,7 +2990,7 @@
                     reader.readAsDataURL(selectedFile);
                 });
 
-                const resp = await fetch('/api/upload-document', {
+                const resp = await fetchWithRetry('/api/upload-document', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2518,12 +3016,10 @@
                 }
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast('Upload failed: ' + error.message, 'error');
+                const errInfo = getContextualErrorMessage(error, 'document');
+                showToast(`${errInfo.title}: ${errInfo.detail}`, 'error');
             } finally {
-                if (uploadBtn) {
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = originalText;
-                }
+                setButtonLoading(btn, false);
             }
         }
 

@@ -125,6 +125,25 @@
             font-weight: 600;
         }
 
+        .nav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--gold);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .nav-badge:empty {
+            display: none;
+        }
+
         .sidebar-footer {
             padding: 15px 20px;
             border-top: 1px solid var(--silver);
@@ -158,6 +177,23 @@
             color: var(--gold);
             font-size: 24px;
             cursor: pointer;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+
+        .mobile-menu-toggle:hover {
+            background: rgba(184, 134, 11, 0.1);
+        }
+
+        .mobile-menu-toggle:active {
+            background: rgba(184, 134, 11, 0.2);
+            transform: scale(0.95);
+        }
+
+        .mobile-menu-toggle.active {
+            background: rgba(184, 134, 11, 0.15);
+            color: var(--gold-dark);
         }
 
         .header-logo {
@@ -490,6 +526,30 @@
             border-bottom: none;
         }
 
+        .table-responsive {
+            position: relative;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 16px;
+        }
+
+        .table-responsive::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .table-responsive.has-overflow::after {
+            opacity: 1;
+        }
+
         /* ===== BADGES ===== */
         .badge {
             display: inline-block;
@@ -559,9 +619,21 @@
             border-radius: var(--radius-md);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             max-width: 500px;
-            width: 90%;
+            width: 95%;
+            margin: 20px auto;
             max-height: 90vh;
             overflow-y: auto;
+        }
+
+        .modal-content {
+            max-width: 500px;
+            width: 95%;
+            margin: 20px auto;
+            max-height: 90vh;
+            overflow-y: auto;
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
         .modal-header {
@@ -774,7 +846,49 @@
             }
 
             .modal {
-                width: 95%;
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+                max-height: 100vh;
+                min-height: 100vh;
+            }
+
+            .modal-content {
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+                max-height: 100vh;
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .modal input, .modal select, .modal textarea {
+                font-size: 16px !important;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .main-content, .content-body {
+                padding: 15px;
+                overflow-x: hidden;
+            }
+
+            .stat-cards, .stats-grid, .dashboard-stats {
+                flex-wrap: wrap;
+            }
+
+            .stat-cards > div, .stat-card {
+                min-width: calc(50% - 8px);
+                flex: 1 1 calc(50% - 8px);
             }
         }
 
@@ -811,6 +925,105 @@
             .filter-btn {
                 width: 100%;
             }
+
+            .stat-cards > div, .stat-card {
+                min-width: 100%;
+                flex: 1 1 100%;
+            }
+        }
+
+        /* ===== LOADING BUTTON STATES ===== */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: btn-spin 0.6s linear infinite;
+        }
+        @keyframes btn-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== SKELETON LOADING ===== */
+        .skeleton-loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+            border-radius: 4px;
+            min-height: 20px;
+        }
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-card {
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+        .skeleton-card .skeleton-line {
+            height: 14px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e8e8e8 25%, #d8d8d8 50%, #e8e8e8 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.5s infinite;
+        }
+        .skeleton-line.short { width: 40%; }
+        .skeleton-line.medium { width: 65%; }
+        .skeleton-line.long { width: 90%; }
+
+        /* Error state with retry */
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+        .error-state .error-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .error-state .error-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .error-state .error-detail {
+            font-size: 14px;
+            color: var(--gray-light);
+            margin-bottom: 16px;
+        }
+        .btn-retry {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 20px;
+            background: var(--gold);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-retry:hover {
+            background: var(--gold-dark);
         }
     </style>
 </head>
@@ -835,7 +1048,7 @@
                 <div class="nav-item" data-tab="staff">Staff Management</div>
                 <div class="nav-item" data-tab="documents">Documents</div>
                 <div class="nav-item" data-tab="calendar">Calendar</div>
-                <div class="nav-item" data-tab="messages">Messages</div>
+                <div class="nav-item" data-tab="messages">Messages<span id="messagesBadge" class="nav-badge"></span></div>
                 <div class="nav-item" data-tab="billing">Billing & Invoices</div>
                 <div class="nav-item" data-tab="reports">Reports</div>
                 <div class="nav-item" data-tab="settings">Settings</div>
@@ -1047,6 +1260,19 @@
 
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
                         <button class="btn btn-gold" onclick="openNewMessageModal()">+ New Message</button>
+                    </div>
+
+                    <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="messageSearch" placeholder="Search messages..." 
+                               style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;"
+                               oninput="filterMessages()">
+                        <select id="messagePriorityFilter" onchange="filterMessages()" 
+                                style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;">
+                            <option value="">All Priorities</option>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                        </select>
                     </div>
 
                     <div id="messagesContainer">
@@ -1563,6 +1789,92 @@
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
+        // ===== UTILITY FUNCTIONS =====
+        function setButtonLoading(btn, loading, originalText) {
+            if (!btn) return;
+            if (loading) {
+                btn.dataset.originalText = btn.textContent;
+                btn.textContent = 'Processing...';
+                btn.classList.add('btn-loading');
+                btn.disabled = true;
+            } else {
+                btn.textContent = btn.dataset.originalText || originalText || 'Save';
+                btn.classList.remove('btn-loading');
+                btn.disabled = false;
+            }
+        }
+
+        function showSkeletonLoading(containerId, count) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            let html = '';
+            for (let i = 0; i < (count || 3); i++) {
+                html += '<div class="skeleton-card"><div class="skeleton-line long"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ===== ERROR HANDLING UTILITIES =====
+        function renderErrorState(containerId, title, detail, retryFn) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-title">${title || 'Something went wrong'}</div>
+                    <div class="error-detail">${detail || 'Please try again or refresh the page.'}</div>
+                    ${retryFn ? `<button class="btn-retry" onclick="${retryFn}">↻ Try Again</button>` : ''}
+                </div>
+            `;
+        }
+
+        function getContextualErrorMessage(error, context) {
+            const msg = error.message || String(error);
+            if (msg.includes('429') || msg.includes('rate limit') || msg.includes('throttl')) {
+                return { title: 'Too Many Requests', detail: 'The server is busy. Please wait a moment and try again.' };
+            }
+            if (msg.includes('401') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+                return { title: 'Session Expired', detail: 'Your login session has expired. Please log in again.' };
+            }
+            if (msg.includes('404') || msg.includes('not found')) {
+                return { title: 'Not Found', detail: `The requested ${context || 'resource'} could not be found.` };
+            }
+            if (msg.includes('500') || msg.includes('server error')) {
+                return { title: 'Server Error', detail: 'Something went wrong on the server. Please try again shortly.' };
+            }
+            if (msg.includes('network') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+                return { title: 'Connection Error', detail: 'Unable to connect to the server. Check your internet connection.' };
+            }
+            return { title: `Error ${context ? 'with ' + context : ''}`, detail: msg };
+        }
+
+        // ===== RETRY WITH EXPONENTIAL BACKOFF =====
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            let lastError;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const resp = await fetch(url, options);
+                    if (resp.status === 429 && attempt < maxRetries) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        showToast(`Rate limited. Retrying in ${waitMs/1000}s...`, 'info');
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    return resp;
+                } catch(err) {
+                    lastError = err;
+                    if (attempt < maxRetries && (err.message.includes('network') || err.message.includes('Failed to fetch'))) {
+                        const waitMs = Math.min(1000 * Math.pow(2, attempt), 8000);
+                        await new Promise(r => setTimeout(r, waitMs));
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+            throw lastError;
+        }
+
+
         // ===== STATE & CONFIG =====
         let currentTab = 'dashboard';
         let mattersFilter = 'all';
@@ -1686,7 +1998,7 @@
         // ===== DATA FETCHING =====
         async function fetchList(listName) {
             try {
-                const resp = await fetch(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
+                const resp = await fetchWithRetry(`/api/sharepoint?site=client&list=${encodeURIComponent(listName)}`, {
                     credentials: 'include'
                 });
                 if (!resp.ok) {
@@ -1809,6 +2121,124 @@
             return div.innerHTML;
         }
 
+        function timeAgo(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+            if (seconds < 2592000) return Math.floor(seconds / 604800) + 'w ago';
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function updateUnreadBadge() {
+            const messages = portalData.messages || [];
+            const userEmail = getCookie('cq_user') ? decodeURIComponent(getCookie('cq_user')) : '';
+            const unreadCount = messages.filter(m => {
+                const isRead = m.Read === 'true' || m.Read === true;
+                const isFromMe = (m.SenderEmail || '').toLowerCase() === userEmail.toLowerCase();
+                return !isRead && !isFromMe;
+            }).length;
+            
+            const badge = document.getElementById('messagesBadge');
+            if (badge) {
+                badge.textContent = unreadCount > 0 ? unreadCount : '';
+            }
+        }
+
+        function filterMessages() {
+            const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
+            const priority = document.getElementById('messagePriorityFilter')?.value || '';
+            
+            const messages = portalData.messages || [];
+            const filtered = messages.filter(m => {
+                const matchesSearch = !search || 
+                    (m.Title || '').toLowerCase().includes(search) ||
+                    (m.Message_x0020_Body || '').toLowerCase().includes(search) ||
+                    (m.SenderEmail || '').toLowerCase().includes(search);
+                const matchesPriority = !priority || (m.Priority || '').toLowerCase() === priority.toLowerCase();
+                return matchesSearch && matchesPriority;
+            });
+            
+            renderFilteredMessages(filtered);
+        }
+
+        function renderFilteredMessages(filtered) {
+            const container = document.getElementById('messagesContainer');
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💌</div>
+                        <div class="empty-state-title">No messages found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map((msg, idx) => {
+                const isUnread = !msg.Read;
+                const borderStyle = isUnread ? 'border-left: 4px solid var(--gold);' : '';
+                const bgStyle = isUnread ? 'background: rgba(184, 134, 11, 0.08);' : '';
+                const titleWeight = isUnread ? '700' : '600';
+                const unreadDot = isUnread ? '<span style="display:inline-block;width:8px;height:8px;background:var(--gold);border-radius:50%;margin-right:6px;"></span>' : '';
+                const senderEmail = msg.SenderEmail || '';
+                const senderLabel = senderEmail ? '<span style="font-size:11px;padding:1px 6px;border-radius:3px;background:rgba(184,134,11,0.15);color:var(--gold-dark);margin-right:6px;">CLIENT</span>' : '';
+                const originalIdx = portalData.messages.findIndex(m => m === msg);
+                return `
+                <div class="card" style="cursor: pointer; transition: background 0.15s; ${borderStyle} ${bgStyle}"
+                     data-bg="${isUnread ? 'rgba(184,134,11,0.08)' : ''}"
+                     onmouseenter="this.style.background='#f8f6f0'"
+                     onmouseleave="this.style.background=this.dataset.bg||''"
+                     onclick="viewMessageDetail(${originalIdx})">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <div style="color: var(--gold); font-weight: ${titleWeight}; margin-bottom: 8px;">${unreadDot}${senderLabel}${escapeHtml(msg.Title || '(No subject)')}</div>
+                            <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
+                            <div style="color: #888; font-size: 12px;"><span title="${formatDate(msg.Created)}">${timeAgo(msg.Created)}</span></div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function groupMessageThreads(messages) {
+            const threads = {};
+            const standalone = [];
+            
+            messages.forEach(msg => {
+                const subject = (msg.Title || '').trim();
+                const isReply = subject.toLowerCase().startsWith('re: ');
+                const threadKey = isReply ? subject.substring(4).trim().toLowerCase() : subject.toLowerCase();
+                
+                if (!threads[threadKey]) {
+                    threads[threadKey] = { original: null, replies: [] };
+                }
+                
+                if (isReply) {
+                    threads[threadKey].replies.push(msg);
+                } else {
+                    threads[threadKey].original = msg;
+                }
+            });
+            
+            // Convert to array, sorted by most recent activity
+            return Object.values(threads).map(thread => {
+                const allMsgs = [thread.original, ...thread.replies].filter(Boolean);
+                allMsgs.sort((a, b) => new Date(b.Created) - new Date(a.Created));
+                return {
+                    latest: allMsgs[0],
+                    original: thread.original || allMsgs[allMsgs.length - 1],
+                    replies: thread.replies.sort((a, b) => new Date(a.Created) - new Date(b.Created)),
+                    count: allMsgs.length
+                };
+            }).sort((a, b) => new Date(b.latest.Created) - new Date(a.latest.Created));
+        }
+
         // ===== RENDER FUNCTIONS =====
         function renderDashboard() {
             document.getElementById('statTotalMatters').textContent = portalData.matters.length;
@@ -1862,6 +2292,7 @@
                     </tr>
                 `;
             }).join('');
+            checkTableOverflow();
         }
 
         function viewMatterDetail(matterId) {
@@ -2105,7 +2536,7 @@
                 reader.readAsDataURL(file);
             });
 
-            const resp = await fetch('/api/upload-document', {
+            const resp = await fetchWithRetry('/api/upload-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2400,6 +2831,7 @@
                         <div class="empty-state-title">No messages</div>
                     </div>
                 `;
+                updateUnreadBadge();
                 return;
             }
 
@@ -2426,11 +2858,12 @@
                         <div style="flex: 1;">
                             <div style="color: var(--gold); font-weight: ${titleWeight}; margin-bottom: 8px;">${unreadDot}${senderLabel}${escapeHtml(msg.Title || '(No subject)')}</div>
                             <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
-                            <div style="color: #888; font-size: 12px;">${formatDatetime(msg.Created)}</div>
+                            <div style="color: #888; font-size: 12px;"><span title="${formatDate(msg.Created)}">${timeAgo(msg.Created)}</span></div>
                         </div>
                     </div>
                 </div>
             `}).join('');
+            updateUnreadBadge();
         }
 
         function viewMessageDetail(idx) {
@@ -2499,7 +2932,7 @@
 
         async function markMessageRead(itemId, idx) {
             try {
-                await fetch('/api/sharepoint-write', {
+                await fetchWithRetry('/api/sharepoint-write', {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -2547,6 +2980,7 @@
                     </tr>
                 `;
             }).join('');
+            checkTableOverflow();
         }
 
         function renderInvoices() {
@@ -2581,6 +3015,7 @@
                     </tr>
                 `;
             }).join('');
+            checkTableOverflow();
         }
 
         function formatCurrencyUGX(amount) {
@@ -2895,6 +3330,9 @@
         // ===== CRUD OPERATIONS =====
         async function saveMatter(e) {
             e.preventDefault();
+            const btn = document.querySelector('#matterModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
+
             const form = document.getElementById('matterForm');
             const formData = new FormData(form);
             const matterId = document.getElementById('matterIdField').value;
@@ -2929,7 +3367,7 @@
                     ...(matterId && { itemId: matterId })
                 };
 
-                const resp = await fetch(url, {
+                const resp = await fetchWithRetry(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -2947,12 +3385,19 @@
                     document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save matter'}</div>`;
                 }
             } catch (error) {
-                document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                const errInfo = getContextualErrorMessage(error, 'matter');
+                document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                showToast(errInfo.title, 'error');
+            } finally {
+                setButtonLoading(btn, false);
             }
         }
 
         async function saveClient(e) {
             e.preventDefault();
+            const btn = document.querySelector('#clientModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
+
             const form = document.getElementById('clientForm');
             const formData = new FormData(form);
             const clientId = document.getElementById('clientIdField').value;
@@ -2977,7 +3422,7 @@
                     ...(clientId && { itemId: clientId })
                 };
 
-                const resp = await fetch(url, {
+                const resp = await fetchWithRetry(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -2994,7 +3439,7 @@
 
                         if (clientEmail) {
                             try {
-                                const notifyResp = await fetch('/api/notify-client', {
+                                const notifyResp = await fetchWithRetry('/api/notify-client', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
@@ -3028,12 +3473,19 @@
                     document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save client'}</div>`;
                 }
             } catch (error) {
-                document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                const errInfo = getContextualErrorMessage(error, 'client');
+                document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                showToast(errInfo.title, 'error');
+            } finally {
+                setButtonLoading(btn, false);
             }
         }
 
         async function saveEvent(e) {
             e.preventDefault();
+            const btn = document.querySelector('#eventModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
+
             const form = document.getElementById('eventForm');
             const formData = new FormData(form);
             const eventId = document.getElementById('eventIdField').value;
@@ -3057,7 +3509,7 @@
                     ...(eventId && { itemId: eventId })
                 };
 
-                const resp = await fetch(url, {
+                const resp = await fetchWithRetry(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -3075,14 +3527,18 @@
                     document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save event'}</div>`;
                 }
             } catch (error) {
-                document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                const errInfo = getContextualErrorMessage(error, 'event');
+                document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                showToast(errInfo.title, 'error');
+            } finally {
+                setButtonLoading(btn, false);
             }
         }
 
         async function deleteMatter(matterId) {
             showConfirmDelete('Are you sure you want to delete this matter? This action cannot be undone.', async () => {
                 try {
-                    const resp = await fetch('/api/sharepoint-write', {
+                    const resp = await fetchWithRetry('/api/sharepoint-write', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3107,7 +3563,7 @@
         async function deleteClient(clientId) {
             showConfirmDelete('Are you sure you want to delete this client? This action cannot be undone.', async () => {
                 try {
-                    const resp = await fetch('/api/sharepoint-write', {
+                    const resp = await fetchWithRetry('/api/sharepoint-write', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3132,7 +3588,7 @@
         async function deleteEvent(eventId) {
             showConfirmDelete('Are you sure you want to delete this event? This action cannot be undone.', async () => {
                 try {
-                    const resp = await fetch('/api/sharepoint-write', {
+                    const resp = await fetchWithRetry('/api/sharepoint-write', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3174,6 +3630,9 @@
 
         async function saveStaff(e) {
             e.preventDefault();
+            const btn = document.querySelector('#staffModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
+
             const form = document.getElementById('staffForm');
             const formData = new FormData(form);
             const staffId = document.getElementById('staffIdField').value;
@@ -3213,7 +3672,7 @@
 
                 if (staffEmail) {
                     try {
-                        const notifyResp = await fetch('/api/notify-client', {
+                        const notifyResp = await fetchWithRetry('/api/notify-client', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -3240,6 +3699,7 @@
             setTimeout(() => {
                 closeStaffModal();
                 renderStaff();
+                setButtonLoading(btn, false);
             }, 1000);
         }
 
@@ -3260,7 +3720,7 @@
 
             try {
                 showToast('Sending invite to ' + staff.email + '...', 'info');
-                const resp = await fetch('/api/notify-client', {
+                const resp = await fetchWithRetry('/api/notify-client', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3320,6 +3780,8 @@
 
         async function saveInvoice(e) {
             e.preventDefault();
+            const btn = document.querySelector('#invoiceModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
             const form = document.getElementById('invoiceForm');
             const formData = new FormData(form);
             const invoiceId = document.getElementById('invoiceIdField').value;
@@ -3392,7 +3854,7 @@
                     ...(invoiceId && { itemId: invoiceId })
                 };
 
-                const spResp = await fetch('/api/sharepoint-write', {
+                const spResp = await fetchWithRetry('/api/sharepoint-write', {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(sharePointBody),
@@ -3420,7 +3882,7 @@
         async function deleteInvoice(invoiceId) {
             showConfirmDelete('Are you sure you want to delete this invoice? This action cannot be undone.', async () => {
                 try {
-                    const resp = await fetch('/api/sharepoint-write', {
+                    const resp = await fetchWithRetry('/api/sharepoint-write', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -3444,6 +3906,8 @@
 
         async function saveMessage(e) {
             e.preventDefault();
+            const btn = document.querySelector('#messageModal .modal-footer .btn-gold');
+            setButtonLoading(btn, true);
             const form = document.getElementById('messageForm');
             const formData = new FormData(form);
             const messageId = document.getElementById('messageIdField').value;
@@ -3466,7 +3930,7 @@
                     ...(messageId && { itemId: messageId })
                 };
 
-                const resp = await fetch(url, {
+                const resp = await fetchWithRetry(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
@@ -3484,7 +3948,11 @@
                     document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to send message'}</div>`;
                 }
             } catch (error) {
-                document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                const errInfo = getContextualErrorMessage(error, 'message');
+                document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                showToast(errInfo.title, 'error');
+            } finally {
+                setButtonLoading(btn, false);
             }
         }
 
@@ -3523,7 +3991,7 @@
                     dueDate: dueDate
                 };
 
-                const resp = await fetch('/api/send-invoice-email', {
+                const resp = await fetchWithRetry('/api/send-invoice-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(invoiceDetails),
@@ -3719,6 +4187,17 @@
             }
         }
 
+        function checkTableOverflow() {
+            document.querySelectorAll('.table-responsive').forEach(el => {
+                if (el.scrollWidth > el.clientWidth) {
+                    el.classList.add('has-overflow');
+                } else {
+                    el.classList.remove('has-overflow');
+                }
+            });
+        }
+        window.addEventListener('resize', checkTableOverflow);
+
         // ===== EVENT LISTENERS =====
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -3729,7 +4208,10 @@
         document.getElementById('logoutBtn').addEventListener('click', logout);
 
         document.getElementById('mobileMenuToggle').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('mobile-hidden');
+            const toggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            toggle.classList.toggle('active');
+            sidebar.classList.toggle('mobile-hidden');
         });
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
