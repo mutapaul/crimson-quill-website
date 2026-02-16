@@ -2001,6 +2001,7 @@
                                             ${sender === 'Client' ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
                                             Received: ${formatDate(message.Created)}
                                         </div>
+                                        ${sender !== 'Client' ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\\'")}')">Reply</button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -2223,8 +2224,36 @@
             }
         }
 
+        function replyToMessageClient(subject, matterId) {
+            openMessageModal();
+            // Pre-fill subject
+            const subjectInput = document.getElementById('msgSubject');
+            if (subjectInput) {
+                subjectInput.value = subject.startsWith('Re: ') ? subject : 'Re: ' + subject;
+            }
+            // Pre-select and lock matter
+            const matterSelect = document.getElementById('msgMatter');
+            if (matterSelect && matterId && matterId !== 'N/A') {
+                // Find and select the matter option
+                for (let opt of matterSelect.options) {
+                    if (opt.value === matterId) {
+                        matterSelect.value = matterId;
+                        break;
+                    }
+                }
+                matterSelect.disabled = true;
+            }
+            // Focus body
+            setTimeout(() => {
+                const bodyTextarea = document.getElementById('msgBody');
+                if (bodyTextarea) bodyTextarea.focus();
+            }, 100);
+        }
+
         function openMessageModal() {
             document.getElementById('messageModal').classList.add('show');
+            // Reset disabled state for new messages
+            document.getElementById('msgMatter').disabled = false;
             // Populate matter selector
             const matterSelect = document.getElementById('msgMatter');
             matterSelect.innerHTML = '<option value="">Select a matter...</option>';
@@ -2240,12 +2269,13 @@
         function closeMessageModal() {
             document.getElementById('messageModal').classList.remove('show');
             document.getElementById('messageForm').reset();
+            document.getElementById('msgMatter').disabled = false;
         }
 
         async function submitMessage(e) {
             e.preventDefault();
             const subject = document.getElementById('msgSubject').value;
-            const matterID = document.getElementById('msgMatter').value;
+            const matterID = document.getElementById('msgMatter').value || document.getElementById('msgMatter').value;
             const body = document.getElementById('msgBody').value;
 
             try {

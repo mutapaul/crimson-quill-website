@@ -1200,6 +1200,12 @@
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-textarea"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Lead Lawyer</label>
+                        <select name="leadLawyer" class="form-select" id="matterLeadLawyerSelect">
+                            <option value="">Select lead lawyer...</option>
+                        </select>
+                    </div>
                     <input type="hidden" name="matterId" id="matterIdField">
                 </form>
             </div>
@@ -1719,6 +1725,7 @@
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 renderDashboard();
                 populateClientSelect();
+                populateLeadLawyerSelect();
                 populateMatterSelects();
                 renderMatters();
                 renderClients();
@@ -2067,13 +2074,53 @@
         // ===== MATTER FILE MANAGEMENT =====
         function getMatterFileStore(matterId) {
             const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
-            if (!store[String(matterId)]) store[String(matterId)] = { folders: [], files: [] };
-            return store[String(matterId)];
+            const matterKey = String(matterId);
+
+            // Try to find the matter to get alternate keys
+            const matter = portalData.matters.find(m => String(m.id) === matterKey);
+            const matterIdKey = matter ? (matter.Matter_x0020_ID || '') : '';
+            const titleKey = matter ? (matter.Title || '') : '';
+
+            // Check all possible keys - numeric id, Matter_x0020_ID, and Title
+            let data = store[matterKey] || store[matterIdKey] || store[titleKey];
+            if (!data) {
+                data = { folders: [], files: [] };
+                store[matterKey] = data;
+            } else {
+                // Normalize: if data is an array (client portal format), convert to staff format
+                if (Array.isArray(data)) {
+                    data = {
+                        folders: [],
+                        files: data.map(f => ({
+                            name: f.name,
+                            size: f.size || 0,
+                            dataUrl: f.dataUrl,
+                            uploadedAt: f.uploadedAt,
+                            type: f.type || '',
+                            folder: f.folder || null,
+                            uploaded: f.uploadedAt || new Date().toISOString()
+                        }))
+                    };
+                    store[matterKey] = data;
+                }
+            }
+            return data;
         }
 
         function saveMatterFileStore(matterId, data) {
             const store = JSON.parse(localStorage.getItem('cq_matter_files') || '{}');
-            store[String(matterId)] = data;
+            const matterKey = String(matterId);
+
+            // Try to find the matter to get alternate keys
+            const matter = portalData.matters.find(m => String(m.id) === matterKey);
+            const matterIdKey = matter ? (matter.Matter_x0020_ID || '') : '';
+            const titleKey = matter ? (matter.Title || '') : '';
+
+            // Save under all keys so both client and staff portals can access
+            store[matterKey] = data;
+            if (matterIdKey) store[matterIdKey] = data;
+            if (titleKey) store[titleKey] = data;
+
             localStorage.setItem('cq_matter_files', JSON.stringify(store));
         }
 
@@ -2385,7 +2432,29 @@
             let html = '';
             portalData.matters.forEach(matter => {
                 const matterKey = String(matter.id);
-                const store = allFileStore[matterKey] || { folders: [], files: [] };
+                const matterIdKey = matter.Matter_x0020_ID || '';
+                const matterTitleKey = matter.Title || '';
+
+                // Check all possible keys - numeric id, Matter_x0020_ID, and Title
+                let store = allFileStore[matterKey] || allFileStore[matterIdKey] || allFileStore[matterTitleKey];
+                if (!store) store = { folders: [], files: [] };
+
+                // Normalize: if store is an array (client portal format), convert
+                if (Array.isArray(store)) {
+                    store = {
+                        folders: [],
+                        files: store.map(f => ({
+                            name: f.name,
+                            size: f.size || 0,
+                            dataUrl: f.dataUrl,
+                            uploadedAt: f.uploadedAt,
+                            type: f.type || '',
+                            folder: f.folder || null,
+                            uploaded: f.uploadedAt || new Date().toISOString()
+                        }))
+                    };
+                }
+
                 const folderCount = store.folders.length;
                 const fileCount = store.files.length;
 
@@ -2538,6 +2607,7 @@
                         break;
                     }
                 }
+                matterSelect.disabled = true;
             }
             // Focus body
             setTimeout(() => {
@@ -2834,17 +2904,27 @@
             document.getElementById('messageIdField').value = '';
             document.querySelector('#messageModal .modal-title').textContent = 'New Message';
             document.getElementById('messageFormMessages').innerHTML = '';
+            document.getElementById('messageMattersSelect').disabled = false;
             document.getElementById('messageModal').classList.add('active');
         }
 
         function closeMessageModal() {
             document.getElementById('messageModal').classList.remove('active');
+            document.getElementById('messageMattersSelect').disabled = false;
         }
 
         function populateClientSelect() {
             const select = document.getElementById('matterClientSelect');
             select.innerHTML = '<option value="">Select a client...</option>' +
                 portalData.clients.map(c => `<option value="${escapeHtml(c.Title || '')}">${escapeHtml(c.Title || '')}</option>`).join('');
+        }
+
+        function populateLeadLawyerSelect() {
+            const select = document.getElementById('matterLeadLawyerSelect');
+            if (select && portalData.staff) {
+                select.innerHTML = '<option value="">Select lead lawyer...</option>' +
+                    portalData.staff.map(s => `<option value="${escapeHtml(s.name || '')}">${escapeHtml(s.name || '')}</option>`).join('');
+            }
         }
 
         function populateMatterSelects() {
@@ -2886,6 +2966,7 @@
             document.querySelector('#matterForm select[name="status"]').value = matter.Matter_x0020_Status || 'Active';
             document.querySelector('#matterForm select[name="priority"]').value = matter.Priority || 'Medium';
             document.querySelector('#matterForm textarea[name="description"]').value = matter.Matter_x0020_Description || '';
+            document.querySelector('#matterForm select[name="leadLawyer"]').value = matter.Lead_x0020_Lawyer || '';
 
             document.getElementById('matterModal').classList.add('active');
         }
@@ -2942,8 +3023,19 @@
                 Practice_x0020_Area: formData.get('practiceArea'),
                 Matter_x0020_Status: formData.get('status'),
                 Priority: formData.get('priority'),
-                Matter_x0020_Description: formData.get('description')
+                Matter_x0020_Description: formData.get('description'),
+                Lead_x0020_Lawyer: formData.get('leadLawyer')
             };
+
+            // Auto-generate Matter ID for new matters
+            if (!matterId) {
+                const existingIds = (portalData.matters || [])
+                    .map(m => m.Matter_x0020_ID || '')
+                    .filter(id => id.match(/^CQ-M\d+$/))
+                    .map(id => parseInt(id.replace('CQ-M', '')) || 0);
+                const nextNumber = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+                payload.Matter_x0020_ID = 'CQ-M' + String(nextNumber).padStart(3, '0');
+            }
 
             try {
                 const method = matterId ? 'PATCH' : 'POST';
@@ -3410,7 +3502,7 @@
 
             const payload = {
                 Title: formData.get('subject'),
-                Matter_x0020_ID: formData.get('matter'),
+                Matter_x0020_ID: document.getElementById('messageMattersSelect').value || formData.get('matter'),
                 Message_x0020_Body: formData.get('body'),
                 Priority: formData.get('priority'),
                 Read: false
