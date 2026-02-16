@@ -181,27 +181,48 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
       startDateTime: startTime.toISOString(),
       endDateTime: endTime.toISOString(),
       subject: eventTitle,
-      lobbyBypassSettings: {
-        scope: 'organization',
-        isDialInBypassEnabled: true,
-      },
-      autoAdmittedUsers: 'organizationAndFederated',
     };
 
-    console.log(`Creating Teams meeting for organizer: "${organizer}", URL: /users/${encodeURIComponent(organizer)}/onlineMeetings`);
-    console.log(`Meeting body:`, JSON.stringify(meetingBody));
+    console.error(`[DEBUG] Creating Teams meeting for organizer: "${organizer}"`);
+    console.error(`[DEBUG] URL: /users/${encodeURIComponent(organizer)}/onlineMeetings`);
+    console.error(`[DEBUG] Meeting body: ${JSON.stringify(meetingBody)}`);
 
-    const result = await graphApi(
-      `/users/${encodeURIComponent(organizer)}/onlineMeetings`,
-      token,
-      'POST',
-      meetingBody
-    );
+    // Try v1.0 endpoint first
+    try {
+      const result = await graphApi(
+        `/users/${encodeURIComponent(organizer)}/onlineMeetings`,
+        token,
+        'POST',
+        meetingBody
+      );
+      console.error(`[DEBUG] Teams meeting created successfully via v1.0. joinWebUrl: ${result.joinWebUrl}`);
+      return result.joinWebUrl || null;
+    } catch (v1Error) {
+      console.error(`[DEBUG] v1.0 failed: ${v1Error.message}`);
 
-    console.log(`Teams meeting created successfully. joinWebUrl: ${result.joinWebUrl}`);
-    return result.joinWebUrl || null;
+      // Fallback: try beta endpoint
+      try {
+        const betaResp = await fetch(`https://graph.microsoft.com/beta/users/${encodeURIComponent(organizer)}/onlineMeetings`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(meetingBody),
+        });
+        const betaText = await betaResp.text();
+        console.error(`[DEBUG] Beta endpoint response (${betaResp.status}): ${betaText}`);
+        if (betaResp.ok) {
+          const betaResult = JSON.parse(betaText);
+          return betaResult.joinWebUrl || null;
+        }
+      } catch (betaError) {
+        console.error(`[DEBUG] Beta also failed: ${betaError.message}`);
+      }
+
+      return null;
+    }
   } catch (error) {
-    // Gracefully skip Teams meeting creation if permissions are missing
     console.error(`Teams meeting creation failed:`, error.message);
     return null;
   }
