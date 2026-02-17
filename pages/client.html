@@ -2918,7 +2918,10 @@
                                         </div>
                                         <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
                                     </div>
-                                    <span class="badge ${priorityBadgeClass}">${priority}</span>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <span class="badge ${priorityBadgeClass}">${priority}</span>
+                                        <button onclick="event.stopPropagation(); deleteMessageClient(${message.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'" title="Delete message">✕</button>
+                                    </div>
                                 </div>
                                 <div class="list-item-details" id="msg-details-${index}">
                                     <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
