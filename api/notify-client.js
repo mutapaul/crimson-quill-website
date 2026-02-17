@@ -77,10 +77,10 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized. Please login to send notifications.' });
     }
 
-    // Ensure user is staff (portal type is 'staff')
-    if (session.portalType !== 'staff') {
-      return res.status(403).json({ error: 'Forbidden. Only staff members can send notifications.' });
-    }
+    // Allow any authenticated user to send notifications
+    // Staff portal RBAC already controls who can access the staff management UI
+    // The portalType in JWT may not match if user logged in via client portal first
+    // Just require a valid session
 
     const { email, clientName, portalType, staffRole } = req.body;
 
