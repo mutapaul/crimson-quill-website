@@ -3751,7 +3751,7 @@
             document.body.insertAdjacentHTML('beforeend', modalHtml);
         }
 
-        function recordPayment(e, invoiceId) {
+        async function recordPayment(e, invoiceId) {
             e.preventDefault();
             const amount = parseFloat(document.getElementById('paymentAmount').value);
             const method = document.getElementById('paymentMethod').value;
