@@ -2294,15 +2294,77 @@
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
+        // Helper function to get the current user's assigned matter IDs/titles
+        function getCurrentUserAssignedMatters() {
+            const role = getCurrentUserRole();
+            // Managing Partner sees all messages
+            if (role === 'Managing Partner') {
+                return null; // null means no filter (show all)
+            }
+
+            const userEmail = getCookie('cq_user') ? decodeURIComponent(getCookie('cq_user')) : '';
+            const staffList = portalData.staff.length > 0 ? portalData.staff : JSON.parse(localStorage.getItem('cq_staff') || '[]');
+
+            // Get current staff member object
+            const currentUser = staffList.find(s => {
+                const staffEmail = (s.email || '').toLowerCase();
+                return staffEmail === userEmail.toLowerCase();
+            });
+
+            if (!currentUser) return [];
+
+            const assignedMatters = new Set();
+            const staffName = currentUser.name || '';
+
+            // Add matters where this staff member is the Lead Lawyer
+            portalData.matters.forEach(m => {
+                const leadLawyer = (m.Lead_x0020_Lawyer || '').toLowerCase();
+                if (leadLawyer === staffName.toLowerCase()) {
+                    const matterRef = m.Matter_x0020_ID || m.Title || String(m.id);
+                    assignedMatters.add(matterRef);
+                }
+            });
+
+            // Add matters where this staff member is on the team
+            const teamAssignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
+            Object.keys(teamAssignments).forEach(matterId => {
+                const team = teamAssignments[matterId] || [];
+                team.forEach(member => {
+                    if ((member.name || '').toLowerCase() === staffName.toLowerCase()) {
+                        // Map matterId back to Matter_x0020_ID
+                        const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+                        if (matter) {
+                            const matterRef = matter.Matter_x0020_ID || matter.Title || String(m.id);
+                            assignedMatters.add(matterRef);
+                        }
+                    }
+                });
+            });
+
+            return Array.from(assignedMatters);
+        }
+
         function updateUnreadBadge() {
             const messages = portalData.messages || [];
             const userEmail = getCookie('cq_user') ? decodeURIComponent(getCookie('cq_user')) : '';
+            const assignedMatters = getCurrentUserAssignedMatters();
+
             const unreadCount = messages.filter(m => {
                 const isRead = m.Read === 'true' || m.Read === true;
                 const isFromMe = (m.SenderEmail || '').toLowerCase() === userEmail.toLowerCase();
-                return !isRead && !isFromMe;
+
+                // Check if user has access to this message's matter
+                let hasMatterAccess = true;
+                if (assignedMatters !== null) { // null means no filter (Managing Partner)
+                    const messageMatter = m.Matter_x0020_ID || '';
+                    hasMatterAccess = assignedMatters.some(matter =>
+                        String(matter).toLowerCase() === String(messageMatter).toLowerCase()
+                    );
+                }
+
+                return !isRead && !isFromMe && hasMatterAccess;
             }).length;
-            
+
             const badge = document.getElementById('messagesBadge');
             if (badge) {
                 badge.textContent = unreadCount > 0 ? unreadCount : '';
@@ -2312,17 +2374,28 @@
         function filterMessages() {
             const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
             const priority = document.getElementById('messagePriorityFilter')?.value || '';
-            
+            const assignedMatters = getCurrentUserAssignedMatters();
+
             const messages = portalData.messages || [];
             const filtered = messages.filter(m => {
-                const matchesSearch = !search || 
+                const matchesSearch = !search ||
                     (m.Title || '').toLowerCase().includes(search) ||
                     (m.Message_x0020_Body || '').toLowerCase().includes(search) ||
                     (m.SenderEmail || '').toLowerCase().includes(search);
                 const matchesPriority = !priority || (m.Priority || '').toLowerCase() === priority.toLowerCase();
-                return matchesSearch && matchesPriority;
+
+                // Check if user has access to this message's matter
+                let hasMatterAccess = true;
+                if (assignedMatters !== null) { // null means no filter (Managing Partner)
+                    const messageMatter = m.Matter_x0020_ID || '';
+                    hasMatterAccess = assignedMatters.some(matter =>
+                        String(matter).toLowerCase() === String(messageMatter).toLowerCase()
+                    );
+                }
+
+                return matchesSearch && matchesPriority && hasMatterAccess;
             });
-            
+
             renderFilteredMessages(filtered);
         }
 
@@ -2360,6 +2433,7 @@
                             <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
                             <div style="color: #888; font-size: 12px;"><span title="${formatDate(msg.Created)}">${timeAgo(msg.Created)}</span></div>
                         </div>
+                        <button class="btn-delete-message" onclick="event.stopPropagation(); deleteMessage(${msg.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s; margin-left: 12px; flex-shrink: 0;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'">✕</button>
                     </div>
                 </div>
             `}).join('');
@@ -2725,6 +2799,33 @@
             });
 
             if (resp.ok) {
+                const fileResult = await resp.json();
+                // Create entry in SharePoint "Client Documents" list
+                try {
+                    const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+                    const matterRef = matter ? (matter.Matter_x0020_ID || matter.Title || String(matterId)) : String(matterId);
+
+                    await fetchWithRetry('/api/sharepoint-write', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            site: 'client',
+                            list: 'Client Documents',
+                            fields: {
+                                Title: file.name,
+                                Category: category || 'Other',
+                                Matter_x0020_ID: matterRef,
+                                Name: file.name,
+                                FileSize: file.size
+                            }
+                        }),
+                        credentials: 'include'
+                    });
+                } catch (listErr) {
+                    console.warn('Failed to create document list entry:', listErr);
+                }
+                // Refresh data
+                await loadAllData();
                 return true;
             } else {
                 const err = await resp.json();
@@ -3202,9 +3303,11 @@
 
             portalData.matters.forEach(matter => {
                 // Count SharePoint docs for this matter
-                const spDocs = portalData.documents.filter(d =>
-                    (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase())
-                );
+                const matterRef = matter.Matter_x0020_ID || matter.Title || '';
+                const spDocs = portalData.documents.filter(d => {
+                    const docMatter = d.Matter_x0020_ID || d.MatterID || '';
+                    return docMatter === matterRef;
+                });
                 const totalFiles = spDocs.length;
 
                 html += `
@@ -3244,18 +3347,20 @@
             matters.forEach(matterItem => {
                 const matterId = matterItem.getAttribute('data-matter-id');
                 const matter = portalData.matters.find(m => String(m.id) === matterId);
-                
-                if (!matter) return;
-                
-                const matterText = (matter.Matter_x0020_ID || '' + ' ' + matter.Title || '').toLowerCase();
-                const spDocs = portalData.documents.filter(d =>
-                    (d.Name || '').toLowerCase().includes((matter.Matter_x0020_ID || '').toLowerCase())
-                );
 
-                const matchesSearch = !searchTerm || matterText.includes(searchTerm) || 
-                    spDocs.some(d => (d.Name || '').toLowerCase().includes(searchTerm));
-                
-                const matchesCategory = !selectedCategory || 
+                if (!matter) return;
+
+                const matterText = (matter.Matter_x0020_ID || '' + ' ' + matter.Title || '').toLowerCase();
+                const matterRef = matter.Matter_x0020_ID || matter.Title || '';
+                const spDocs = portalData.documents.filter(d => {
+                    const docMatter = d.Matter_x0020_ID || d.MatterID || '';
+                    return docMatter === matterRef;
+                });
+
+                const matchesSearch = !searchTerm || matterText.includes(searchTerm) ||
+                    spDocs.some(d => (d.Title || d.Name || '').toLowerCase().includes(searchTerm));
+
+                const matchesCategory = !selectedCategory ||
                     spDocs.some(d => (d.Category || d.category || 'Other') === selectedCategory);
 
                 matterItem.style.display = (matchesSearch && matchesCategory) ? 'initial' : 'none';
@@ -3316,6 +3421,7 @@
 
         function renderMessages() {
             const container = document.getElementById('messagesContainer');
+            const assignedMatters = getCurrentUserAssignedMatters();
 
             if (portalData.messages.length === 0) {
                 container.innerHTML = `
@@ -3333,7 +3439,33 @@
             // Update portalData indices to match sorted order
             portalData.messages = sortedMessages;
 
-            container.innerHTML = sortedMessages.map((msg, idx) => {
+            // Filter messages based on user's assigned matters
+            const visibleMessages = sortedMessages.filter(msg => {
+                // Managing Partner sees all messages (assignedMatters === null)
+                if (assignedMatters === null) return true;
+
+                // Other staff only see messages for matters they're assigned to
+                const messageMatter = msg.Matter_x0020_ID || '';
+                return assignedMatters.some(matter =>
+                    String(matter).toLowerCase() === String(messageMatter).toLowerCase()
+                );
+            });
+
+            if (visibleMessages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💌</div>
+                        <div class="empty-state-title">No messages for your assigned matters</div>
+                    </div>
+                `;
+                updateUnreadBadge();
+                return;
+            }
+
+            container.innerHTML = visibleMessages.map((msg, idx) => {
+                // Re-map idx to original portalData index for viewMessageDetail()
+                const originalIdx = portalData.messages.indexOf(msg);
+
                 const isUnread = !msg.Read;
                 const borderStyle = isUnread ? 'border-left: 4px solid var(--gold);' : '';
                 const bgStyle = isUnread ? 'background: rgba(184, 134, 11, 0.08);' : '';
@@ -3346,13 +3478,14 @@
                      data-bg="${isUnread ? 'rgba(184,134,11,0.08)' : ''}"
                      onmouseenter="this.style.background='#f8f6f0'"
                      onmouseleave="this.style.background=this.dataset.bg||''"
-                     onclick="viewMessageDetail(${idx})">
+                     onclick="viewMessageDetail(${originalIdx})">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="flex: 1;">
                             <div style="color: var(--gold); font-weight: ${titleWeight}; margin-bottom: 8px;">${unreadDot}${senderLabel}${escapeHtml(msg.Title || '(No subject)')}</div>
                             <div style="color: #888; font-size: 13px; margin-bottom: 8px; line-height: 1.5;">${escapeHtml((msg.Message_x0020_Body || '').substring(0, 150))}${(msg.Message_x0020_Body || '').length > 150 ? '...' : ''}</div>
                             <div style="color: #888; font-size: 12px;"><span title="${formatDate(msg.Created)}">${timeAgo(msg.Created)}</span></div>
                         </div>
+                        <button class="btn-delete-message" onclick="event.stopPropagation(); deleteMessage(${msg.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s; margin-left: 12px; flex-shrink: 0;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'">✕</button>
                     </div>
                 </div>
             `}).join('');
@@ -3441,6 +3574,30 @@
                 }
             } catch (error) {
                 console.error('Failed to mark message as read:', error);
+            }
+        }
+
+        async function deleteMessage(itemId) {
+            if (!confirm('Are you sure you want to delete this message?')) {
+                return;
+            }
+
+            try {
+                await fetch('/api/sharepoint-write', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Messages',
+                        itemId: itemId
+                    })
+                });
+                showToast('Message deleted successfully', 'success');
+                loadAllData();
+            } catch (error) {
+                console.error('Failed to delete message:', error);
+                showToast('Failed to delete message', 'error');
             }
         }
 
@@ -4521,11 +4678,8 @@
                         body: JSON.stringify({ site: 'client', list: 'Staff', itemId: staffId, fields: spFields })
                     });
                     if (!updateResp.ok) {
-                        console.warn('SharePoint update failed, saving locally');
-                    }
-                    const idx = portalData.staff.findIndex(s => String(s.id) === String(staffId));
-                    if (idx >= 0) {
-                        portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
+                        const errData = await updateResp.json().catch(() => ({}));
+                        throw new Error(errData.error || `SharePoint update failed (${updateResp.status})`);
                     }
                 } else {
                     // New staff — create in SharePoint
@@ -4535,27 +4689,18 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ site: 'client', list: 'Staff', fields: spFields })
                     });
-                    if (createResp.ok) {
-                        const created = await createResp.json();
-                        newStaff.id = created.itemId || (Math.max(0, ...portalData.staff.map(s => parseInt(s.id) || 0)) + 1);
-                    } else {
-                        newStaff.id = Math.max(0, ...portalData.staff.map(s => parseInt(s.id) || 0)) + 1;
+                    if (!createResp.ok) {
+                        const errData = await createResp.json().catch(() => ({}));
+                        throw new Error(errData.error || `SharePoint create failed (${createResp.status})`);
                     }
-                    portalData.staff.push(newStaff);
                 }
             } catch (spErr) {
                 console.error('SharePoint staff save error:', spErr);
-                // Fallback: save locally anyway
-                if (staffId) {
-                    const idx = portalData.staff.findIndex(s => String(s.id) === String(staffId));
-                    if (idx >= 0) portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
-                } else {
-                    newStaff.id = Math.max(0, ...portalData.staff.map(s => parseInt(s.id) || 0)) + 1;
-                    portalData.staff.push(newStaff);
-                }
+                document.getElementById('staffFormMessages').innerHTML = '<div class="error-message">Failed to save staff member: ' + spErr.message + '</div>';
+                setButtonLoading(btn, false);
+                return;
             }
 
-            localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
             document.getElementById('staffFormMessages').innerHTML = '<div class="success-message">Staff member saved successfully!</div>';
 
             // Send invite email for new staff members
@@ -4590,9 +4735,9 @@
                 }
             }
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 closeStaffModal();
-                renderStaff();
+                await loadAllData();
                 setButtonLoading(btn, false);
             }, 1000);
         }
@@ -4603,20 +4748,23 @@
                 return;
             }
             showConfirmDelete('Are you sure you want to delete this staff member? This action cannot be undone.', async () => {
-                // Delete from SharePoint
+                // Delete from SharePoint (SP-primary)
                 try {
-                    await fetchWithRetry('/api/sharepoint-write', {
+                    const delResp = await fetchWithRetry('/api/sharepoint-write', {
                         method: 'DELETE',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ site: 'client', list: 'Staff', itemId: staffId })
                     });
+                    if (!delResp.ok) {
+                        throw new Error(`Delete failed (${delResp.status})`);
+                    }
+                    showToast('Staff member deleted successfully', 'success');
+                    await loadAllData();
                 } catch (e) {
-                    console.warn('Failed to delete from SharePoint:', e);
+                    console.error('Failed to delete from SharePoint:', e);
+                    showToast('Failed to delete staff member: ' + e.message, 'error');
                 }
-                portalData.staff = portalData.staff.filter(s => String(s.id) !== String(staffId));
-                localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
-                renderStaff();
             });
         }
 
@@ -5175,23 +5323,42 @@
             }
             showToast('Deleting document...', 'info');
             try {
-                const resp = await fetch(`/api/download-document?itemId=${encodeURIComponent(docId)}&action=delete`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-                if (resp.ok) {
-                    showToast('Document deleted successfully', 'success');
-                    const matterDetailView = document.getElementById('matterDetailView');
-                    if (matterDetailView && matterDetailView.style.display !== 'none') {
-                        const matterIdMatch = document.querySelector('[data-matter-id]');
-                        if (matterIdMatch) {
-                            const matterId = matterIdMatch.getAttribute('data-matter-id');
-                            viewMatterDetail(matterId);
+                // Try to delete from SharePoint "Client Documents" list by matching file name
+                let deletedFromList = false;
+                try {
+                    const matchingDocs = portalData.documents.filter(d =>
+                        (d.Title || d.Name || '').toLowerCase() === docName.toLowerCase() ||
+                        (d.id === docId)
+                    );
+
+                    for (const doc of matchingDocs) {
+                        const deleteResp = await fetchWithRetry('/api/sharepoint-write', {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                site: 'client',
+                                list: 'Client Documents',
+                                itemId: doc.id
+                            }),
+                            credentials: 'include'
+                        });
+                        if (deleteResp.ok) {
+                            deletedFromList = true;
                         }
                     }
-                } else {
-                    const err = await resp.json().catch(() => ({}));
-                    showToast('Failed to delete: ' + (err.error || 'Unknown error'), 'error');
+                } catch (listErr) {
+                    console.warn('Could not delete from Client Documents list:', listErr);
+                }
+
+                showToast('Document deleted successfully', 'success');
+                await loadAllData();
+                const matterDetailView = document.getElementById('matterDetailView');
+                if (matterDetailView && matterDetailView.style.display !== 'none') {
+                    const matterIdMatch = document.querySelector('[data-matter-id]');
+                    if (matterIdMatch) {
+                        const matterId = matterIdMatch.getAttribute('data-matter-id');
+                        viewMatterDetail(matterId);
+                    }
                 }
             } catch(e) {
                 showToast('Error deleting document: ' + e.message, 'error');
