@@ -1924,7 +1924,7 @@
 
         // Default staff members
         const defaultStaff = [
-            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul.mutamba@cqadvocates.com', phone: '+256 701 000 001' },
+            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'mutapaul1@gmail.com', phone: '+256 701 000 001' },
             { id: 2, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
             { id: 3, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
             { id: 4, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
@@ -2177,6 +2177,12 @@
                 portalData.invoices = localInvoices.length > 0 ? localInvoices : spInvoices;
 
                 // Load staff from SharePoint (with localStorage fallback)
+                // Clear stale localStorage staff to ensure fresh data
+                const staffVersion = localStorage.getItem('cq_staff_version');
+                if (staffVersion !== 'v2') {
+                    localStorage.removeItem('cq_staff');
+                    localStorage.setItem('cq_staff_version', 'v2');
+                }
                 try {
                     const staffResp = await fetchWithRetry('/api/manage-staff', { credentials: 'include' });
                     if (staffResp.ok) {
@@ -2190,14 +2196,12 @@
                             seedDefaultStaffToSharePoint(defaultStaff);
                         }
                     } else {
-                        // API error — fall back to localStorage
-                        const storedStaff = localStorage.getItem('cq_staff');
-                        portalData.staff = storedStaff ? JSON.parse(storedStaff) : [...defaultStaff];
+                        // API error — fall back to defaults (localStorage was cleared)
+                        portalData.staff = [...defaultStaff];
                     }
                 } catch (staffErr) {
-                    console.warn('Failed to load staff from SharePoint, using localStorage:', staffErr);
-                    const storedStaff = localStorage.getItem('cq_staff');
-                    portalData.staff = storedStaff ? JSON.parse(storedStaff) : [...defaultStaff];
+                    console.warn('Failed to load staff from SharePoint, using defaults:', staffErr);
+                    portalData.staff = [...defaultStaff];
                 }
                 // Always sync to localStorage for role lookups
                 localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
