@@ -1791,13 +1791,18 @@
             const messagesData = portalData.messages || { items: [] };
             const messages = messagesData.items || [];
             const clientEmail = clientProfile.email || '';
+            const myMatterIds = new Set(clientProfile.matterIds || []);
             const unreadCount = messages.filter(m => {
+                // Only count messages for this client's matters
+                const msgMatter = m.Matter_x0020_ID || '';
+                if (!msgMatter || (myMatterIds.size > 0 && !myMatterIds.has(msgMatter))) return false;
+
                 const isRead = m.Read === 'true' || m.Read === true;
                 const senderEmail = m.SenderEmail || m.Author_x0020_Email || '';
                 const isFromClient = senderEmail.toLowerCase() === clientEmail.toLowerCase();
                 return !isRead && !isFromClient;
             }).length;
-            
+
             const badge = document.getElementById('messagesBadge');
             if (badge) {
                 badge.textContent = unreadCount > 0 ? unreadCount : '';
@@ -1842,18 +1847,23 @@
         function filterMessages() {
             const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
             const priority = document.getElementById('messagePriorityFilter')?.value || '';
-            
+            const myMatterIds = new Set(clientProfile.matterIds || []);
+
             const messagesData = portalData.messages || { items: [] };
             const messages = messagesData.items || [];
             const filtered = messages.filter(m => {
-                const matchesSearch = !search || 
+                // Safety: only show messages for this client's matters
+                const msgMatter = m.Matter_x0020_ID || '';
+                if (!msgMatter || (myMatterIds.size > 0 && !myMatterIds.has(msgMatter))) return false;
+
+                const matchesSearch = !search ||
                     (m.Title || '').toLowerCase().includes(search) ||
                     (m.Message_x0020_Body || '').toLowerCase().includes(search) ||
                     (m.SenderEmail || m.Author_x0020_Email || '').toLowerCase().includes(search);
                 const matchesPriority = !priority || (m.Priority || '').toLowerCase() === priority.toLowerCase();
                 return matchesSearch && matchesPriority;
             });
-            
+
             renderFilteredMessages(filtered);
         }
 
@@ -2835,12 +2845,27 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const data = portalData.messages || await fetchList('Messages');
-                portalData.messages = data;
+                // IMPORTANT: Only use pre-filtered messages from loadClientData()
+                // Never fall back to fetching ALL messages which would bypass matter filtering
+                if (!portalData.messages) {
+                    // If messages haven't been loaded yet, wait for loadClientData to complete
+                    await loadClientData();
+                }
+                const data = portalData.messages || { items: [], listName: 'Messages' };
 
                 let messages = data.items || [];
 
-                // FIX 1: Sort messages by Created date descending (newest first)
+                // Safety re-filter: ensure only messages for this client's matters are shown
+                const myMatterIds = new Set(clientProfile.matterIds || []);
+                if (myMatterIds.size > 0) {
+                    messages = messages.filter(msg => {
+                        const msgMatter = msg.Matter_x0020_ID || '';
+                        // Only show messages that have a valid Matter_x0020_ID matching client's matters
+                        return msgMatter && myMatterIds.has(msgMatter);
+                    });
+                }
+
+                // Sort messages by Created date descending (newest first)
                 messages.sort((a, b) => new Date(b.Created) - new Date(a.Created));
 
                 let html = '<div class="card"><div class="card-title">Messages</div>';

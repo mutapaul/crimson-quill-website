@@ -1588,8 +1588,8 @@
                         <input type="text" name="subject" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Matter</label>
-                        <select name="matter" class="form-select" id="messageMattersSelect">
+                        <label class="form-label">Matter *</label>
+                        <select name="matter" class="form-select" id="messageMattersSelect" required>
                             <option value="">Select a matter...</option>
                         </select>
                     </div>
@@ -4702,9 +4702,16 @@
             const form = document.getElementById('messageForm');
             const formData = new FormData(form);
 
+            const selectedMatter = document.getElementById('messageMattersSelect').value || formData.get('matter');
+            if (!selectedMatter) {
+                document.getElementById('messageFormMessages').innerHTML = '<div class="error-message">Please select a matter. Messages must be associated with a matter so the correct client receives them.</div>';
+                setButtonLoading(btn, false);
+                return;
+            }
+
             const payload = {
                 Title: formData.get('subject'),
-                Matter_x0020_ID: document.getElementById('messageMattersSelect').value || formData.get('matter'),
+                Matter_x0020_ID: selectedMatter,
                 Message_x0020_Body: formData.get('body'),
                 Priority: formData.get('priority'),
                 Read: false
