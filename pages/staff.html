@@ -3497,12 +3497,12 @@
             }
 
             tbody.innerHTML = portalData.invoices.map(invoice => {
-                const invNumber = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '—';
-                const invMatter = invoice.matterNumber || invoice.Matter_x0020_ID || '—';
-                const invClient = invoice.client || invoice.Client_x0020_Name || '—';
-                const invDate = invoice.date || invoice.Invoice_x0020_Date;
-                const invTotal = invoice.totalAmount || invoice.Total_x0020_Amount || 0;
-                const invStatus = invoice.status || invoice.Status || 'Draft';
+                const invNumber = invoice.InvoiceNumber || invoice.invoiceNumber || invoice.Invoice_x0020_Number || invoice.Title || '—';
+                const invMatter = invoice.MatterID || invoice.Matter_x0020_ID || invoice.matterNumber || '—';
+                const invClient = invoice.ClientName || invoice.Client_x0020_Name || invoice.client || '—';
+                const invDate = invoice.DueDate || invoice.Due_x0020_Date || invoice.date || invoice.Invoice_x0020_Date;
+                const invTotal = invoice.Amount || invoice.totalAmount || invoice.Total_x0020_Amount || 0;
+                const invStatus = invoice.PaymentStatus || invoice.Payment_x0020_Status || invoice.status || invoice.Status || 'Draft';
                 const invId = invoice.id;
 
                 // Determine status badge with payment info
@@ -3511,7 +3511,7 @@
                 const paidAmount = invoice.amountPaid || 0;
                 const unpaidAmount = invTotal - paidAmount;
 
-                if (invStatus === 'Paid' || paidAmount >= invTotal) {
+                if (invStatus === 'Paid' || (paidAmount > 0 && paidAmount >= invTotal)) {
                     statusClass = 'badge-active';
                     statusDisplay = 'Paid';
                 } else if (paidAmount > 0) {
