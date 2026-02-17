@@ -1263,9 +1263,9 @@
                     </div>
 
                     <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">
-                        <input type="text" id="messageSearch" placeholder="Search messages..." 
+                        <input type="text" id="messageSearch" placeholder="Search messages..."
                                style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;"
-                               oninput="filterMessages()">
+                               oninput="debouncedFilterMessages()">
                         <select id="messagePriorityFilter" onchange="filterMessages()" 
                                 style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;">
                             <option value="">All Priorities</option>
@@ -1706,11 +1706,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Professional Fees (UGX)</label>
-                        <input type="number" name="professionalFees" class="form-input" id="invoiceFeesField" oninput="updateInvoiceTotal()">
+                        <input type="number" name="professionalFees" class="form-input" id="invoiceFeesField" oninput="debouncedUpdateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Disbursements (UGX)</label>
-                        <input type="number" name="disbursements" class="form-input" id="invoiceDisbursementsField" oninput="updateInvoiceTotal()">
+                        <input type="number" name="disbursements" class="form-input" id="invoiceDisbursementsField" oninput="debouncedUpdateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">VAT Amount (18%, Auto-calculated) (UGX)</label>
@@ -1724,7 +1724,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Amount Paid (UGX)</label>
-                        <input type="number" name="amountPaid" class="form-input" id="invoiceAmountPaidField" oninput="updateInvoiceTotal()">
+                        <input type="number" name="amountPaid" class="form-input" id="invoiceAmountPaidField" oninput="debouncedUpdateInvoiceTotal()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Status</label>
@@ -1834,6 +1834,15 @@
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script>
+        // ===== DEBOUNCE UTILITY =====
+        function debounce(fn, delay = 300) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
         // ===== UTILITY FUNCTIONS =====
         function setButtonLoading(btn, loading, originalText) {
             if (!btn) return;
@@ -1948,6 +1957,11 @@
 
         // ===== CONFIRM DELETE MODAL =====
         let pendingDeleteCallback = null;
+
+        // ===== DEBOUNCED FILTER FUNCTIONS =====
+        const debouncedFilterMessages = debounce(() => filterMessages(), 300);
+        const debouncedFilterDocumentsOverview = debounce(() => filterDocumentsOverview(), 300);
+        const debouncedUpdateInvoiceTotal = debounce(() => updateInvoiceTotal(), 300);
 
         function showConfirmDelete(message, callback) {
             document.getElementById('confirmDeleteMessage').textContent = message;
@@ -3353,9 +3367,9 @@
             
             // Add search and filter controls
             html += `<div style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
-                <input type="text" id="docSearchInput" placeholder="Search documents by name..." 
+                <input type="text" id="docSearchInput" placeholder="Search documents by name..."
                     style="flex:1;padding:10px 14px;border:1px solid var(--silver);border-radius:var(--radius-sm);font-size:14px;"
-                    oninput="filterDocumentsOverview()">
+                    oninput="debouncedFilterDocumentsOverview()">
                 <select id="docCategoryFilter" style="padding:10px;border:1px solid var(--silver);border-radius:var(--radius-sm);"
                     onchange="filterDocumentsOverview()">
                     <option value="">All Categories</option>

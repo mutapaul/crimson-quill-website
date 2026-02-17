@@ -1,5 +1,5 @@
 /**
- * Crimson & Quill â Portal Authentication Client Logic
+ * Crimson & Quill - Portal Authentication Client Logic
  */
 var CQAuth = (function () {
   'use strict';

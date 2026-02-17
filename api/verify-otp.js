@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // OTP is correct â clean up
+    // OTP is correct - clean up
     await deleteOTP(kv, normalizedEmail);
 
     // Generate JWT session token

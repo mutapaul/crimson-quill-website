@@ -1711,6 +1711,17 @@
 
     <script>
         // ============================================================================
+        // DEBOUNCE UTILITY
+        // ============================================================================
+        function debounce(fn, delay = 300) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        // ============================================================================
         // UTILITY FUNCTIONS
         // ============================================================================
         function setButtonLoading(btn, loading, originalText) {
@@ -1743,6 +1754,12 @@
         let currentTab = 'dashboard';
         let portalData = {};
         let clientProfile = { name: null, email: null, matterNames: [], matterIds: [] };
+
+        // ============================================================================
+        // DEBOUNCED FILTER FUNCTIONS
+        // ============================================================================
+        const debouncedFilterMessages = debounce(() => filterMessages(), 300);
+        const debouncedFilterCalendarEvents = debounce(() => filterCalendarEvents(), 300);
 
         // ============================================================================
         // UTILITIES
@@ -1861,6 +1878,61 @@
             });
         }
 
+        // ============================================================================
+        // MESSAGE RENDERING HELPER
+        // ============================================================================
+        /**
+         * Renders HTML for a single message item
+         * @param {Object} message - Message object with id, Title, Message_x0020_Body, Priority, Created, Read, etc.
+         * @param {number} originalIdx - Original index in the full messages array (for detail toggling)
+         * @returns {string} HTML string for the message item
+         */
+        function renderMessageHTML(message, originalIdx) {
+            const clientEmail = clientProfile.email || '';
+            const priority = message.Priority || 'Normal';
+            const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
+
+            const unreadStyle = message.Read
+                ? ''
+                : 'border-left: 4px solid var(--gold); background: rgba(184, 134, 11, 0.12);';
+            const titleWeight = message.Read ? '500' : '700';
+
+            const senderEmail = message.SenderEmail || message.Author_x0020_Email || '';
+            const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
+            const sender = isClientMessage ? 'You' : 'Staff';
+            const senderBadgeClass = isClientMessage ? 'sender-badge-client' : 'sender-badge-staff';
+
+            return `
+                <div class="list-item" onclick="toggleMessageDetails(this, ${originalIdx})" style="${unreadStyle}">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div class="list-item-title" style="font-weight: ${titleWeight};">
+                                <span class="sender-badge ${senderBadgeClass}">${sender}</span>
+                                ${message.Title || 'No Subject'}
+                                ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
+                            </div>
+                            <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="badge ${priorityBadgeClass}">${priority}</span>
+                            <button onclick="event.stopPropagation(); deleteMessageClient(${message.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s; flex-shrink: 0;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'" title="Delete message">✕</button>
+                        </div>
+                    </div>
+                    <div class="list-item-details" id="msg-details-${originalIdx}">
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
+                            <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
+                            <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
+                                ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
+                                ${isClientMessage ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
+                                Received: ${formatDate(message.Created)}
+                            </div>
+                            ${!isClientMessage ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\\'")}')">'Reply</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         function filterMessages() {
             const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
             const priority = document.getElementById('messagePriorityFilter')?.value || '';
@@ -1885,58 +1957,18 @@
         }
 
         function renderFilteredMessages(filtered) {
-            const clientEmail = clientProfile.email || '';
             let html = '';
-            
+
             if (filtered.length === 0) {
                 html = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">No messages match your search.</div></div>';
             } else {
-                filtered.forEach((message, index) => {
-                    const priority = message.Priority || 'Normal';
-                    const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-                    const unreadStyle = message.Read
-                        ? ''
-                        : 'border-left: 4px solid var(--gold); background: rgba(184, 134, 11, 0.12);';
-                    const titleWeight = message.Read ? '500' : '700';
-                    
-                    const senderEmail = message.SenderEmail || message.Author_x0020_Email || '';
-                    const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
-                    const sender = isClientMessage ? 'You' : 'Staff';
-                    const senderBadgeClass = isClientMessage ? 'sender-badge-client' : 'sender-badge-staff';
-                    
-                    // Find original index in full messages array
+                filtered.forEach((message) => {
+                    // Find original index in full messages array for detail toggling
                     const messagesData = portalData.messages || { items: [] };
                     const originalIdx = (messagesData.items || []).findIndex(m => m === message);
-                    
-                    html += `
-                        <div class="list-item" onclick="toggleMessageDetails(this, ${originalIdx})" style="${unreadStyle}">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div style="flex: 1;">
-                                    <div class="list-item-title" style="font-weight: ${titleWeight};">
-                                        <span class="sender-badge ${senderBadgeClass}">${sender}</span>
-                                        ${message.Title || 'No Subject'}
-                                        ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
-                                    </div>
-                                    <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
-                                </div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <span class="badge ${priorityBadgeClass}">${priority}</span>
-                                    <button class="btn-delete-message" onclick="event.stopPropagation(); deleteMessageClient(${message.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500; transition: background 0.2s; flex-shrink: 0;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'">✕</button>
-                                </div>
-                            </div>
-                            <div class="list-item-details" id="msg-details-${originalIdx}">
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
-                                    <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
-                                    <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
-                                        ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
-                                        ${isClientMessage ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
-                                        Received: ${formatDate(message.Created)}
-                                    </div>
-                                    ${!isClientMessage ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\'")}')">Reply</button>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    `;
+
+                    // Use the consolidated helper function
+                    html += renderMessageHTML(message, originalIdx);
                 });
             }
             
@@ -1946,7 +1978,7 @@
                 '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">' +
                 '<input type="text" id="messageSearch" placeholder="Search messages..." ' +
                 'style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" ' +
-                'oninput="filterMessages()">' +
+                'oninput="debouncedFilterMessages()">' +
                 '<select id="messagePriorityFilter" onchange="filterMessages()" ' +
                 'style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;">' +
                 '<option value="">All Priorities</option>' +
@@ -2641,7 +2673,7 @@
                 // Add filter
                 if (uniqueMatters.length > 0) {
                     html += '<div class="filter-group"><label class="filter-label">Filter by Matter</label>';
-                    html += '<select class="filter-select" id="eventMatterFilter" onchange="filterCalendarEvents()">';
+                    html += '<select class="filter-select" id="eventMatterFilter" onchange="debouncedFilterCalendarEvents()">';
                     html += '<option value="">All Matters</option>';
                     uniqueMatters.forEach(matter => {
                         html += `<option value="${matter}">${matter}</option>`;
@@ -2900,7 +2932,7 @@
                 let html = '<div class="card"><div class="card-title">Messages</div>';
                 html += '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>';
                 html += '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">';
-                html += '<input type="text" id="messageSearch" placeholder="Search messages..." style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" oninput="filterMessages()">';
+                html += '<input type="text" id="messageSearch" placeholder="Search messages..." style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" oninput="debouncedFilterMessages()">';
                 html += '<select id="messagePriorityFilter" onchange="filterMessages()" style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;"><option value="">All Priorities</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>';
                 html += '</div>';
 
@@ -2908,51 +2940,8 @@
                     html += '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">You have no messages at this time.</div></div>';
                 } else {
                     messages.forEach((message, index) => {
-                        const priority = message.Priority || 'Normal';
-                        const priorityBadgeClass = `badge-${priority.toLowerCase()}`;
-
-                        // FIX 3: Improve unread message styling
-                        const unreadStyle = message.Read
-                            ? ''
-                            : 'border-left: 4px solid var(--gold); background: rgba(184, 134, 11, 0.12);';
-                        const titleWeight = message.Read ? '500' : '700';
-
-                        // FIX 2: Determine sender by checking SenderEmail field or comparing author email with client email
-                        const clientEmail = clientProfile.email || '';
-                        const senderEmail = message.SenderEmail || message.Author_x0020_Email || '';
-                        const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
-                        const sender = isClientMessage ? 'You' : 'Staff';
-                        const senderBadgeClass = isClientMessage ? 'sender-badge-client' : 'sender-badge-staff';
-
-                        html += `
-                            <div class="list-item" onclick="toggleMessageDetails(this, ${index})" style="${unreadStyle}">
-                                <div style="display: flex; justify-content: space-between; align-items: start;">
-                                    <div style="flex: 1;">
-                                        <div class="list-item-title" style="font-weight: ${titleWeight};">
-                                            <span class="sender-badge ${senderBadgeClass}">${sender}</span>
-                                            ${message.Title || 'No Subject'}
-                                            ${!message.Read ? '<span style="display: inline-block; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; margin-left: 8px; vertical-align: middle;"></span>' : ''}
-                                        </div>
-                                        <div class="list-item-meta">Matter: ${message.Matter_x0020_ID || 'N/A'} • <span title="${formatDate(message.Created)}">${timeAgo(message.Created)}</span></div>
-                                    </div>
-                                    <div style="display: flex; gap: 8px; align-items: center;">
-                                        <span class="badge ${priorityBadgeClass}">${priority}</span>
-                                        <button onclick="event.stopPropagation(); deleteMessageClient(${message.id})" style="padding: 4px 8px; border: none; background: #dc3545; color: white; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: 500;" onmouseenter="this.style.background='#c82333'" onmouseleave="this.style.background='#dc3545'" title="Delete message">✕</button>
-                                    </div>
-                                </div>
-                                <div class="list-item-details" id="msg-details-${index}">
-                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--silver);">
-                                        <div style="color: var(--gray); line-height: 1.6;">${message.Message_x0020_Body || 'No content'}</div>
-                                        <div style="margin-top: 15px; font-size: 12px; color: var(--gray-light);">
-                                            ${!message.Read ? '<span style="background: var(--gold); color: white; padding: 2px 8px; border-radius: 3px; margin-right: 10px;">Unread</span>' : ''}
-                                            ${isClientMessage ? '<span style="background: rgba(184, 134, 11, 0.2); color: var(--gold-dark); padding: 2px 8px; border-radius: 3px; margin-right: 10px;">You sent this</span>' : ''}
-                                            Received: ${formatDate(message.Created)}
-                                        </div>
-                                        ${!isClientMessage ? `<button class="btn btn-sm" style="margin-top: 15px; padding: 6px 12px; font-size: 12px; background: var(--gold); color: white; border: none; border-radius: 3px; cursor: pointer;" onclick="event.stopPropagation(); replyToMessageClient('${(message.Title || 'Message').replace(/'/g, "\\'")}', '${(message.Matter_x0020_ID || 'N/A').replace(/'/g, "\\'")}')">Reply</button>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        // Use the consolidated helper function
+                        html += renderMessageHTML(message, index);
                     });
                 }
 
@@ -3853,6 +3842,20 @@
             if (e.target === this) closeDocViewer();
         });
 
+        // Confirm Modal backdrop click handler
+        document.getElementById('confirmModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('confirmModal').classList.remove('show');
+            }
+        });
+
+        // Create Folder Modal close handlers
+        document.getElementById('createFolderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('createFolderModal').classList.remove('show');
+            }
+        });
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 if (document.getElementById('docViewerModal').classList.contains('show')) {
@@ -3863,6 +3866,9 @@
                 }
                 if (document.getElementById('invoiceModal').classList.contains('show')) {
                     document.getElementById('invoiceModal').classList.remove('show');
+                }
+                if (document.getElementById('createFolderModal').classList.contains('show')) {
+                    document.getElementById('createFolderModal').classList.remove('show');
                 }
             }
         });
