@@ -2104,6 +2104,8 @@
             document.getElementById('userEmail').textContent = userCookie;
             const role = getCurrentUserRole();
             document.getElementById('userRole').textContent = role;
+            // Apply nav visibility immediately with cached data to prevent flash of unauthorized nav items
+            applyRoleBasedNavigation();
             return true;
         }
 
@@ -2135,21 +2137,25 @@
                     credentials: 'include'
                 });
                 if (!resp.ok) {
-                    throw new Error(`Failed to fetch ${listName}`);
+                    // 404 means list doesn't exist in SharePoint yet — expected for Staff/Billing
+                    if (resp.status === 404) {
+                        return [];
+                    }
+                    throw new Error(`Failed to fetch ${listName} (${resp.status})`);
                 }
                 const data = await resp.json();
                 return data.items || [];
             } catch (error) {
-                console.error(`Error fetching ${listName}:`, error);
+                console.warn(`Could not load ${listName}:`, error.message || error);
                 return [];
             }
         }
 
-        /** Seed default staff to SharePoint Staff list (runs in background) */
+        /** Seed default staff to SharePoint Staff list (runs in background, single attempt per member) */
         async function seedDefaultStaffToSharePoint(staffList) {
             for (const s of staffList) {
                 try {
-                    await fetchWithRetry('/api/sharepoint-write', {
+                    const resp = await fetch('/api/sharepoint-write', {
                         method: 'POST',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
@@ -2164,8 +2170,13 @@
                             }
                         })
                     });
+                    if (!resp.ok) {
+                        // Staff list may not exist in SharePoint yet — skip silently
+                        break;
+                    }
                 } catch (e) {
-                    console.warn('Failed to seed staff member:', s.name, e);
+                    // Network or list error — stop trying to seed
+                    break;
                 }
             }
         }
@@ -2237,6 +2248,11 @@
                 // Refresh role display after staff data is loaded from SharePoint
                 const refreshedRole = getCurrentUserRole();
                 document.getElementById('userRole').textContent = refreshedRole;
+                // Show/hide Add Staff button based on permissions
+                const addStaffBtn = document.getElementById('newStaffBtn');
+                if (addStaffBtn) {
+                    addStaffBtn.style.display = hasPermission('staff', 'create') ? '' : 'none';
+                }
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loadingOverlay').classList.add('hidden');
@@ -3461,6 +3477,8 @@
 
         function renderStaff() {
             const tbody = document.getElementById('staffTableBody');
+            const canEdit = hasPermission('staff', 'edit');
+            const canDelete = hasPermission('staff', 'delete');
 
             if (portalData.staff.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #888;">No staff members</td></tr>';
@@ -3473,6 +3491,20 @@
                     return leadLawyer.toLowerCase() === staff.name.toLowerCase();
                 }).length;
 
+                let actionButtons = '';
+                if (canEdit) {
+                    actionButtons += `<button class="btn btn-sm btn-secondary" onclick="editStaff('${staff.id}')">Edit</button>`;
+                }
+                if (canDelete) {
+                    actionButtons += `<button class="btn btn-sm btn-danger" onclick="deleteStaff('${staff.id}')">Delete</button>`;
+                }
+                if (staff.email && canEdit) {
+                    actionButtons += `<button class="btn btn-sm" style="background: var(--gold); color: white; border: none; margin-left: 4px;" onclick="sendStaffInvite('${staff.id}')" title="Send portal invite email">Invite</button>`;
+                }
+                if (!actionButtons) {
+                    actionButtons = '<span style="color: #888; font-size: 12px;">View only</span>';
+                }
+
                 return `
                     <tr>
                         <td><strong>${escapeHtml(staff.name || '—')}</strong></td>
@@ -3480,11 +3512,7 @@
                         <td>${escapeHtml(staff.email || '—')}</td>
                         <td>${escapeHtml(staff.phone || '—')}</td>
                         <td>${matterCount}</td>
-                        <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editStaff('${staff.id}')">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteStaff('${staff.id}')">Delete</button>
-                            ${staff.email ? `<button class="btn btn-sm" style="background: var(--gold); color: white; border: none; margin-left: 4px;" onclick="sendStaffInvite('${staff.id}')" title="Send portal invite email">Invite</button>` : ''}
-                        </td>
+                        <td>${actionButtons}</td>
                     </tr>
                 `;
             }).join('');
@@ -4443,7 +4471,11 @@
         }
 
         function editStaff(staffId) {
-            const staff = portalData.staff.find(s => s.id === staffId);
+            if (!hasPermission('staff', 'edit')) {
+                showToast(`You don't have permission to edit staff members. Required role: ${getMinRoleForPermission('staff', 'edit')}`, 'error');
+                return;
+            }
+            const staff = portalData.staff.find(s => String(s.id) === String(staffId));
             if (!staff) return;
 
             editingStaffId = staffId;
@@ -4482,6 +4514,7 @@
 
             if (!newStaff.name || !newStaff.role) {
                 document.getElementById('staffFormMessages').innerHTML = '<div class="error-message">Name and Role are required</div>';
+                setButtonLoading(btn, false);
                 return;
             }
 
@@ -4580,6 +4613,10 @@
         }
 
         function deleteStaff(staffId) {
+            if (!hasPermission('staff', 'delete')) {
+                showToast(`You don't have permission to delete staff members. Required role: ${getMinRoleForPermission('staff', 'delete')}`, 'error');
+                return;
+            }
             showConfirmDelete('Are you sure you want to delete this staff member? This action cannot be undone.', async () => {
                 // Delete from SharePoint
                 try {
@@ -4599,7 +4636,7 @@
         }
 
         async function sendStaffInvite(staffId) {
-            const staff = portalData.staff.find(s => s.id === staffId);
+            const staff = portalData.staff.find(s => String(s.id) === String(staffId));
             if (!staff || !staff.email) {
                 showToast('No email address found for this staff member', 'error');
                 return;
