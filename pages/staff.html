@@ -1813,6 +1813,23 @@
         </div>
     </div>
 
+    <!-- Confirm Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Action</h3>
+                <button type="button" class="modal-close" id="closeConfirmModal" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; color: #666;">&times;</button>
+            </div>
+            <div style="padding: 20px 0; text-align: left;">
+                <p id="confirmModalMessage" style="margin: 0; color: #555; font-size: 14px;"></p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 10px;">
+                <button type="button" class="btn btn-secondary" id="confirmModalCancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmModalOk">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 10001; display: flex; flex-direction: column; gap: 10px;"></div>
 
@@ -1983,6 +2000,51 @@
             toast.textContent = message;
             container.appendChild(toast);
             setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function showConfirmModal(message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirmModal');
+                const messageEl = document.getElementById('confirmModalMessage');
+                const cancelBtn = document.getElementById('confirmModalCancel');
+                const okBtn = document.getElementById('confirmModalOk');
+                const closeBtn = document.getElementById('closeConfirmModal');
+
+                messageEl.textContent = message;
+                modal.classList.add('show');
+
+                const handleCancel = () => {
+                    modal.classList.remove('show');
+                    cleanup();
+                    resolve(false);
+                };
+
+                const handleOk = () => {
+                    modal.classList.remove('show');
+                    cleanup();
+                    resolve(true);
+                };
+
+                const cleanup = () => {
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    okBtn.removeEventListener('click', handleOk);
+                    closeBtn.removeEventListener('click', handleCancel);
+                    document.removeEventListener('keydown', handleEscape);
+                };
+
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        handleCancel();
+                    }
+                };
+
+                cancelBtn.addEventListener('click', handleCancel);
+                okBtn.addEventListener('click', handleOk);
+                closeBtn.addEventListener('click', handleCancel);
+                document.addEventListener('keydown', handleEscape);
+
+                okBtn.focus();
+            });
         }
 
         // ===== RBAC PERMISSIONS =====
@@ -3578,7 +3640,8 @@
         }
 
         async function deleteMessage(itemId) {
-            if (!confirm('Are you sure you want to delete this message?')) {
+            const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
+            if (!confirmed) {
                 return;
             }
 
