@@ -1071,7 +1071,7 @@
                 </div>
                 <div class="header-right">
                     <div class="user-info">
-                        <div class="user-email" id="userEmail">user@crimson-quill.com</div>
+                        <div class="user-email" id="userEmail">Loading...</div>
                         <div class="user-role" id="userRole">Loading...</div>
                     </div>
                     <button class="btn btn-gold btn-sm" id="logoutBtn">Logout</button>
@@ -1924,12 +1924,8 @@
 
         // Default staff members
         const defaultStaff = [
-            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'mutapaul1@gmail.com', phone: '+256 701 000 001' },
-            { id: 2, name: 'Kelvin Balyebuga', role: 'Managing Partner', email: 'kelvin.balyebuga@cqadvocates.com', phone: '' },
-            { id: 3, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
-            { id: 4, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
-            { id: 5, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
-            { id: 6, name: 'James Kato', role: 'Legal Assistant', email: 'james@crimson-quill.com', phone: '+256 701 000 005' }
+            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul.mutamba@cqadvocates.com', phone: '+256 778 171 215' },
+            { id: 2, name: 'Kelvin Balyebuga', role: 'Managing Partner', email: 'kelvin.balyebuga@cqadvocates.com', phone: '' }
         ];
 
         let editingStaffId = null;
@@ -2024,14 +2020,21 @@
             settings: { view: 80, edit: 80 }
         };
 
+        // Map login emails to staff emails (for staff who log in with a different email)
+        const EMAIL_ALIASES = {
+            'mutapaul1@gmail.com': 'paul.mutamba@cqadvocates.com'
+        };
+
         function getCurrentUserRole() {
             const userEmail = decodeURIComponent(document.cookie.split('cq_user=')[1]?.split(';')[0] || '').toLowerCase();
             const staffList = portalData.staff.length > 0 ? portalData.staff : JSON.parse(localStorage.getItem('cq_staff') || '[]');
-            // Match by email (case-insensitive) — check both staff email and login email fields
-            const currentUser = staffList.find(s =>
-                (s.email || '').toLowerCase() === userEmail ||
-                (s.loginEmail || '').toLowerCase() === userEmail
-            );
+            // Resolve alias if login email differs from staff email
+            const resolvedEmail = EMAIL_ALIASES[userEmail] || userEmail;
+            // Match by email (case-insensitive) — check both direct and aliased email
+            const currentUser = staffList.find(s => {
+                const staffEmail = (s.email || '').toLowerCase();
+                return staffEmail === userEmail || staffEmail === resolvedEmail;
+            });
             return currentUser?.role || 'Read-Only';
         }
 
@@ -2190,9 +2193,9 @@
                 // Load staff from SharePoint "Staff" list (with localStorage fallback)
                 // Clear stale localStorage staff to ensure fresh data
                 const staffVersion = localStorage.getItem('cq_staff_version');
-                if (staffVersion !== 'v4') {
+                if (staffVersion !== 'v5') {
                     localStorage.removeItem('cq_staff');
-                    localStorage.setItem('cq_staff_version', 'v4');
+                    localStorage.setItem('cq_staff_version', 'v5');
                 }
                 try {
                     const spStaff = await fetchList('Staff');
@@ -4965,9 +4968,9 @@
             <div class="firm-subtitle">Advocates & Legal Consultants</div>
         </div>
         <div class="firm-contact">
-            Plot 1, Kimathi Avenue<br>
+            Ntinda, Kiwatule Rd, Mpungu Close<br>
             Kampala, Uganda<br>
-            Tel: +256 701 000 000<br>
+            Tel: +256 778 171 215<br>
             info@cqadvocates.com<br>
             www.cqadvocates.com
         </div>
