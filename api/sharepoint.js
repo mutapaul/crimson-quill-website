@@ -85,7 +85,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { site, list, top } = req.query;
+  const { site, list, top, matterTitle, folderPath } = req.query;
   if (!site || !list) {
     return res.status(400).json({ error: 'Missing site or list parameter' });
   }
@@ -110,8 +110,22 @@ export default async function handler(req, res) {
         );
         const lib = libs.value.find(d => d.name === libName || d.name === 'Documents');
         if (lib) {
+          // Build the folder path for the drive API endpoint
+          let drivePath = `/drives/${lib.id}/root`;
+          
+          // Construct the path based on matterTitle and folderPath
+          if (matterTitle) {
+            if (folderPath) {
+              // Both matterTitle and folderPath provided: navigate to Client Portal/matterTitle/folderPath
+              drivePath = `/drives/${lib.id}/root:/Client Portal/${matterTitle}/${folderPath}`;
+            } else {
+              // Only matterTitle provided: navigate to Client Portal/matterTitle
+              drivePath = `/drives/${lib.id}/root:/Client Portal/${matterTitle}`;
+            }
+          }
+          
           const files = await graphApi(
-            `/drives/${lib.id}/root/children?$top=${topCount}`,
+            `${drivePath}/children?$top=${topCount}`,
             token
           );
           return res.status(200).json({ success: true, type: 'documents', items: files.value || [] });

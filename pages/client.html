@@ -1611,8 +1611,8 @@
                     <div class="upload-area" id="uploadArea">
                         <div class="upload-area-icon">📄</div>
                         <div class="upload-area-text">Click to upload or drag and drop</div>
-                        <div class="upload-area-hint">Max file size: 10 MB</div>
-                        <input type="file" id="fileInput" style="display: none;">
+                        <div class="upload-area-hint">Max file size: 5 MB · Supported: PDF, DOCX, XLSX, PNG, JPG, TXT, CSV, MSG</div>
+                        <input type="file" id="fileInput" style="display: none;" multiple>
                     </div>
                     <div id="fileName" style="margin-top: 10px; font-size: 13px; color: var(--gray);"></div>
                     <div id="uploadProgress" style="display: none;">
@@ -1625,6 +1625,33 @@
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-secondary" id="cancelUploadBtn">Cancel</button>
                     <button type="submit" class="btn btn-gold" id="uploadSubmitBtn">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal" id="createFolderModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Folder</h3>
+                <button class="modal-close" onclick="document.getElementById('createFolderModal').classList.remove('show')">&times;</button>
+            </div>
+            <form onsubmit="submitCreateFolder(event)">
+                <div class="form-group">
+                    <label class="form-label" for="newFolderMatter">Matter</label>
+                    <select class="form-select" id="newFolderMatter" required>
+                        <option value="">-- Choose a matter --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="newFolderName">Folder Name</label>
+                    <input type="text" class="form-input" id="newFolderName" placeholder="Enter folder name" required style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                </div>
+                <div id="currentFolderPathDisplay" style="display:none;margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;"></div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('createFolderModal').classList.remove('show')">Cancel</button>
+                    <button type="submit" class="btn btn-gold">Create Folder</button>
                 </div>
             </form>
         </div>
@@ -2297,47 +2324,223 @@
             }
         }
 
-        async function loadDocuments() {
+        // Client portal folder path tracking
+        let clientCurrentMatter = null;
+        let clientFolderPath = '';
+
+        async function loadDocuments(matterFilter, folderPath) {
             const container = document.getElementById('documents');
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
+            // Get client's matters for the matter selector
+            const matters = (portalData.matters?.items || []);
+
+            // If a specific matter is selected, load its folder contents
+            if (matterFilter) {
+                clientCurrentMatter = matterFilter;
+                clientFolderPath = folderPath || '';
+                await loadMatterDocuments(container, matterFilter, clientFolderPath, matters);
+                return;
+            }
+
+            // Default view: show matter-based document overview
             try {
-                const data = portalData.documents || await fetchList('Client Documents');
-                portalData.documents = data;
+                let html = '<div class="card">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px;">';
+                html += '<div class="card-title" style="margin: 0;">Documents</div>';
+                html += '<div style="display: flex; gap: 8px;">';
+                html += '<button class="btn btn-secondary" onclick="openCreateFolderModal()" style="padding: 8px 16px; font-size: 13px;">+ New Folder</button>';
+                html += '<button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 16px; font-size: 13px;">+ Upload Document</button>';
+                html += '</div></div>';
 
-                const documents = data.items || [];
-
-                let html = '<div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><div class="card-title" style="margin: 0;">Documents</div><button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 16px; font-size: 13px;">+ Upload Document</button></div>';
-                html += '<p style="color: var(--gray-light); font-size: 13px; margin-bottom: 16px;">Click on any document to preview it</p><div style="display: flex; flex-direction: column; gap: 2px;">';
-
-                // Add SharePoint documents
-                documents.forEach((doc, idx) => {
-                    const ext = (doc.Name || '').split('.').pop().toLowerCase();
-                    const icon = ext === 'pdf' ? '📕' : (ext === 'docx' || ext === 'doc') ? '📘' : (ext === 'xlsx' || ext === 'xls') ? '📗' : ['png','jpg','jpeg','gif','svg','webp'].includes(ext) ? '🖼️' : '📄';
-                    const size = doc.FileSizeDisplayString || doc.Size || '';
-                    const sizeDisplay = size ? (typeof size === 'number' ? (size / 1024).toFixed(1) + ' KB' : size) : '';
-
-                    html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm);" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewSharePointDoc(\'' + (doc.WebUrl || '#').replace(/'/g, "\\'") + '\', \'' + (doc.Name || doc.Title || 'Untitled').replace(/'/g, "\\'") + '\', \'' + sizeDisplay.replace(/'/g, "\\'") + '\')">';
-                    html += '<div style="display: flex; align-items: center; gap: 10px;">';
-                    html += '<span style="font-size: 18px;">' + icon + '</span>';
-                    html += '<div>';
-                    html += '<div style="font-size: 14px; font-weight: 500;">' + (doc.Name || doc.Title || 'Untitled') + '</div>';
-                    html += '<div style="font-size: 11px; color: var(--gray-light);">' + formatDate(doc.TimeLastModified || doc.Modified) + (sizeDisplay ? ' · ' + sizeDisplay : '') + '</div>';
-                    html += '</div></div>';
-                    html += '<span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>';
-                    html += '</div>';
-                });
-
-                if (documents.length === 0) {
-                    html = '<div class="card"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;"><div class="card-title" style="margin: 0;">Documents</div><button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 16px; font-size: 13px;">+ Upload Document</button></div><div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">No Documents Found</div><div class="empty-state-text">There are no documents available yet. Upload your first document to get started.</div></div></div>';
+                if (matters.length === 0) {
+                    html += '<div class="empty-state"><div class="empty-state-icon">📄</div><div class="empty-state-title">No Documents Found</div><div class="empty-state-text">There are no documents available yet. Upload your first document to get started.</div></div>';
                 } else {
-                    html += '</div></div>';
+                    html += '<p style="color: var(--gray-light); font-size: 13px; margin-bottom: 16px;">Select a matter to browse its documents and folders</p>';
+                    html += '<div style="display: flex; flex-direction: column; gap: 2px;">';
+                    matters.forEach(matter => {
+                        const matterTitle = matter.Title || 'Untitled';
+                        const matterId = matter.Matter_x0020_ID || matter.Title || '';
+                        html += '<div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm);" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="loadDocuments(\'' + matterTitle.replace(/'/g, "\\'") + '\')">';
+                        html += '<span style="font-size: 20px;">📁</span>';
+                        html += '<div style="flex: 1;"><div style="font-size: 14px; font-weight: 600;">' + matterTitle + '</div>';
+                        html += '<div style="font-size: 12px; color: var(--gray-light);">' + (matterId !== matterTitle ? matterId : 'Matter folder') + '</div></div>';
+                        html += '<span style="color: var(--gold); font-weight: 600; font-size: 12px;">Open →</span>';
+                        html += '</div>';
+                    });
+                    html += '</div>';
                 }
 
+                html += '</div>';
                 container.innerHTML = html;
             } catch (error) {
                 container.innerHTML = '<div class="error-message">Failed to load documents: ' + error.message + '</div>';
             }
+        }
+
+        async function loadMatterDocuments(container, matterTitle, folderPath, matters) {
+            try {
+                const params = new URLSearchParams({ matterTitle });
+                if (folderPath) params.set('folderPath', folderPath);
+
+                const resp = await fetchWithRetry('/api/upload-document?' + params.toString(), {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                let items = [];
+                if (resp.ok) {
+                    const data = await resp.json();
+                    items = data.items || [];
+                }
+
+                let html = '<div class="card">';
+
+                // Header with buttons
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">';
+                html += '<div class="card-title" style="margin: 0;">Documents — ' + matterTitle + '</div>';
+                html += '<div style="display: flex; gap: 8px;">';
+                html += '<button class="btn btn-secondary" onclick="createClientFolder(\'' + matterTitle.replace(/'/g, "\\'") + '\')" style="padding: 8px 12px; font-size: 12px;">+ New Folder</button>';
+                html += '<button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 12px; font-size: 12px;">+ Upload</button>';
+                html += '</div></div>';
+
+                // Breadcrumb
+                html += '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#f8f6f0;border-radius:4px;margin-bottom:12px;font-size:13px;flex-wrap:wrap;">';
+                html += '<span style="cursor:pointer;color:var(--gold);font-weight:600;" onclick="loadDocuments()">All Matters</span>';
+                html += ' <span style="color:#999;">›</span> ';
+
+                if (folderPath) {
+                    html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + matterTitle.replace(/'/g, "\\'") + '\')">' + matterTitle + '</span>';
+                    const parts = folderPath.split('/').filter(Boolean);
+                    parts.forEach((part, idx) => {
+                        html += ' <span style="color:#999;">›</span> ';
+                        if (idx === parts.length - 1) {
+                            html += '<span style="font-weight:600;">' + part + '</span>';
+                        } else {
+                            const pathToHere = parts.slice(0, idx + 1).join('/');
+                            html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + matterTitle.replace(/'/g, "\\'") + '\', \'' + pathToHere.replace(/'/g, "\\'") + '\')">' + part + '</span>';
+                        }
+                    });
+                    html += ' <button onclick="clientNavigateUp()" style="margin-left:auto;background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#666;">↑ Up</button>';
+                } else {
+                    html += '<span style="font-weight:600;">' + matterTitle + '</span>';
+                    html += ' <button onclick="loadDocuments()" style="margin-left:auto;background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#666;">← Back</button>';
+                }
+                html += '</div>';
+
+                // Content
+                const folders = items.filter(i => i.isFolder);
+                const files = items.filter(i => !i.isFolder);
+
+                if (items.length === 0) {
+                    html += '<div style="text-align:center;padding:30px;color:#888;font-size:13px;">No documents or folders here yet. Upload files or create a folder to get started.</div>';
+                } else {
+                    html += '<div style="display: flex; flex-direction: column; gap: 2px;">';
+
+                    // Folders
+                    folders.forEach(folder => {
+                        html += '<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="clientNavigateInto(\'' + folder.name.replace(/'/g, "\\'") + '\')">';
+                        html += '<span style="font-size:18px;">📁</span>';
+                        html += '<div style="flex:1;"><div style="font-size:14px;font-weight:600;">' + folder.name + '</div>';
+                        html += '<div style="font-size:11px;color:var(--gray-light);">' + (folder.childCount !== undefined ? folder.childCount + ' items' : 'Folder') + '</div></div>';
+                        html += '<span style="color:var(--gold);font-weight:600;font-size:12px;">Open →</span>';
+                        html += '</div>';
+                    });
+
+                    // Files
+                    files.forEach(doc => {
+                        const ext = (doc.name || '').split('.').pop().toLowerCase();
+                        const icon = ext === 'pdf' ? '📕' : (ext === 'docx' || ext === 'doc') ? '📘' : (ext === 'xlsx' || ext === 'xls') ? '📗' : ['png','jpg','jpeg','gif','svg','webp'].includes(ext) ? '🖼️' : '📄';
+                        const sizeDisplay = doc.size ? (doc.size / 1024 > 1024 ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : (doc.size / 1024).toFixed(1) + ' KB') : '';
+                        const modifiedTime = doc.lastModifiedDateTime ? formatDate(doc.lastModifiedDateTime) : '';
+
+                        html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewSharePointDoc(\'' + (doc.webUrl || '#').replace(/'/g, "\\'") + '\', \'' + (doc.name || 'Unnamed').replace(/'/g, "\\'") + '\', \'' + sizeDisplay.replace(/'/g, "\\'") + '\')">';
+                        html += '<div style="display: flex; align-items: center; gap: 10px;">';
+                        html += '<span style="font-size: 18px;">' + icon + '</span>';
+                        html += '<div>';
+                        html += '<div style="font-size: 14px; font-weight: 500;">' + (doc.name || 'Untitled') + '</div>';
+                        html += '<div style="font-size: 11px; color: var(--gray-light);">' + modifiedTime + (sizeDisplay ? ' · ' + sizeDisplay : '') + '</div>';
+                        html += '</div></div>';
+                        html += '<span style="color: var(--gold); font-weight: 600; font-size: 12px;">View →</span>';
+                        html += '</div>';
+                    });
+
+                    html += '</div>';
+                }
+
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = '<div class="error-message">Failed to load documents: ' + error.message + '</div>';
+            }
+        }
+
+        function clientNavigateInto(folderName) {
+            const newPath = clientFolderPath ? clientFolderPath + '/' + folderName : folderName;
+            loadDocuments(clientCurrentMatter, newPath);
+        }
+
+        function clientNavigateUp() {
+            const parts = (clientFolderPath || '').split('/').filter(Boolean);
+            parts.pop();
+            loadDocuments(clientCurrentMatter, parts.join('/'));
+        }
+
+        async function createClientFolder(matterTitle) {
+            const folderName = prompt('Enter folder name:');
+            if (!folderName || !folderName.trim()) return;
+
+            try {
+                showToast('Creating folder...', 'info');
+                const resp = await fetchWithRetry('/api/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'createFolder',
+                        folderName: folderName.trim(),
+                        matterTitle: matterTitle,
+                        folderPath: clientFolderPath || ''
+                    }),
+                    credentials: 'include'
+                });
+
+                if (resp.ok) {
+                    showToast('Folder "' + folderName.trim() + '" created successfully', 'success');
+                    loadDocuments(clientCurrentMatter, clientFolderPath);
+                } else {
+                    const err = await resp.json();
+                    showToast('Failed to create folder: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch (err) {
+                showToast('Failed to create folder: ' + err.message, 'error');
+            }
+        }
+
+        function openCreateFolderModal() {
+            const modal = document.getElementById('createFolderModal');
+            modal.classList.add('show');
+            const matterSelect = document.getElementById('newFolderMatter');
+            matterSelect.innerHTML = '<option value="">-- Choose a matter --</option>';
+            const matters = portalData.matters?.items || [];
+            matters.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.Title || '';
+                opt.textContent = m.Title || 'Untitled';
+                matterSelect.appendChild(opt);
+            });
+            document.getElementById('newFolderName').value = '';
+        }
+
+        async function submitCreateFolder(e) {
+            e.preventDefault();
+            const matterTitle = document.getElementById('newFolderMatter').value;
+            const folderName = document.getElementById('newFolderName').value.trim();
+            if (!matterTitle || !folderName) {
+                showToast('Please select a matter and enter a folder name', 'error');
+                return;
+            }
+            document.getElementById('createFolderModal').classList.remove('show');
+            await createClientFolder(matterTitle);
         }
 
         async function loadCalendar() {
@@ -3095,7 +3298,7 @@
             document.getElementById('uploadProgress').style.display = 'none';
         }
 
-        let selectedFile = null;
+        let selectedFiles = [];
 
         const uploadArea = document.getElementById('uploadArea');
         if (uploadArea) {
@@ -3116,7 +3319,7 @@
                 e.preventDefault();
                 uploadArea.classList.remove('drag-over');
                 if (e.dataTransfer.files.length > 0) {
-                    handleFileSelect(e.dataTransfer.files[0]);
+                    handleFilesSelect(Array.from(e.dataTransfer.files));
                 }
             });
         }
@@ -3125,16 +3328,23 @@
         if (fileInput) {
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    handleFileSelect(e.target.files[0]);
+                    handleFilesSelect(Array.from(e.target.files));
                 }
             });
         }
 
-        function handleFileSelect(file) {
-            selectedFile = file;
-            document.getElementById('fileName').textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+        function handleFilesSelect(files) {
+            selectedFiles = files;
+            if (files.length === 1) {
+                document.getElementById('fileName').textContent = '✓ ' + files[0].name + ' (' + (files[0].size / 1024).toFixed(1) + ' KB)';
+            } else {
+                document.getElementById('fileName').textContent = '✓ ' + files.length + ' files selected';
+            }
             document.getElementById('uploadArea').style.borderColor = 'var(--gold)';
         }
+
+        // Keep backward compat
+        function handleFileSelect(file) { handleFilesSelect([file]); }
 
         async function submitUpload(e) {
             if (e && e.preventDefault) e.preventDefault();
@@ -3142,7 +3352,7 @@
             const btn = document.querySelector('#uploadModal button[type="submit"], #uploadModal .btn-gold');
             setButtonLoading(btn, true);
 
-            if (!selectedFile) {
+            if (!selectedFiles || selectedFiles.length === 0) {
                 showToast('Please select a file', 'error');
                 setButtonLoading(btn, false);
                 return;
@@ -3162,50 +3372,76 @@
             );
             const matterTitle = matter ? (matter.Title || matterId) : matterId;
 
-            // Validate file type
+            // Validate file types
             const allowedTypes = ['pdf','docx','xlsx','png','jpg','jpeg','txt','csv','msg'];
-            const ext = selectedFile.name.split('.').pop().toLowerCase();
-            if (!allowedTypes.includes(ext)) {
-                showToast('File type not allowed. Accepted: ' + allowedTypes.join(', '), 'error');
-                setButtonLoading(btn, false);
-                return;
-            }
 
             try {
-                // Read file as base64
-                const fileData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        const base64 = reader.result.split(',')[1]; // Remove data:...;base64, prefix
-                        resolve(base64);
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(selectedFile);
-                });
+                let successCount = 0;
+                const progressDiv = document.getElementById('uploadProgress');
+                const progressFill = document.getElementById('progressFill');
+                const progressText = document.getElementById('progressText');
+                progressDiv.style.display = 'block';
 
-                const resp = await fetchWithRetry('/api/upload-document', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: selectedFile.name,
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    const ext = file.name.split('.').pop().toLowerCase();
+
+                    if (!allowedTypes.includes(ext)) {
+                        progressText.textContent = 'Skipped ' + file.name + ' (type not allowed)';
+                        continue;
+                    }
+
+                    if (file.size > 5 * 1024 * 1024) {
+                        progressText.textContent = 'Skipped ' + file.name + ' (too large, max 5MB)';
+                        continue;
+                    }
+
+                    progressText.textContent = 'Uploading ' + (i + 1) + ' of ' + selectedFiles.length + ': ' + file.name;
+                    progressFill.style.width = ((i + 1) / selectedFiles.length * 100) + '%';
+
+                    const fileData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+
+                    const body = {
+                        fileName: file.name,
                         fileData: fileData,
                         matterId: matterId,
                         matterTitle: matterTitle
-                    }),
-                    credentials: 'include'
-                });
+                    };
+                    // If we're browsing inside a matter folder, upload to that folder
+                    if (clientCurrentMatter === matterTitle && clientFolderPath) {
+                        body.folderPath = clientFolderPath;
+                    }
 
-                if (resp.ok) {
-                    const result = await resp.json();
-                    showToast('Document uploaded successfully to SharePoint', 'success');
+                    const resp = await fetchWithRetry('/api/upload-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                        credentials: 'include'
+                    });
+
+                    if (resp.ok) {
+                        successCount++;
+                    }
+                }
+
+                if (successCount > 0) {
+                    showToast(successCount + ' document(s) uploaded successfully', 'success');
                     closeUploadModal();
-                    selectedFile = null;
-                    // Refresh documents
-                    await loadClientData();
-                    switchTab('documents');
+                    selectedFiles = [];
+                    // Refresh documents view
+                    if (clientCurrentMatter) {
+                        loadDocuments(clientCurrentMatter, clientFolderPath);
+                    } else {
+                        await loadClientData();
+                        switchTab('documents');
+                    }
                 } else {
-                    const err = await resp.json();
-                    showToast('Upload failed: ' + (err.error || 'Unknown error'), 'error');
+                    showToast('No files were uploaded. Check file types and sizes.', 'error');
                 }
             } catch (error) {
                 console.error('Upload error:', error);
