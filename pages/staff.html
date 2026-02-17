@@ -1922,12 +1922,8 @@
             activityLog: []
         };
 
-        // Default staff members
-        const defaultStaff = [
-            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul.mutamba@cqadvocates.com', phone: '+256 778 171 215' },
-            { id: 2, name: 'Kelvin Balyebuga', role: 'Managing Partner', email: 'kelvin.balyebuga@cqadvocates.com', phone: '' },
-            { id: 3, name: 'Frank Lubega', role: 'Partner', email: 'frank.lubega@cqadvocates.com', phone: '' }
-        ];
+        // Staff data is loaded from SharePoint "Staff" list
+        // localStorage is used only as a cache for role lookups during initial page load
 
         let editingStaffId = null;
         let editingInvoiceId = null;
@@ -2144,35 +2140,7 @@
             }
         }
 
-        /** Seed default staff to SharePoint Staff list (runs in background, single attempt per member) */
-        async function seedDefaultStaffToSharePoint(staffList) {
-            for (const s of staffList) {
-                try {
-                    const resp = await fetch('/api/sharepoint-write', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            site: 'client',
-                            list: 'Staff',
-                            fields: {
-                                Title: s.name,
-                                Email: s.email,
-                                Role: s.role,
-                                Phone: s.phone || ''
-                            }
-                        })
-                    });
-                    if (!resp.ok) {
-                        // Staff list may not exist in SharePoint yet — skip silently
-                        break;
-                    }
-                } catch (e) {
-                    // Network or list error — stop trying to seed
-                    break;
-                }
-            }
-        }
+        // Staff data is managed via SharePoint — no local seeding needed
 
         async function loadAllData() {
             try {
@@ -2182,7 +2150,7 @@
                     fetchList('Client Documents'),
                     fetchList('Events'),
                     fetchList('Messages'),
-                    fetchList('Billing')
+                    fetchList('Billing Records')
                 ]);
 
                 portalData.matters = matters || [];
@@ -2195,13 +2163,7 @@
                 const localInvoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
                 portalData.invoices = localInvoices.length > 0 ? localInvoices : spInvoices;
 
-                // Load staff from SharePoint "Staff" list (with localStorage fallback)
-                // Clear stale localStorage staff to ensure fresh data
-                const staffVersion = localStorage.getItem('cq_staff_version');
-                if (staffVersion !== 'v6') {
-                    localStorage.removeItem('cq_staff');
-                    localStorage.setItem('cq_staff_version', 'v6');
-                }
+                // Load staff from SharePoint "Staff" list
                 try {
                     const spStaff = await fetchList('Staff');
                     if (spStaff && spStaff.length > 0) {
@@ -2214,16 +2176,19 @@
                             phone: s.Phone || ''
                         }));
                     } else {
-                        // Staff list empty or not found — use defaults and seed to SharePoint
-                        portalData.staff = [...defaultStaff];
-                        seedDefaultStaffToSharePoint(defaultStaff);
+                        // Staff list exists but is empty — use localStorage cache if available
+                        const cachedStaff = JSON.parse(localStorage.getItem('cq_staff') || '[]');
+                        portalData.staff = cachedStaff;
                     }
                 } catch (staffErr) {
-                    console.warn('Failed to load staff from SharePoint, using defaults:', staffErr);
-                    portalData.staff = [...defaultStaff];
+                    console.warn('Failed to load staff from SharePoint, using cache:', staffErr);
+                    const cachedStaff = JSON.parse(localStorage.getItem('cq_staff') || '[]');
+                    portalData.staff = cachedStaff;
                 }
-                // Always sync to localStorage for role lookups
-                localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                // Cache staff data locally for role lookups on page load
+                if (portalData.staff.length > 0) {
+                    localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                }
 
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 renderDashboard();
@@ -4770,7 +4735,7 @@
                 const method = invoiceId ? 'PATCH' : 'POST';
                 const sharePointBody = {
                     site: 'client',
-                    list: 'Billing',
+                    list: 'Billing Records',
                     fields: sharePointPayload,
                     ...(invoiceId && { itemId: invoiceId })
                 };
@@ -4808,7 +4773,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             site: 'client',
-                            list: 'Billing',
+                            list: 'Billing Records',
                             itemId: invoiceId
                         }),
                         credentials: 'include'

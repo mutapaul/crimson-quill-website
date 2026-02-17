@@ -2135,7 +2135,7 @@
                     fetchList('Matters'),
                     fetchList('Messages'),
                     fetchList('Events'),
-                    fetchList('Billing').catch(e => ({ items: [] }))
+                    fetchList('Billing Records').catch(e => ({ items: [] }))
                 ]);
 
                 const allMatters = mattersData.items || [];
@@ -2181,7 +2181,7 @@
                 portalData.matters = { items: myMatters, listName: 'Matters' };
                 portalData.messages = { items: myMessages, listName: 'Messages' };
                 portalData.events = { items: myEvents, listName: 'Events' };
-                portalData.billing = { items: myBilling, listName: 'Billing' };
+                portalData.billing = { items: myBilling, listName: 'Billing Records' };
 
                 updateNotificationBadge();
                 console.log(`Client data loaded: ${myMatters.length} matters, ${myMessages.length} messages, ${myEvents.length} events, ${myBilling.length} billing records`);
@@ -2938,7 +2938,7 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const data = portalData.billing || await fetchList('Billing');
+                const data = portalData.billing || await fetchList('Billing Records');
 
                 // Filter billing records to only this client's matters
                 const allRecords = data.items || [];
@@ -2947,7 +2947,7 @@
                     ? allRecords.filter(r => myMatterIds.has(r.MatterId || ''))
                     : allRecords;
 
-                portalData.billing = { items: records, listName: 'Billing' };
+                portalData.billing = { items: records, listName: 'Billing Records' };
 
                 let totalBilled = 0;
                 let totalPaid = 0;
