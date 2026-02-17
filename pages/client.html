@@ -2486,34 +2486,66 @@
             loadDocuments(clientCurrentMatter, parts.join('/'));
         }
 
-        async function createClientFolder(matterTitle) {
-            const folderName = prompt('Enter folder name:');
-            if (!folderName || !folderName.trim()) return;
+        function createClientFolder(matterTitle) {
+            // Custom modal instead of prompt()
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            overlay.innerHTML = '<div style="background:white;padding:30px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.3);min-width:400px;">' +
+                '<h3 style="margin:0 0 20px 0;font-size:18px;font-weight:600;">Create New Folder</h3>' +
+                (clientFolderPath ? '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + matterTitle + '/' + clientFolderPath + '</strong></div>' : '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + matterTitle + '</strong></div>') +
+                '<div style="margin-bottom:20px;">' +
+                '<label style="display:block;font-weight:600;margin-bottom:8px;">Folder Name</label>' +
+                '<input type="text" id="clientNewFolderInput" placeholder="Enter folder name" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">' +
+                '</div>' +
+                '<div style="display:flex;gap:10px;justify-content:flex-end;">' +
+                '<button id="cancelClientFolderBtn" style="padding:10px 20px;border:1px solid #ddd;background:white;border-radius:4px;cursor:pointer;">Cancel</button>' +
+                '<button id="confirmClientFolderBtn" style="padding:10px 20px;border:none;background:#B8860B;color:white;border-radius:4px;cursor:pointer;font-weight:600;">Create Folder</button>' +
+                '</div></div>';
 
-            try {
-                showToast('Creating folder...', 'info');
-                const resp = await fetchWithRetry('/api/upload-document', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'createFolder',
-                        folderName: folderName.trim(),
-                        matterTitle: matterTitle,
-                        folderPath: clientFolderPath || ''
-                    }),
-                    credentials: 'include'
-                });
+            document.body.appendChild(overlay);
+            const input = document.getElementById('clientNewFolderInput');
+            setTimeout(() => input.focus(), 100);
 
-                if (resp.ok) {
-                    showToast('Folder "' + folderName.trim() + '" created successfully', 'success');
-                    loadDocuments(clientCurrentMatter, clientFolderPath);
-                } else {
-                    const err = await resp.json();
-                    showToast('Failed to create folder: ' + (err.error || 'Unknown error'), 'error');
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('confirmClientFolderBtn').click();
+                if (e.key === 'Escape') document.getElementById('cancelClientFolderBtn').click();
+            });
+
+            document.getElementById('cancelClientFolderBtn').onclick = () => overlay.remove();
+
+            document.getElementById('confirmClientFolderBtn').onclick = async () => {
+                const folderName = input.value.trim();
+                if (!folderName) {
+                    input.style.borderColor = '#dc3545';
+                    return;
                 }
-            } catch (err) {
-                showToast('Failed to create folder: ' + err.message, 'error');
-            }
+                overlay.remove();
+
+                try {
+                    showToast('Creating folder...', 'info');
+                    const resp = await fetchWithRetry('/api/upload-document', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'createFolder',
+                            folderName: folderName,
+                            matterTitle: matterTitle,
+                            folderPath: clientFolderPath || ''
+                        }),
+                        credentials: 'include'
+                    });
+
+                    if (resp.ok) {
+                        showToast('Folder "' + folderName + '" created successfully', 'success');
+                        loadDocuments(clientCurrentMatter, clientFolderPath);
+                    } else {
+                        const err = await resp.json();
+                        showToast('Failed to create folder: ' + (err.error || 'Unknown error'), 'error');
+                    }
+                } catch (err) {
+                    showToast('Failed to create folder: ' + err.message, 'error');
+                }
+            };
         }
 
         function openCreateFolderModal() {
