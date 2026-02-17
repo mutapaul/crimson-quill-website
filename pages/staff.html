@@ -2552,12 +2552,7 @@
                     <div id="matterFileBrowser_${matter.id}">
                         <div style="text-align:center;padding:20px;"><div class="mini-spinner"></div> Loading documents...</div>
                     </div>
-                    <script>
-                        (function() {
-                            matterFolderPaths[${matter.id}] = '';
-                            refreshMatterFileBrowser(${matter.id});
-                        })();
-                    </script>
+                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="matterFolderPaths[${matter.id}]='';refreshMatterFileBrowser(${matter.id});" style="display:none">
                 </div>
 
                 <!-- Related Invoices -->
