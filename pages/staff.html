@@ -2359,8 +2359,8 @@
         // Helper function to get the current user's assigned matter IDs/titles
         function getCurrentUserAssignedMatters() {
             const role = getCurrentUserRole();
-            // Managing Partner sees all messages
-            if (role === 'Managing Partner') {
+            // Managing Partner and Partner see all messages
+            if (role === 'Managing Partner' || role === 'Partner') {
                 return null; // null means no filter (show all)
             }
 
