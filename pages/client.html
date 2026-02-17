@@ -2174,8 +2174,17 @@
                     return myMatterIds.has(evtMatter);
                 });
 
-                // Filter billing by this client's matters
-                const myBilling = allBilling.filter(b => myMatterIds.has(b.MatterId || ''));
+                // Normalize billing SP field names and filter by client matters
+                const normalizedBilling = allBilling.map(b => ({
+                    ...b,
+                    RecordType: b.Record_x0020_Type || b.RecordType || 'Invoice',
+                    PaymentStatus: b.Payment_x0020_Status || b.PaymentStatus || 'Pending',
+                    MatterID: b.Matter_x0020_ID || b.MatterID || '',
+                    DueDate: b.Due_x0020_Date || b.DueDate || '',
+                    ClientName: b.Client_x0020_Name || b.ClientName || '',
+                    InvoiceNumber: b.Invoice_x0020_Number || b.InvoiceNumber || '',
+                }));
+                const myBilling = normalizedBilling.filter(b => myMatterIds.has(b.Matter_x0020_ID || b.MatterID || ''));
 
                 // Store filtered data
                 portalData.matters = { items: myMatters, listName: 'Matters' };
