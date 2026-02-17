@@ -2047,6 +2047,12 @@
             });
         }
 
+        // ===== MATTER ID HELPER =====
+        function getMatterDisplayId(matter) {
+            if (!matter) return '—';
+            return matter.Matter_x0020_ID || matter.Title || String(matter.id || '');
+        }
+
         // ===== RBAC PERMISSIONS =====
         // Superadmin roles: Partner and Managing Partner have full access (level 100),
         // equivalent to Administrator, with unrestricted access to all sections and settings.
@@ -2382,7 +2388,7 @@
             portalData.matters.forEach(m => {
                 const leadLawyer = (m.Lead_x0020_Lawyer || '').toLowerCase();
                 if (leadLawyer === staffName.toLowerCase()) {
-                    const matterRef = m.Matter_x0020_ID || m.Title || String(m.id);
+                    const matterRef = getMatterDisplayId(m);
                     assignedMatters.add(matterRef);
                 }
             });
@@ -2396,7 +2402,7 @@
                         // Map matterId back to Matter_x0020_ID
                         const matter = portalData.matters.find(m => String(m.id) === String(matterId));
                         if (matter) {
-                            const matterRef = matter.Matter_x0020_ID || matter.Title || String(matter.id);
+                            const matterRef = getMatterDisplayId(matter);
                             assignedMatters.add(matterRef);
                         }
                     }
@@ -2822,7 +2828,9 @@
 
         function getMatterTitle(matterId) {
             const matter = portalData.matters.find(m => String(m.id) === String(matterId));
-            return matter ? (matter.Title || matter.Matter_x0020_ID || String(matterId)) : String(matterId);
+            if (!matter) return String(matterId);
+            // Return the display ID, which follows the standardized pattern
+            return getMatterDisplayId(matter);
         }
 
         async function uploadFileToSharePoint(file, matterId, category, folderPath) {
@@ -2865,7 +2873,7 @@
                 // Create entry in SharePoint "Client Documents" list
                 try {
                     const matter = portalData.matters.find(m => String(m.id) === String(matterId));
-                    const matterRef = matter ? (matter.Matter_x0020_ID || matter.Title || String(matterId)) : String(matterId);
+                    const matterRef = matter ? getMatterDisplayId(matter) : String(matterId);
 
                     await fetchWithRetry('/api/sharepoint-write', {
                         method: 'POST',
@@ -3365,7 +3373,7 @@
 
             portalData.matters.forEach(matter => {
                 // Count SharePoint docs for this matter
-                const matterRef = matter.Matter_x0020_ID || matter.Title || '';
+                const matterRef = getMatterDisplayId(matter);
                 const spDocs = portalData.documents.filter(d => {
                     const docMatter = d.Matter_x0020_ID || d.MatterID || '';
                     return docMatter === matterRef;
@@ -3802,7 +3810,7 @@
         function generateNextInvoiceNumber(matterID) {
             if (!matterID) return 'Select a matter first';
             const invoices = (portalData.invoices || []);
-            const matterInvoices = invoices.filter(inv => inv.matterNumber === matterID);
+            const matterInvoices = invoices.filter(inv => (inv.Matter_x0020_ID || inv.matterNumber) === matterID);
             const nextNum = matterInvoices.length + 1;
             return `${matterID}-INV-${String(nextNum).padStart(3, '0')}`;
         }
@@ -4964,7 +4972,12 @@
                     ClientName: invoiceData.client,
                     InvoiceNumber: invoiceData.invoiceNumber,
                     Currency: 'UGX',
-                    Description: invoiceData.serviceDescription
+                    Description: invoiceData.serviceDescription,
+                    Professional_x0020_Fees: invoiceData.professionalFees,
+                    Disbursements: invoiceData.disbursements,
+                    VAT_x0020_Amount: invoiceData.vatAmount,
+                    Amount_x0020_Paid: invoiceData.amountPaid,
+                    Invoice_x0020_Date: invoiceData.date
                 };
 
                 const method = invoiceId ? 'PATCH' : 'POST';
