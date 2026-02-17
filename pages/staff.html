@@ -2168,7 +2168,7 @@
                     ClientName: b.ClientName || b.Client_x0020_Name || '',
                     InvoiceNumber: b.InvoiceNumber || b.Invoice_x0020_Number || '',
                 }));
-                portalData.invoices = spInvoices.length > 0 ? spInvoices : JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+                portalData.invoices = spInvoices.length > 0 ? spInvoices : (portalData.invoices || []);
 
                 // Load staff from SharePoint "Staff" list
                 try {
@@ -2407,7 +2407,11 @@
             }).length;
             document.getElementById('statActiveMatters').textContent = activeMatters;
             document.getElementById('statTotalClients').textContent = portalData.clients.length;
-            const pendingBilling = portalData.matters.filter(m => !m['Billing Status'] || m['Billing Status'].toLowerCase() !== 'paid').length;
+            // Count pending billing from actual Billing Records (not matters)
+            const pendingBilling = (portalData.invoices || []).filter(b => {
+                const status = (b.PaymentStatus || b.Payment_x0020_Status || '').toLowerCase();
+                return status !== 'paid';
+            }).length;
             document.getElementById('statPendingBilling').textContent = pendingBilling;
         }
 
@@ -2483,7 +2487,7 @@
             );
 
             // Get related invoices
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoices = (portalData.invoices || []);
             const matterInvoices = invoices.filter(inv => String(inv.matterId) === String(matterId));
 
             const content = document.getElementById('matterDetailContent');
@@ -3252,7 +3256,7 @@
                     spDocs.some(d => (d.Name || '').toLowerCase().includes(searchTerm));
                 
                 const matchesCategory = !selectedCategory || 
-                    spDocs.some(d => (d.category || 'Other') === selectedCategory);
+                    spDocs.some(d => (d.Category || d.category || 'Other') === selectedCategory);
 
                 matterItem.style.display = (matchesSearch && matchesCategory) ? 'initial' : 'none';
             });
@@ -3570,7 +3574,7 @@
 
         function generateNextInvoiceNumber(matterID) {
             if (!matterID) return 'Select a matter first';
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoices = (portalData.invoices || []);
             const matterInvoices = invoices.filter(inv => inv.matterNumber === matterID);
             const nextNum = matterInvoices.length + 1;
             return `${matterID}-INV-${String(nextNum).padStart(3, '0')}`;
@@ -3651,7 +3655,7 @@
         }
 
         function renderBillingSummary() {
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoices = (portalData.invoices || []);
             const totalBilled = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
             const totalPaid = invoices.reduce((sum, inv) => sum + (inv.amountPaid || 0), 0);
             const totalOutstanding = totalBilled - totalPaid;
@@ -3700,7 +3704,7 @@
         }
 
         function openPaymentModal(invoiceId) {
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoices = (portalData.invoices || []);
             const invoice = invoices.find(inv => inv.id === invoiceId);
             if (!invoice) return;
 
@@ -3754,7 +3758,7 @@
             const date = document.getElementById('paymentDate').value;
             const ref = document.getElementById('paymentRef').value;
 
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
+            const invoices = (portalData.invoices || []);
             const invoice = invoices.find(inv => inv.id === invoiceId);
             if (!invoice) return;
 
@@ -3773,9 +3777,25 @@
                 invoice.status = 'Partial';
             }
 
-            localStorage.setItem('cq_invoices', JSON.stringify(invoices));
+            // Sync payment status to SharePoint
+            try {
+                await fetchWithRetry('/api/sharepoint-write', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Billing Records',
+                        itemId: invoiceId,
+                        fields: { Payment_x0020_Status: invoice.status }
+                    }),
+                    credentials: 'include'
+                });
+            } catch (err) {
+                console.warn('Failed to sync payment status to SharePoint:', err);
+            }
             document.getElementById('paymentModal').remove();
             showToast(`Payment of UGX ${amount.toLocaleString()} recorded successfully`, 'success');
+            await loadAllData();
             renderInvoices();
         }
 
@@ -4714,20 +4734,10 @@
             };
             invoiceData.totalAmount = invoiceData.professionalFees + invoiceData.disbursements + invoiceData.vatAmount;
 
-            // Save locally
-            const invoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
-            const existingIdx = invoices.findIndex(inv => inv.id === invoiceId);
-            if (existingIdx >= 0) {
-                invoices[existingIdx] = invoiceData;
-            } else {
-                invoices.push(invoiceData);
-            }
-            localStorage.setItem('cq_invoices', JSON.stringify(invoices));
-            portalData.invoices = invoices;
-
-            // Sync invoice to SharePoint Billing list
+            // Write to SharePoint first (SP is the primary data source)
             try {
                 const sharePointPayload = {
+                    Title: invoiceData.invoiceNumber || `INV-${Date.now()}`,
                     Record_x0020_Type: 'Invoice',
                     Matter_x0020_ID: matterNumber,
                     Amount: invoiceData.totalAmount,
@@ -4755,21 +4765,24 @@
                 });
 
                 if (!spResp.ok) {
-                    console.error('Failed to sync invoice to SharePoint Billing list');
-                    // Continue anyway - local save was successful
+                    const errData = await spResp.json().catch(() => ({}));
+                    throw new Error(errData.error || `SharePoint write failed (${spResp.status})`);
                 }
-            } catch (spError) {
-                console.error('Error syncing to SharePoint:', spError);
-                // Continue anyway - local save was successful
-            }
 
-            document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
-            document.getElementById('generatePdfBtn').style.display = 'inline-block';
-            document.getElementById('sendInvoiceBtn').style.display = 'inline-block';
-            setTimeout(() => {
-                closeInvoiceModal();
-                renderInvoices();
-            }, 1000);
+                // Reload all data from SharePoint to stay in sync
+                await loadAllData();
+
+                document.getElementById('invoiceFormMessages').innerHTML = '<div class="success-message">Invoice saved successfully!</div>';
+                document.getElementById('generatePdfBtn').style.display = 'inline-block';
+                document.getElementById('sendInvoiceBtn').style.display = 'inline-block';
+                setTimeout(() => {
+                    closeInvoiceModal();
+                    renderInvoices();
+                }, 1000);
+            } catch (spError) {
+                console.error('Error saving invoice to SharePoint:', spError);
+                document.getElementById('invoiceFormMessages').innerHTML = '<div class="error-message">Failed to save invoice: ' + spError.message + '</div>';
+            }
         }
 
         async function deleteInvoice(invoiceId) {

@@ -2953,7 +2953,7 @@
                 const allRecords = data.items || [];
                 const myMatterIds = new Set(clientProfile.matterIds || []);
                 const records = clientProfile.name
-                    ? allRecords.filter(r => myMatterIds.has(r.MatterId || ''))
+                    ? allRecords.filter(r => myMatterIds.has(r.Matter_x0020_ID || r.MatterID || r.MatterId || ''))
                     : allRecords;
 
                 portalData.billing = { items: records, listName: 'Billing Records' };
@@ -3049,7 +3049,7 @@
                         html += `
                             <tr style="cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background='#f8f6f0'" onmouseleave="this.style.background='transparent'" onclick="showInvoiceModal(this)">
                                 <td>${record.RecordType || 'Invoice'}</td>
-                                <td>${record.MatterId || 'N/A'}</td>
+                                <td>${record.Matter_x0020_ID || record.MatterID || 'N/A'}</td>
                                 <td><strong>${formatCurrency(record.Amount, currency)}</strong></td>
                                 <td><span class="badge ${statusBadgeClass}">${status}</span></td>
                                 <td>${formatDate(record.DueDate)}</td>
@@ -3167,6 +3167,35 @@
             const detailsDiv = document.getElementById(`msg-details-${index}`);
             if (detailsDiv) {
                 detailsDiv.classList.toggle('show');
+            }
+            // Mark message as read when expanded
+            const messagesData = portalData.messages || { items: [] };
+            const msg = messagesData.items?.[index];
+            if (msg && !msg.Read && msg.id) {
+                markMessageReadClient(msg.id, index);
+            }
+        }
+
+        async function markMessageReadClient(itemId, idx) {
+            try {
+                await fetch('/api/sharepoint-write', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Messages',
+                        itemId: itemId,
+                        fields: { Read: true }
+                    })
+                });
+                // Update local state
+                if (portalData.messages?.items?.[idx]) {
+                    portalData.messages.items[idx].Read = true;
+                }
+                updateNotificationBadge();
+            } catch (err) {
+                console.warn('Failed to mark message as read:', err);
             }
         }
 
@@ -3568,7 +3597,7 @@
             const records = (portalData.billing && portalData.billing.items) || [];
             const record = records.find(r =>
                 (r.RecordType || 'Invoice') === recordType &&
-                (r.MatterId || 'N/A') === matterId
+                (r.Matter_x0020_ID || r.MatterID || 'N/A') === matterId
             );
 
             let html = `
