@@ -2021,20 +2021,13 @@
             settings: { view: 80, edit: 80 }
         };
 
-        // Map login emails to staff emails (for staff who log in with a different email)
-        const EMAIL_ALIASES = {
-            'mutapaul1@gmail.com': 'paul.mutamba@cqadvocates.com'
-        };
-
         function getCurrentUserRole() {
             const userEmail = decodeURIComponent(document.cookie.split('cq_user=')[1]?.split(';')[0] || '').toLowerCase();
             const staffList = portalData.staff.length > 0 ? portalData.staff : JSON.parse(localStorage.getItem('cq_staff') || '[]');
-            // Resolve alias if login email differs from staff email
-            const resolvedEmail = EMAIL_ALIASES[userEmail] || userEmail;
-            // Match by email (case-insensitive) — check both direct and aliased email
+            // Match by email (case-insensitive)
             const currentUser = staffList.find(s => {
                 const staffEmail = (s.email || '').toLowerCase();
-                return staffEmail === userEmail || staffEmail === resolvedEmail;
+                return staffEmail === userEmail;
             });
             return currentUser?.role || 'Read-Only';
         }

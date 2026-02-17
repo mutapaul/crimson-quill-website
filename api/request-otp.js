@@ -9,11 +9,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const STAFF_GROUP_ID = process.env.STAFF_GROUP_ID || '';
 const CLIENT_GROUP_ID = process.env.CLIENT_GROUP_ID || '';
 
-// Map non-firm login emails to their corresponding staff emails
-// Allows staff members who use personal emails to log in to the staff portal
-const STAFF_EMAIL_ALIASES = {
-  'mutapaul1@gmail.com': 'paul.mutamba@cqadvocates.com',
-};
 
 module.exports = async function handler(req, res) {
   // Only allow POST
@@ -59,19 +54,17 @@ module.exports = async function handler(req, res) {
     let hasAccess = false;
 
     if (portalType === 'staff') {
-      // Staff must be @cqadvocates.com domain users or have a known alias
-      const isAlias = !!STAFF_EMAIL_ALIASES[normalizedEmail];
-      if (!isFirmEmail(normalizedEmail) && !isAlias) {
+      // Staff must be @cqadvocates.com domain users
+      if (!isFirmEmail(normalizedEmail)) {
         return res.status(403).json({
           error: 'Staff portal access is restricted to Crimson & Quill team members.',
         });
       }
       // Optionally check if in staff security group
       if (STAFF_GROUP_ID) {
-        const emailToCheck = isAlias ? STAFF_EMAIL_ALIASES[normalizedEmail] : normalizedEmail;
-        hasAccess = await isEmailInGroup(emailToCheck, STAFF_GROUP_ID);
+        hasAccess = await isEmailInGroup(normalizedEmail, STAFF_GROUP_ID);
       } else {
-        // If no group ID configured, allow all @cqadvocates.com and aliased emails
+        // If no group ID configured, allow all @cqadvocates.com emails
         hasAccess = true;
       }
     } else {
