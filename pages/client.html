@@ -3222,13 +3222,14 @@
             }
         }
 
+        let isDeletingClient = false;
         async function deleteMessageClient(itemId) {
-            const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
-            if (!confirmed) {
-                return;
-            }
-
+            if (isDeletingClient) return;
+            isDeletingClient = true;
             try {
+                const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
+                if (!confirmed) { isDeletingClient = false; return; }
+
                 await fetch('/api/sharepoint-write', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
@@ -3245,6 +3246,8 @@
             } catch (error) {
                 console.error('Failed to delete message:', error);
                 showToast('Failed to delete message', 'error');
+            } finally {
+                setTimeout(() => { isDeletingClient = false; }, 500);
             }
         }
 

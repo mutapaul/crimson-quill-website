@@ -2396,7 +2396,7 @@
                         // Map matterId back to Matter_x0020_ID
                         const matter = portalData.matters.find(m => String(m.id) === String(matterId));
                         if (matter) {
-                            const matterRef = matter.Matter_x0020_ID || matter.Title || String(m.id);
+                            const matterRef = matter.Matter_x0020_ID || matter.Title || String(matter.id);
                             assignedMatters.add(matterRef);
                         }
                     }
@@ -3639,14 +3639,15 @@
             }
         }
 
+        let isDeleting = false;
         async function deleteMessage(itemId) {
-            const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
-            if (!confirmed) {
-                return;
-            }
-
+            if (isDeleting) return;
+            isDeleting = true;
             try {
-                await fetch('/api/sharepoint-write', {
+                const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
+                if (!confirmed) { isDeleting = false; return; }
+
+                const resp = await fetchWithRetry('/api/sharepoint-write', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -3656,11 +3657,17 @@
                         itemId: itemId
                     })
                 });
-                showToast('Message deleted successfully', 'success');
-                loadAllData();
+
+                if (resp.ok) {
+                    loadAllData();
+                } else {
+                    showToast('Failed to delete message', 'error');
+                }
             } catch (error) {
                 console.error('Failed to delete message:', error);
                 showToast('Failed to delete message', 'error');
+            } finally {
+                setTimeout(() => { isDeleting = false; }, 500);
             }
         }
 
