@@ -2181,8 +2181,8 @@
                     PaymentStatus: b.Payment_x0020_Status || b.PaymentStatus || 'Pending',
                     MatterID: b.Matter_x0020_ID || b.MatterID || '',
                     DueDate: b.Due_x0020_Date || b.DueDate || '',
-                    ClientName: b.Client_x0020_Name || b.ClientName || '',
-                    InvoiceNumber: b.Invoice_x0020_Number || b.InvoiceNumber || '',
+                    ClientName: b.ClientName || b.Client_x0020_Name || '',
+                    InvoiceNumber: b.InvoiceNumber || b.Invoice_x0020_Number || '',
                 }));
                 const myBilling = normalizedBilling.filter(b => myMatterIds.has(b.Matter_x0020_ID || b.MatterID || ''));
 

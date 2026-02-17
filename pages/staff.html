@@ -2165,8 +2165,8 @@
                     PaymentStatus: b.Payment_x0020_Status || b.PaymentStatus || 'Pending',
                     MatterID: b.Matter_x0020_ID || b.MatterID || '',
                     DueDate: b.Due_x0020_Date || b.DueDate || '',
-                    ClientName: b.Client_x0020_Name || b.ClientName || '',
-                    InvoiceNumber: b.Invoice_x0020_Number || b.InvoiceNumber || '',
+                    ClientName: b.ClientName || b.Client_x0020_Name || '',
+                    InvoiceNumber: b.InvoiceNumber || b.Invoice_x0020_Number || '',
                 }));
                 portalData.invoices = spInvoices.length > 0 ? spInvoices : JSON.parse(localStorage.getItem('cq_invoices') || '[]');
 
@@ -4733,8 +4733,8 @@
                     Amount: invoiceData.totalAmount,
                     Payment_x0020_Status: invoiceData.status,
                     Due_x0020_Date: invoiceData.dueDate,
-                    Client_x0020_Name: invoiceData.client,
-                    Invoice_x0020_Number: invoiceData.invoiceNumber,
+                    ClientName: invoiceData.client,
+                    InvoiceNumber: invoiceData.invoiceNumber,
                     Currency: 'UGX',
                     Description: invoiceData.serviceDescription
                 };
