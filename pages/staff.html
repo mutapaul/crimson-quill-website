@@ -1925,10 +1925,11 @@
         // Default staff members
         const defaultStaff = [
             { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'mutapaul1@gmail.com', phone: '+256 701 000 001' },
-            { id: 2, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
-            { id: 3, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
-            { id: 4, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
-            { id: 5, name: 'James Kato', role: 'Legal Assistant', email: 'james@crimson-quill.com', phone: '+256 701 000 005' }
+            { id: 2, name: 'Kelvin Balyebuga', role: 'Managing Partner', email: 'kelvin.balyebuga@cqadvocates.com', phone: '' },
+            { id: 3, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
+            { id: 4, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
+            { id: 5, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
+            { id: 6, name: 'James Kato', role: 'Legal Assistant', email: 'james@crimson-quill.com', phone: '+256 701 000 005' }
         ];
 
         let editingStaffId = null;
@@ -2082,8 +2083,9 @@
                 else if (section.includes('report')) resource = 'reports';
                 else if (section.includes('setting')) resource = 'settings';
 
-                if (resource && !hasPermission(resource, 'view')) {
-                    item.style.display = 'none';
+                if (resource) {
+                    // Show or hide based on current permissions (fixes re-show after role refresh)
+                    item.style.display = hasPermission(resource, 'view') ? '' : 'none';
                 }
             });
         }
@@ -2188,9 +2190,9 @@
                 // Load staff from SharePoint "Staff" list (with localStorage fallback)
                 // Clear stale localStorage staff to ensure fresh data
                 const staffVersion = localStorage.getItem('cq_staff_version');
-                if (staffVersion !== 'v3') {
+                if (staffVersion !== 'v4') {
                     localStorage.removeItem('cq_staff');
-                    localStorage.setItem('cq_staff_version', 'v3');
+                    localStorage.setItem('cq_staff_version', 'v4');
                 }
                 try {
                     const spStaff = await fetchList('Staff');
