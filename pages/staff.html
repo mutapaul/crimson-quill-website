@@ -1992,10 +1992,14 @@
         }
 
         // ===== RBAC PERMISSIONS =====
+        // Superadmin roles: Partner and Managing Partner have full access (level 100),
+        // equivalent to Administrator, with unrestricted access to all sections and settings.
+        const SUPERADMIN_ROLES = ['Administrator', 'Managing Partner', 'Partner'];
+
         const ROLES = {
-            'Administrator': { level: 100, label: 'Administrator' },
-            'Managing Partner': { level: 90, label: 'Managing Partner' },
-            'Partner': { level: 80, label: 'Partner' },
+            'Administrator': { level: 100, label: 'Administrator', superadmin: true },
+            'Managing Partner': { level: 100, label: 'Managing Partner', superadmin: true },
+            'Partner': { level: 100, label: 'Partner', superadmin: true },
             'Senior Associate': { level: 70, label: 'Senior Associate' },
             'Associate': { level: 60, label: 'Associate' },
             'Paralegal': { level: 40, label: 'Paralegal' },
@@ -2009,14 +2013,14 @@
         const PERMISSIONS = {
             // Resource: { action: minimum_level }
             matters: { view: 10, create: 60, edit: 60, delete: 80 },
-            clients: { view: 10, create: 60, edit: 60, delete: 90 },
+            clients: { view: 10, create: 60, edit: 60, delete: 80 },
             messages: { view: 10, create: 20, edit: 60, delete: 80 },
             documents: { view: 10, upload: 20, delete: 70, categorize: 40 },
             calendar: { view: 10, create: 40, edit: 40, delete: 70 },
-            billing: { view: 40, create: 70, edit: 70, delete: 90, sendInvoice: 70 },
-            staff: { view: 60, create: 90, edit: 90, delete: 100 },
+            billing: { view: 40, create: 70, edit: 70, delete: 80, sendInvoice: 70 },
+            staff: { view: 60, create: 80, edit: 80, delete: 80 },
             reports: { view: 40 },
-            settings: { view: 80, edit: 100 }
+            settings: { view: 80, edit: 80 }
         };
 
         function getCurrentUserRole() {
@@ -2031,7 +2035,14 @@
             return ROLES[role]?.level || 10;
         }
 
+        function isSuperAdmin() {
+            const role = getCurrentUserRole();
+            return SUPERADMIN_ROLES.includes(role);
+        }
+
         function hasPermission(resource, action) {
+            // Superadmin roles (Partner, Managing Partner, Administrator) have unrestricted access
+            if (isSuperAdmin()) return true;
             const level = getUserPermissionLevel();
             const required = PERMISSIONS[resource]?.[action];
             if (required === undefined) return false;
@@ -3541,19 +3552,30 @@
         function renderAccessPermissions() {
             // Render Access & Permissions
             const currentRole = getCurrentUserRole();
-            document.getElementById('currentRoleDisplay').textContent = currentRole;
+            const superAdmin = isSuperAdmin();
+            document.getElementById('currentRoleDisplay').textContent = currentRole + (superAdmin ? ' (Superadmin)' : '');
 
             // Build permissions list
             const resourcePermissions = [];
-            for (const [resource, actions] of Object.entries(PERMISSIONS)) {
-                for (const [action, required] of Object.entries(actions)) {
-                    if (hasPermission(resource, action)) {
+            if (superAdmin) {
+                // Superadmins get all permissions
+                for (const [resource, actions] of Object.entries(PERMISSIONS)) {
+                    for (const action of Object.keys(actions)) {
                         resourcePermissions.push(`${action} ${resource}`);
+                    }
+                }
+            } else {
+                for (const [resource, actions] of Object.entries(PERMISSIONS)) {
+                    for (const [action, required] of Object.entries(actions)) {
+                        if (hasPermission(resource, action)) {
+                            resourcePermissions.push(`${action} ${resource}`);
+                        }
                     }
                 }
             }
             document.getElementById('permissionsDisplay').innerHTML = resourcePermissions.length > 0
-                ? resourcePermissions.map(p => `<div style="padding: 4px 0;">✓ ${escapeHtml(p)}</div>`).join('')
+                ? (superAdmin ? '<div style="padding: 4px 0; color: var(--gold); font-weight: 600;">Full Superadmin Access — All Permissions Granted</div>' : '')
+                  + resourcePermissions.map(p => `<div style="padding: 4px 0;">✓ ${escapeHtml(p)}</div>`).join('')
                 : '<div style="color: #888;">No permissions granted</div>';
 
             // Build role hierarchy matrix
@@ -3571,22 +3593,29 @@
             `;
 
             roleEntries.forEach(([roleName, roleInfo]) => {
-                const perms = [];
-                for (const [resource, actions] of Object.entries(PERMISSIONS)) {
-                    for (const [action, required] of Object.entries(actions)) {
-                        if (roleInfo.level >= required) {
-                            perms.push(`${action} ${resource}`);
-                            if (perms.length >= 3) break;
+                const isSuperadminRole = SUPERADMIN_ROLES.includes(roleName);
+                let permsText;
+                if (isSuperadminRole) {
+                    permsText = '<span style="color: var(--gold); font-weight: 600;">Full Access (Superadmin)</span>';
+                } else {
+                    const perms = [];
+                    for (const [resource, actions] of Object.entries(PERMISSIONS)) {
+                        for (const [action, required] of Object.entries(actions)) {
+                            if (roleInfo.level >= required) {
+                                perms.push(`${action} ${resource}`);
+                                if (perms.length >= 3) break;
+                            }
                         }
+                        if (perms.length >= 3) break;
                     }
-                    if (perms.length >= 3) break;
+                    permsText = perms.slice(0, 3).join(', ') + '...';
                 }
                 const isCurrentRole = roleName === currentRole ? 'background-color: #fef9f3;' : '';
                 matrixHtml += `
                     <tr style="${isCurrentRole}border-bottom: 1px solid var(--silver);">
-                        <td style="padding: 8px; border-right: 1px solid var(--silver);">${escapeHtml(roleName)}</td>
+                        <td style="padding: 8px; border-right: 1px solid var(--silver);">${escapeHtml(roleName)}${isSuperadminRole ? ' <span style="color: var(--gold); font-size: 10px;">★</span>' : ''}</td>
                         <td style="padding: 8px; border-right: 1px solid var(--silver); text-align: center; color: var(--gold); font-weight: 600;">${roleInfo.level}</td>
-                        <td style="padding: 8px; font-size: 11px; color: #666;">${perms.slice(0, 3).join(', ')}...</td>
+                        <td style="padding: 8px; font-size: 11px; color: #666;">${permsText}</td>
                     </tr>
                 `;
             });
