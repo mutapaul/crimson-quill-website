@@ -1924,7 +1924,7 @@
 
         // Default staff members
         const defaultStaff = [
-            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul@crimson-quill.com', phone: '+256 701 000 001' },
+            { id: 1, name: 'Paul Mutamba', role: 'Managing Partner', email: 'paul.mutamba@cqadvocates.com', phone: '+256 701 000 001' },
             { id: 2, name: 'Sarah Nakato', role: 'Senior Associate', email: 'sarah@crimson-quill.com', phone: '+256 701 000 002' },
             { id: 3, name: 'David Ochieng', role: 'Associate', email: 'david@crimson-quill.com', phone: '+256 701 000 003' },
             { id: 4, name: 'Grace Amara', role: 'Office Manager', email: 'grace@crimson-quill.com', phone: '+256 701 000 004' },
@@ -2024,9 +2024,13 @@
         };
 
         function getCurrentUserRole() {
-            const userEmail = decodeURIComponent(document.cookie.split('cq_user=')[1]?.split(';')[0] || '');
-            const staffList = JSON.parse(localStorage.getItem('cq_staff') || '[]');
-            const currentUser = staffList.find(s => s.email === userEmail);
+            const userEmail = decodeURIComponent(document.cookie.split('cq_user=')[1]?.split(';')[0] || '').toLowerCase();
+            const staffList = portalData.staff.length > 0 ? portalData.staff : JSON.parse(localStorage.getItem('cq_staff') || '[]');
+            // Match by email (case-insensitive) — check both staff email and login email fields
+            const currentUser = staffList.find(s =>
+                (s.email || '').toLowerCase() === userEmail ||
+                (s.loginEmail || '').toLowerCase() === userEmail
+            );
             return currentUser?.role || 'Read-Only';
         }
 
@@ -2135,6 +2139,22 @@
             }
         }
 
+        /** Seed default staff to SharePoint (runs in background) */
+        async function seedDefaultStaffToSharePoint(staffList) {
+            for (const s of staffList) {
+                try {
+                    await fetchWithRetry('/api/manage-staff', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: s.name, email: s.email, role: s.role, phone: s.phone })
+                    });
+                } catch (e) {
+                    console.warn('Failed to seed staff member:', s.name, e);
+                }
+            }
+        }
+
         async function loadAllData() {
             try {
                 const [matters, clients, documents, events, messages, invoices] = await Promise.all([
@@ -2156,19 +2176,31 @@
                 const localInvoices = JSON.parse(localStorage.getItem('cq_invoices') || '[]');
                 portalData.invoices = localInvoices.length > 0 ? localInvoices : spInvoices;
 
-                // Initialize staff from localStorage or use defaults
-                const storedStaff = localStorage.getItem('cq_staff');
-                if (storedStaff) {
-                    try {
-                        portalData.staff = JSON.parse(storedStaff);
-                    } catch {
-                        portalData.staff = [...defaultStaff];
-                        localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                // Load staff from SharePoint (with localStorage fallback)
+                try {
+                    const staffResp = await fetchWithRetry('/api/manage-staff', { credentials: 'include' });
+                    if (staffResp.ok) {
+                        const staffData = await staffResp.json();
+                        if (staffData.staff && staffData.staff.length > 0) {
+                            portalData.staff = staffData.staff;
+                        } else {
+                            // SharePoint list exists but empty — seed with defaults
+                            portalData.staff = [...defaultStaff];
+                            // Seed defaults to SharePoint in background
+                            seedDefaultStaffToSharePoint(defaultStaff);
+                        }
+                    } else {
+                        // API error — fall back to localStorage
+                        const storedStaff = localStorage.getItem('cq_staff');
+                        portalData.staff = storedStaff ? JSON.parse(storedStaff) : [...defaultStaff];
                     }
-                } else {
-                    portalData.staff = [...defaultStaff];
-                    localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
+                } catch (staffErr) {
+                    console.warn('Failed to load staff from SharePoint, using localStorage:', staffErr);
+                    const storedStaff = localStorage.getItem('cq_staff');
+                    portalData.staff = storedStaff ? JSON.parse(storedStaff) : [...defaultStaff];
                 }
+                // Always sync to localStorage for role lookups
+                localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
 
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 renderDashboard();
@@ -3427,9 +3459,9 @@
                         <td>${escapeHtml(staff.phone || '—')}</td>
                         <td>${matterCount}</td>
                         <td>
-                            <button class="btn btn-sm btn-secondary" onclick="editStaff(${staff.id})">Edit</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteStaff(${staff.id})">Delete</button>
-                            ${staff.email ? `<button class="btn btn-sm" style="background: var(--gold); color: white; border: none; margin-left: 4px;" onclick="sendStaffInvite(${staff.id})" title="Send portal invite email">Invite</button>` : ''}
+                            <button class="btn btn-sm btn-secondary" onclick="editStaff('${staff.id}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStaff('${staff.id}')">Delete</button>
+                            ${staff.email ? `<button class="btn btn-sm" style="background: var(--gold); color: white; border: none; margin-left: 4px;" onclick="sendStaffInvite('${staff.id}')" title="Send portal invite email">Invite</button>` : ''}
                         </td>
                     </tr>
                 `;
@@ -4431,16 +4463,50 @@
                 return;
             }
 
-            if (staffId) {
-                // Edit existing
-                const idx = portalData.staff.findIndex(s => s.id === parseInt(staffId));
-                if (idx >= 0) {
-                    portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
+            // Save to SharePoint
+            try {
+                if (staffId) {
+                    // Edit existing — update in SharePoint
+                    const updateResp = await fetchWithRetry('/api/manage-staff', {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId: staffId, ...newStaff })
+                    });
+                    if (!updateResp.ok) {
+                        const errData = await updateResp.json();
+                        throw new Error(errData.error || 'Update failed');
+                    }
+                    const idx = portalData.staff.findIndex(s => String(s.id) === String(staffId));
+                    if (idx >= 0) {
+                        portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
+                    }
+                } else {
+                    // New staff — create in SharePoint
+                    const createResp = await fetchWithRetry('/api/manage-staff', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newStaff)
+                    });
+                    if (!createResp.ok) {
+                        const errData = await createResp.json();
+                        throw new Error(errData.error || 'Create failed');
+                    }
+                    const created = await createResp.json();
+                    newStaff.id = created.staff?.id || (Math.max(0, ...portalData.staff.map(s => parseInt(s.id) || 0)) + 1);
+                    portalData.staff.push(newStaff);
                 }
-            } else {
-                // New staff
-                newStaff.id = Math.max(0, ...portalData.staff.map(s => s.id || 0)) + 1;
-                portalData.staff.push(newStaff);
+            } catch (spErr) {
+                console.error('SharePoint staff save error:', spErr);
+                // Fallback: save locally anyway
+                if (staffId) {
+                    const idx = portalData.staff.findIndex(s => String(s.id) === String(staffId));
+                    if (idx >= 0) portalData.staff[idx] = { ...portalData.staff[idx], ...newStaff };
+                } else {
+                    newStaff.id = Math.max(0, ...portalData.staff.map(s => parseInt(s.id) || 0)) + 1;
+                    portalData.staff.push(newStaff);
+                }
             }
 
             localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
@@ -4486,8 +4552,19 @@
         }
 
         function deleteStaff(staffId) {
-            showConfirmDelete('Are you sure you want to delete this staff member? This action cannot be undone.', () => {
-                portalData.staff = portalData.staff.filter(s => s.id !== staffId);
+            showConfirmDelete('Are you sure you want to delete this staff member? This action cannot be undone.', async () => {
+                // Delete from SharePoint
+                try {
+                    await fetchWithRetry('/api/manage-staff', {
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId: staffId })
+                    });
+                } catch (e) {
+                    console.warn('Failed to delete from SharePoint:', e);
+                }
+                portalData.staff = portalData.staff.filter(s => String(s.id) !== String(staffId));
                 localStorage.setItem('cq_staff', JSON.stringify(portalData.staff));
                 renderStaff();
             });
