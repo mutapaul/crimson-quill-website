@@ -614,6 +614,7 @@
             display: flex;
         }
 
+        /* Standalone full-screen modal (like confirmModal) */
         .modal {
             position: fixed;
             top: 0;
@@ -629,6 +630,19 @@
 
         .modal.show {
             display: flex;
+        }
+
+        /* Modal content inside modal-overlay container (staff, matter, client, invoice, event, message) */
+        .modal-overlay .modal {
+            position: static;
+            background-color: var(--white);
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            width: 95%;
+            margin: auto;
         }
 
         .modal > .modal-content {
