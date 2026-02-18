@@ -3413,13 +3413,20 @@
                 messageEl.textContent = message;
                 modal.classList.add('show');
 
+                // Track if already resolved to prevent double-resolves
+                let isResolved = false;
+
                 const handleCancel = () => {
+                    if (isResolved) return;
+                    isResolved = true;
                     modal.classList.remove('show');
                     cleanup();
                     resolve(false);
                 };
 
                 const handleOk = () => {
+                    if (isResolved) return;
+                    isResolved = true;
                     modal.classList.remove('show');
                     cleanup();
                     resolve(true);
@@ -3430,6 +3437,7 @@
                     okBtn.removeEventListener('click', handleOk);
                     closeBtn.removeEventListener('click', handleCancel);
                     document.removeEventListener('keydown', handleEscape);
+                    modal.removeEventListener('click', handleBackdropClick);
                 };
 
                 const handleEscape = (e) => {
@@ -3438,10 +3446,17 @@
                     }
                 };
 
+                const handleBackdropClick = (e) => {
+                    if (e.target === modal) {
+                        handleCancel();
+                    }
+                };
+
                 cancelBtn.addEventListener('click', handleCancel);
                 okBtn.addEventListener('click', handleOk);
                 closeBtn.addEventListener('click', handleCancel);
                 document.addEventListener('keydown', handleEscape);
+                modal.addEventListener('click', handleBackdropClick);
 
                 okBtn.focus();
             });
@@ -3842,12 +3857,7 @@
             if (e.target === this) closeDocViewer();
         });
 
-        // Confirm Modal backdrop click handler
-        document.getElementById('confirmModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                document.getElementById('confirmModal').classList.remove('show');
-            }
-        });
+        // Confirm Modal backdrop click is now handled within showConfirmModal() to ensure proper cleanup
 
         // Create Folder Modal close handlers
         document.getElementById('createFolderModal').addEventListener('click', function(e) {
