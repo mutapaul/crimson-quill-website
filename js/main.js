@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initScrollTop();
   initSmoothScroll();
   initAnimations();
+  initSectionDividers();
   initForms();
 });
 
@@ -118,42 +119,192 @@ function initSmoothScroll() {
 }
 
 // ============================================
-// SCROLL ANIMATIONS
+// SCROLL ANIMATIONS — Revolut-style dramatic reveals
+// translateY(75px) → 0, 350ms, cubic-bezier(0.35,0,0,1)
 // ============================================
 function initAnimations() {
-  const animatedElements = document.querySelectorAll('[data-animate]');
-  if (animatedElements.length === 0) return;
+  // Revolut easing & timing
+  const EASE = 'cubic-bezier(0.35, 0, 0, 1)';
+  const DUR  = '600ms';           // slightly longer for drama
+  const STAGGER = 120;            // ms between siblings
+  const TRANSLATE = '75px';       // Revolut uses 75px
 
-  // Add Revolut-style CSS for animated elements
+  // Inject animation CSS
   const style = document.createElement('style');
+  style.id = 'revolut-anim';
   style.textContent = `
-    [data-animate] {
+    .rv-hidden {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(${TRANSLATE});
+      will-change: transform, opacity;
     }
-    [data-animate].animate-slide-up {
+    .rv-visible {
       opacity: 1 !important;
       transform: translateY(0) !important;
+      transition: transform ${DUR} ${EASE}, opacity ${DUR} ${EASE} !important;
+    }
+    /* Hero gets a special entrance — fade + slight scale */
+    .hero .rv-hidden,
+    .hero [data-animate] {
+      opacity: 0;
+      transform: translateY(40px) scale(0.98);
+    }
+    .hero .rv-visible {
+      opacity: 1 !important;
+      transform: translateY(0) scale(1) !important;
+      transition: transform 800ms ${EASE}, opacity 800ms ${EASE} !important;
+    }
+    /* Cards get a subtle scale on reveal */
+    .card.rv-hidden,
+    .feature-card.rv-hidden,
+    .practice-card.rv-hidden,
+    .team-card.rv-hidden,
+    .insight-card.rv-hidden {
+      transform: translateY(60px) scale(0.97);
+    }
+    .card.rv-visible,
+    .feature-card.rv-visible,
+    .practice-card.rv-visible,
+    .team-card.rv-visible,
+    .insight-card.rv-visible {
+      transform: translateY(0) scale(1) !important;
+    }
+    /* Buttons slide up from further */
+    .btn.rv-hidden { transform: translateY(30px); }
+    /* Section labels/small text fade in gently */
+    .label.rv-hidden,
+    .section-label.rv-hidden {
+      transform: translateY(20px);
+    }
+    /* Parallax-feel for large images */
+    img.rv-hidden,
+    picture.rv-hidden {
+      transform: translateY(50px) scale(0.99);
+    }
+    img.rv-visible,
+    picture.rv-visible {
+      transform: translateY(0) scale(1) !important;
     }
   `;
   document.head.appendChild(style);
 
-  // Staggered reveal - Revolut-style cascading animation
-  const observer = new IntersectionObserver((entries) => {
-    const visible = entries.filter(e => e.isIntersecting);
-    visible.forEach((entry, i) => {
+  // Auto-detect animatable elements (no manual data-animate needed)
+  const SELECTORS = [
+    '[data-animate]',
+    '.hero-content',
+    '.hero h1',
+    '.hero p',
+    '.hero .btn',
+    '.hero-label',
+    '.section-header',
+    '.section-header h2',
+    '.section-header p',
+    '.section .label',
+    '.card',
+    '.feature-card',
+    '.practice-card',
+    '.team-card',
+    '.insight-card',
+    '.quote-block',
+    '.cta-section h2',
+    '.cta-section p',
+    '.cta-section .btn',
+    '.page-hero h1',
+    '.page-hero .lead',
+    '.page-hero .label',
+    '.content-section > *',
+    '.contact-form',
+    '.contact-info',
+    '.form-group',
+    '.team-member',
+    '.grid > *',
+    '.values-grid > *',
+    '.features-grid > *',
+    '.practice-grid > *',
+    '.team-grid > *',
+    '.insights-grid > *',
+    '.careers-grid > *',
+    '.process-steps > *',
+    '.legal-section',
+    '.footer-grid > *',
+    'img[src]',
+    'picture'
+  ].join(',');
+
+  const elements = document.querySelectorAll(SELECTORS);
+  if (elements.length === 0) return;
+
+  // Skip elements inside hero for separate hero handling
+  const heroEl = document.querySelector('.hero');
+
+  // Mark all elements as hidden
+  elements.forEach(el => {
+    // Don't double-animate nested elements
+    if (el.closest('.rv-hidden') && el !== el.closest('.rv-hidden')) return;
+    // Skip very small or invisible elements
+    if (el.offsetHeight === 0 && !el.closest('.hero')) return;
+    el.classList.add('rv-hidden');
+  });
+
+  // Hero elements animate immediately on load with stagger
+  if (heroEl) {
+    const heroChildren = heroEl.querySelectorAll('.rv-hidden');
+    heroChildren.forEach((el, i) => {
       setTimeout(() => {
-        entry.target.classList.add('animate-slide-up');
-      }, i * 100);
+        el.classList.add('rv-visible');
+      }, 200 + (i * STAGGER));
+    });
+  }
+
+  // IntersectionObserver for everything else
+  const observer = new IntersectionObserver((entries) => {
+    // Group entries that fire together (same scroll tick)
+    const appearing = entries.filter(e => e.isIntersecting);
+    if (appearing.length === 0) return;
+
+    appearing.forEach((entry, i) => {
+      // Stagger siblings that appear together
+      const delay = i * STAGGER;
+      setTimeout(() => {
+        entry.target.classList.add('rv-visible');
+      }, delay);
       observer.unobserve(entry.target);
     });
   }, {
-    threshold: 0.05,
-    rootMargin: '0px 0px 0px 0px'
+    threshold: 0.08,
+    rootMargin: '0px 0px -60px 0px'   // trigger slightly before fully in view
   });
 
-  animatedElements.forEach(el => observer.observe(el));
+  // Observe non-hero elements
+  document.querySelectorAll('.rv-hidden').forEach(el => {
+    if (heroEl && heroEl.contains(el)) return;  // hero handled above
+    observer.observe(el);
+  });
+
+  // Cleanup: reveal anything still hidden after 5s (safety net)
+  setTimeout(() => {
+    document.querySelectorAll('.rv-hidden:not(.rv-visible)').forEach(el => {
+      el.classList.add('rv-visible');
+    });
+  }, 5000);
+}
+
+// ============================================
+// SECTION DIVIDERS — gold line grows on scroll
+// ============================================
+function initSectionDividers() {
+  const sections = document.querySelectorAll('.section');
+  if (sections.length < 2) return;
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('rv-section-visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  sections.forEach(s => sectionObserver.observe(s));
 }
 
 // ============================================
