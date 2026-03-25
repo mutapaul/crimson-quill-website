@@ -124,21 +124,32 @@ function initAnimations() {
   const animatedElements = document.querySelectorAll('[data-animate]');
   if (animatedElements.length === 0) return;
 
+  // Staggered reveal - Revolut-style cascading animation
+  let visibleIndex = 0;
   const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('animate-slide-up');
-        observer.unobserve(entry.target);
-      }
+    const visible = entries.filter(e => e.isIntersecting);
+    visible.forEach((entry, i) => {
+      entry.target.style.transitionDelay = (i * 0.1) + 's';
+      entry.target.classList.add('animate-slide-up');
+      observer.unobserve(entry.target);
     });
   }, {
     threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
+    rootMargin: '0px 0px -30px 0px'
   });
 
   animatedElements.forEach(el => {
     el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
     observer.observe(el);
+  });
+
+  // Smooth page load fade-in
+  document.body.style.opacity = '0';
+  document.body.style.transition = 'opacity 0.4s ease';
+  requestAnimationFrame(() => {
+    document.body.style.opacity = '1';
   });
 }
 
