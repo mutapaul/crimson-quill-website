@@ -1551,8 +1551,22 @@ h1, h2, h3, h4, h5, h6 {
   transition: color var(--transition-fast);
 }
 
-p {
+/* Only override paragraph color in light sections - preserve white text in dark sections */
+.section p,
+.page-hero .lead,
+.legal-content p,
+.card p {
   color: var(--text-secondary);
+}
+
+/* Ensure white text in dark sections */
+.hero p,
+.hero-text,
+.bg-dark p,
+.bg-crimson p,
+.cta-section p,
+.footer p {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* ============================================
