@@ -124,33 +124,36 @@ function initAnimations() {
   const animatedElements = document.querySelectorAll('[data-animate]');
   if (animatedElements.length === 0) return;
 
+  // Add Revolut-style CSS for animated elements
+  const style = document.createElement('style');
+  style.textContent = `
+    [data-animate] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    [data-animate].animate-slide-up {
+      opacity: 1 !important;
+      transform: translateY(0) !important;
+    }
+  `;
+  document.head.appendChild(style);
+
   // Staggered reveal - Revolut-style cascading animation
-  let visibleIndex = 0;
   const observer = new IntersectionObserver((entries) => {
     const visible = entries.filter(e => e.isIntersecting);
     visible.forEach((entry, i) => {
-      entry.target.style.transitionDelay = (i * 0.1) + 's';
-      entry.target.classList.add('animate-slide-up');
+      setTimeout(() => {
+        entry.target.classList.add('animate-slide-up');
+      }, i * 100);
       observer.unobserve(entry.target);
     });
   }, {
-    threshold: 0.1,
-    rootMargin: '0px 0px -30px 0px'
+    threshold: 0.05,
+    rootMargin: '0px 0px 0px 0px'
   });
 
-  animatedElements.forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(24px)';
-    el.style.transition = 'opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)';
-    observer.observe(el);
-  });
-
-  // Smooth page load fade-in
-  document.body.style.opacity = '0';
-  document.body.style.transition = 'opacity 0.4s ease';
-  requestAnimationFrame(() => {
-    document.body.style.opacity = '1';
-  });
+  animatedElements.forEach(el => observer.observe(el));
 }
 
 // ============================================
