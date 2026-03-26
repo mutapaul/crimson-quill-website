@@ -2376,9 +2376,9 @@
             container.innerHTML = `
                 <div class="error-state">
                     <div class="error-icon">⚠️</div>
-                    <div class="error-title">${title || 'Something went wrong'}</div>
-                    <div class="error-detail">${detail || 'Please try again or refresh the page.'}</div>
-                    ${retryFn ? `<button class="btn-retry" onclick="${retryFn}">↻ Try Again</button>` : ''}
+                    <div class="error-title">${escapeHtml(title || 'Something went wrong')}</div>
+                    <div class="error-detail">${escapeHtml(detail || 'Please try again or refresh the page.')}</div>
+                    ${retryFn ? `<button class="btn-retry" onclick="${escapeHtml(retryFn)}">↻ Try Again</button>` : ''}
                 </div>
             `;
         }
@@ -2400,7 +2400,7 @@
             if (msg.includes('network') || msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
                 return { title: 'Connection Error', detail: 'Unable to connect to the server. Check your internet connection.' };
             }
-            return { title: `Error ${context ? 'with ' + context : ''}`, detail: msg };
+            return { title: `Error ${context ? 'with ' + context : ''}`, detail: escapeHtml(msg) };
         }
 
         // ===== RETRY WITH EXPONENTIAL BACKOFF =====
@@ -4812,7 +4812,7 @@
                 <div id="paymentModal" class="modal-overlay" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
                     <div style="background:white;border-radius:8px;padding:30px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
                         <h3 style="margin-bottom:20px;font-family:'Playfair Display',serif;font-size:20px;">Record Payment</h3>
-                        <p style="margin-bottom:15px;color:#666;">Invoice: <strong>${invoice.invoiceNumber || 'N/A'}</strong></p>
+                        <p style="margin-bottom:15px;color:#666;">Invoice: <strong>${escapeHtml(invoice.invoiceNumber || 'N/A')}</strong></p>
                         <p style="margin-bottom:15px;color:#666;">Total: <strong>UGX ${Number(invoice.totalAmount || 0).toLocaleString()}</strong></p>
                         <p style="margin-bottom:20px;color:#666;padding:10px;background:#f0f0f0;border-radius:4px;">Outstanding: <strong>UGX ${Number((invoice.totalAmount || 0) - (invoice.amountPaid || 0)).toLocaleString()}</strong></p>
                         <form id="paymentForm" onsubmit="recordPayment(event, '${invoiceId}')">
@@ -5253,11 +5253,11 @@
                     }, 1000);
                 } else {
                     const error = await resp.json();
-                    document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save matter'}</div>`;
+                    document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">Error: ${escapeHtml(error.error || 'Failed to save matter')}</div>`;
                 }
             } catch (error) {
                 const errInfo = getContextualErrorMessage(error, 'matter');
-                document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                document.getElementById('matterFormMessages').innerHTML = `<div class="error-message">${escapeHtml(errInfo.title)}: ${escapeHtml(errInfo.detail)}</div>`;
                 showToast(errInfo.title, 'error');
             } finally {
                 setButtonLoading(btn, false);
@@ -5345,11 +5345,11 @@
                     }, 1000);
                 } else {
                     const error = await resp.json();
-                    document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save client'}</div>`;
+                    document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">Error: ${escapeHtml(error.error || 'Failed to save client')}</div>`;
                 }
             } catch (error) {
                 const errInfo = getContextualErrorMessage(error, 'client');
-                document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                document.getElementById('clientFormMessages').innerHTML = `<div class="error-message">${escapeHtml(errInfo.title)}: ${escapeHtml(errInfo.detail)}</div>`;
                 showToast(errInfo.title, 'error');
             } finally {
                 setButtonLoading(btn, false);
@@ -5477,11 +5477,11 @@
                     }
                 } else {
                     const error = await resp.json();
-                    document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to save event'}</div>`;
+                    document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">Error: ${escapeHtml(error.error || 'Failed to save event')}</div>`;
                 }
             } catch (error) {
                 const errInfo = getContextualErrorMessage(error, 'event');
-                document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                document.getElementById('eventFormMessages').innerHTML = `<div class="error-message">${escapeHtml(errInfo.title)}: ${escapeHtml(errInfo.detail)}</div>`;
                 showToast(errInfo.title, 'error');
             } finally {
                 setButtonLoading(btn, false);
@@ -5995,11 +5995,11 @@
                     }, 1000);
                 } else {
                     const error = await resp.json();
-                    document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${error.error || 'Failed to send message'}</div>`;
+                    document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">Error: ${escapeHtml(error.error || 'Failed to send message')}</div>`;
                 }
             } catch (error) {
                 const errInfo = getContextualErrorMessage(error, 'message');
-                document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">${errInfo.title}: ${errInfo.detail}</div>`;
+                document.getElementById('messageFormMessages').innerHTML = `<div class="error-message">${escapeHtml(errInfo.title)}: ${escapeHtml(errInfo.detail)}</div>`;
                 showToast(errInfo.title, 'error');
             } finally {
                 setButtonLoading(btn, false);
@@ -6115,7 +6115,7 @@
                 const label = div.querySelector('[data-custom-label]');
                 const value = div.querySelector('[data-custom-value]');
                 if (label && value && label.value.trim()) {
-                    customFieldsHTML += '<tr><td>' + label.value.trim() + '</td><td style="text-align: right;" colspan="3">' + value.value.trim() + '</td></tr>';
+                    customFieldsHTML += '<tr><td>' + escapeHtml(label.value.trim()) + '</td><td style="text-align: right;" colspan="3">' + escapeHtml(value.value.trim()) + '</td></tr>';
                 }
             });
 
@@ -6161,12 +6161,12 @@
     <div class="invoice-title">Tax Invoice</div>
 
     <div class="ref-grid">
-        <div class="ref-cell"><div class="ref-label">Invoice Number</div><div class="ref-value">${invoiceNumber}</div></div>
+        <div class="ref-cell"><div class="ref-label">Invoice Number</div><div class="ref-value">${escapeHtml(invoiceNumber)}</div></div>
         <div class="ref-cell"><div class="ref-label">Invoice Date</div><div class="ref-value">${fmtDate(invoiceDate)}</div></div>
-        <div class="ref-cell"><div class="ref-label">Matter Reference</div><div class="ref-value">${matterRef}</div></div>
+        <div class="ref-cell"><div class="ref-label">Matter Reference</div><div class="ref-value">${escapeHtml(matterRef)}</div></div>
         <div class="ref-cell"><div class="ref-label">Due Date</div><div class="ref-value">${fmtDate(dueDate)}</div></div>
-        <div class="ref-cell"><div class="ref-label">Bill To</div><div class="ref-value">${clientName || '—'}</div></div>
-        <div class="ref-cell"><div class="ref-label">Matter</div><div class="ref-value">${matterTitle || '—'}</div></div>
+        <div class="ref-cell"><div class="ref-label">Bill To</div><div class="ref-value">${escapeHtml(clientName || '—')}</div></div>
+        <div class="ref-cell"><div class="ref-label">Matter</div><div class="ref-value">${escapeHtml(matterTitle || '—')}</div></div>
     </div>
 
     <table>
@@ -6178,7 +6178,7 @@
         </tr></thead>
         <tbody>
             <tr>
-                <td>${serviceDescription || 'Professional charges as agreed'}</td>
+                <td>${escapeHtml(serviceDescription || 'Professional charges as agreed')}</td>
                 <td style="text-align: right;">${professionalFees.toLocaleString()}</td>
                 <td style="text-align: right;">${disbursements > 0 ? disbursements.toLocaleString() : '—'}</td>
                 <td style="text-align: right;">${vat.toLocaleString()}</td>

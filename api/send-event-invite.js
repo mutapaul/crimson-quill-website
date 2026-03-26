@@ -183,10 +183,6 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
       subject: eventTitle,
     };
 
-    console.error(`[DEBUG] Creating Teams meeting for organizer: "${organizer}"`);
-    console.error(`[DEBUG] URL: /users/${encodeURIComponent(organizer)}/onlineMeetings`);
-    console.error(`[DEBUG] Meeting body: ${JSON.stringify(meetingBody)}`);
-
     // Try v1.0 endpoint first
     try {
       const result = await graphApi(
@@ -195,10 +191,9 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
         'POST',
         meetingBody
       );
-      console.error(`[DEBUG] Teams meeting created successfully via v1.0. joinWebUrl: ${result.joinWebUrl}`);
       return result.joinWebUrl || null;
     } catch (v1Error) {
-      console.error(`[DEBUG] v1.0 failed: ${v1Error.message}`);
+      console.error('Teams meeting creation failed via v1.0 endpoint:', v1Error.message);
 
       // Fallback: try beta endpoint
       try {
@@ -210,14 +205,14 @@ async function createTeamsMeeting(organizerEmail, eventTitle, eventDate, eventDu
           },
           body: JSON.stringify(meetingBody),
         });
-        const betaText = await betaResp.text();
-        console.error(`[DEBUG] Beta endpoint response (${betaResp.status}): ${betaText}`);
         if (betaResp.ok) {
-          const betaResult = JSON.parse(betaText);
+          const betaResult = await betaResp.json();
           return betaResult.joinWebUrl || null;
+        } else {
+          console.error('Teams meeting creation failed via beta endpoint, status:', betaResp.status);
         }
       } catch (betaError) {
-        console.error(`[DEBUG] Beta also failed: ${betaError.message}`);
+        console.error('Teams meeting creation failed via beta endpoint:', betaError.message);
       }
 
       return null;
@@ -772,6 +767,7 @@ async function handleSetup(req, res, session) {
 
     return res.status(200).json(results);
   } catch (error) {
-    return res.status(500).json({ error: error.message, partialResults: results });
+    console.error('Setup error:', error.message);
+    return res.status(500).json({ error: 'An internal error occurred. Please try again.', partialResults: results });
   }
 }

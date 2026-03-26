@@ -4,6 +4,23 @@ const { getOTP, incrementAttempts, deleteOTP } = require('./lib/otp');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// Rate limiter for OTP verification: max 5 attempts per email per 10 minutes
+const otpRateLimitMap = new Map();
+function checkOTPRateLimit(email, maxAttempts = 5, windowMs = 600000) { // 10 minutes
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  let attempts = otpRateLimitMap.get(email) || [];
+  attempts = attempts.filter(t => t > windowStart);
+
+  if (attempts.length >= maxAttempts) {
+    return false; // Rate limited
+  }
+
+  attempts.push(now);
+  otpRateLimitMap.set(email, attempts);
+  return true;
+}
+
 if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET not configured');
 }
@@ -79,8 +96,17 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Check max attempts (3)
-    if (otpData.attempts >= 3) {
+    // Apply rate limiting: max 5 attempts per 10 minutes
+    if (!checkOTPRateLimit(normalizedEmail, 5, 600000)) {
+      // Rate limited - invalidate OTP and require new one
+      await deleteOTP(kv, normalizedEmail);
+      return res.status(429).json({
+        error: 'Too many verification attempts. Please request a new code.',
+      });
+    }
+
+    // Check max attempts (5 per the rate limiter, but also check stored attempts as backup)
+    if (otpData.attempts >= 5) {
       await deleteOTP(kv, normalizedEmail);
       return res.status(400).json({
         error: 'Too many failed attempts. Please request a new code.',
@@ -90,11 +116,9 @@ module.exports = async function handler(req, res) {
     // Verify code
     if (otpData.code !== trimmedCode) {
       await incrementAttempts(kv, normalizedEmail);
-      const remaining = 2 - otpData.attempts;
+      // Generic error message - don't reveal remaining attempts
       return res.status(400).json({
-        error: remaining > 0
-          ? `Incorrect code. ${remaining + 1} attempt${remaining > 0 ? 's' : ''} remaining.`
-          : 'Incorrect code. Please request a new verification code.',
+        error: 'Invalid verification code. Please try again or request a new code.',
       });
     }
 

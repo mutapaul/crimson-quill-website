@@ -110,7 +110,7 @@ module.exports = async function handler(req, res) {
     const { error: sendError } = await resend.emails.send({
       from: 'Crimson & Quill Portal <portal@cqadvocates.com>',
       to: [normalizedEmail],
-      subject: `${otp} - Your Crimson & Quill Verification Code`,
+      subject: 'Your CQ Client Portal Verification Code',
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 30px; background: #FAFAFA;">
           <div style="text-align: center; margin-bottom: 32px;">
@@ -146,7 +146,7 @@ module.exports = async function handler(req, res) {
 
     if (sendError) {
       console.error('Resend error:', sendError);
-      return res.status(500).json({ error: 'Failed to send verification code. Please try again.' });
+      return res.status(500).json({ error: 'An internal error occurred. Please try again.' });
     }
 
     return res.status(200).json({

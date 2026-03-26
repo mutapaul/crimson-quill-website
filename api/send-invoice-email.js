@@ -294,7 +294,7 @@ module.exports = async function handler(req, res) {
 
     if (sendError) {
       console.error('Resend error:', sendError);
-      return res.status(500).json({ error: 'Failed to send invoice email. Please try again.' });
+      return res.status(500).json({ error: 'An internal error occurred. Please try again.' });
     }
 
     return res.status(200).json({
