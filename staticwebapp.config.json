@@ -1,0 +1,25 @@
+{
+  "routes": [
+    { "route": "/login", "rewrite": "/pages/login.html" },
+    { "route": "/verify-otp", "rewrite": "/pages/verify-otp.html" },
+    { "route": "/choose-portal", "rewrite": "/pages/choose-portal.html" },
+    { "route": "/client", "rewrite": "/pages/client.html" },
+    { "route": "/staff", "rewrite": "/pages/staff.html" },
+    { "route": "/index.html", "redirect": "/", "statusCode": 301 },
+    { "route": "/pages/choose-portal.html", "redirect": "/choose-portal", "statusCode": 301 },
+    { "route": "/pages/client.html", "redirect": "/client", "statusCode": 301 },
+    { "route": "/pages/staff.html", "redirect": "/staff", "statusCode": 301 },
+    { "route": "/pages/login.html", "redirect": "/login", "statusCode": 301 },
+    { "route": "/pages/verify-otp.html", "redirect": "/verify-otp", "statusCode": 301 }
+  ],
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  }
+}
