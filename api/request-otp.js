@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   // Handle CORS preflight
