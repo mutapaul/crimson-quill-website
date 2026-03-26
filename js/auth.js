@@ -4,6 +4,18 @@
 var CQAuth = (function () {
   'use strict';
 
+  // Get CSRF token from cookie
+  function getCSRFToken() {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var cookie = cookies[i].trim();
+      if (cookie.startsWith('cq_csrf=')) {
+        return cookie.substring('cq_csrf='.length);
+      }
+    }
+    return '';
+  }
+
   // Get portal type from URL params
   function getPortalType() {
     var params = new URLSearchParams(window.location.search);
@@ -78,9 +90,13 @@ var CQAuth = (function () {
 
       setLoading(submitBtn, true);
 
+      var csrfToken = getCSRFToken();
       fetch('/api/request-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
         body: JSON.stringify({ email: email, portalType: portalType }),
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -191,9 +207,13 @@ var CQAuth = (function () {
 
       setLoading(verifyBtn, true);
 
+      var csrfToken = getCSRFToken();
       fetch('/api/verify-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
         body: JSON.stringify({ email: email, code: code, portalType: portalType }),
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
@@ -294,9 +314,13 @@ var CQAuth = (function () {
       hideError(errorMsg);
       resendLink.textContent = 'Sending...';
 
+      var csrfToken = getCSRFToken();
       fetch('/api/request-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
         body: JSON.stringify({ email: email, portalType: portalType }),
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })

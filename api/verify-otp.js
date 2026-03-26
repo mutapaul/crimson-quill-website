@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@vercel/kv');
 const { getOTP, incrementAttempts, deleteOTP } = require('./lib/otp');
+const { validateCSRFToken } = require('./lib/csrf');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -46,6 +47,11 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Validate CSRF token
+  if (!validateCSRFToken(req)) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
   }
 
   try {

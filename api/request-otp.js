@@ -2,6 +2,7 @@ const { Resend } = require('resend');
 const { createClient } = require('@vercel/kv');
 const { isEmailInGroup, isFirmEmail, isRegisteredClient } = require('./lib/graph');
 const { generateOTP, storeOTP, checkRateLimit } = require('./lib/otp');
+const { validateCSRFToken } = require('./lib/csrf');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -25,6 +26,11 @@ module.exports = async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Validate CSRF token
+  if (!validateCSRFToken(req)) {
+    return res.status(403).json({ error: 'Invalid CSRF token' });
   }
 
   try {

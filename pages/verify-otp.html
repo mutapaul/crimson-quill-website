@@ -281,8 +281,24 @@
   <script src="/js/auth.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Initialize CSRF protection
+      initCSRFProtection();
       CQAuth.initVerify();
     });
+
+    async function initCSRFProtection() {
+      try {
+        const response = await fetch('/api/csrf-token', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (!response.ok) {
+          console.error('Failed to fetch CSRF token');
+        }
+      } catch (error) {
+        console.error('CSRF token fetch error:', error);
+      }
+    }
   </script>
 </body>
 </html>

@@ -2761,19 +2761,33 @@
         }
 
         function logout() {
-            // Clear localStorage session data
-            localStorage.removeItem('cq_staff');
-            localStorage.removeItem('cq_invoices');
-            localStorage.removeItem('cq_matter_teams');
-            localStorage.removeItem('cq_portal_type');
-            localStorage.removeItem('cq_login_email');
+            // Call server-side logout endpoint to revoke token
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            })
+                .then(() => {
+                    // Clear localStorage session data
+                    localStorage.removeItem('cq_staff');
+                    localStorage.removeItem('cq_invoices');
+                    localStorage.removeItem('cq_matter_teams');
+                    localStorage.removeItem('cq_portal_type');
+                    localStorage.removeItem('cq_login_email');
 
-            // Clear cookies
-            document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-            document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-
-            // Redirect to login
-            window.location.href = '/login';
+                    // Redirect to login
+                    window.location.href = '/login';
+                })
+                .catch((error) => {
+                    console.error('Logout error:', error);
+                    // Still clear local data and redirect even if server call fails
+                    localStorage.removeItem('cq_staff');
+                    localStorage.removeItem('cq_invoices');
+                    localStorage.removeItem('cq_matter_teams');
+                    localStorage.removeItem('cq_portal_type');
+                    localStorage.removeItem('cq_login_email');
+                    window.location.href = '/login';
+                });
         }
 
         // ===== SHAREPOINT FIELD NORMALIZATION =====
@@ -4291,8 +4305,8 @@
             container.innerHTML = sorted.map((event, idx) => `
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <div class="card-title">${escapeHtml(event.Title || 'Unnamed Event')}</div>
+                        <div style="flex: 1;">
+                            <div class="card-title" style="cursor: pointer; color: var(--gold);" onclick="viewEventRsvps(${event.id})">${escapeHtml(event.Title || 'Unnamed Event')}</div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
                                 <div>
                                     <div style="color: #888; font-size: 12px; margin-bottom: 4px;">Date & Time</div>
@@ -4315,14 +4329,125 @@
                                 <div style="font-size: 13px;">${escapeHtml(event.Matter_x0020_ID)}</div>
                             </div>
                             ` : ''}
+                            <div style="margin-top: 15px;">
+                                <button class="btn btn-sm btn-secondary" onclick="viewEventRsvps(${event.id})" style="background: rgba(184, 134, 11, 0.1); color: var(--gold); border-color: var(--gold);">View RSVPs</button>
+                            </div>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
                             <button class="btn btn-sm btn-secondary" onclick="editEvent(${event.id})">Edit</button>
                             <button class="btn btn-sm btn-danger" onclick="deleteEvent(${event.id})">Delete</button>
                         </div>
                     </div>
                 </div>
             `).join('');
+        }
+
+        async function viewEventRsvps(eventId) {
+            const event = portalData.events.find(e => e.id === eventId);
+            if (!event) {
+                showToast('Event not found', 'error');
+                return;
+            }
+
+            const container = document.getElementById('calendarContainer');
+            const loadingHtml = `<div class="loading-spinner"><div class="mini-spinner"></div></div>`;
+            container.innerHTML = loadingHtml;
+
+            try {
+                // Fetch RSVPs for this event
+                const resp = await fetch(`/api/sharepoint?site=client&list=EventRSVPs&top=500`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`API error: ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                const eventRsvps = (data.items || []).filter(item =>
+                    String(item.EventID).toLowerCase() === String(eventId).toLowerCase()
+                );
+
+                // Group RSVPs by response type
+                const responseGroups = {
+                    'accepted': eventRsvps.filter(r => r.Response === 'accepted'),
+                    'tentative': eventRsvps.filter(r => r.Response === 'tentative'),
+                    'declined': eventRsvps.filter(r => r.Response === 'declined')
+                };
+
+                let html = `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-secondary" onclick="renderCalendar()" style="padding: 6px 16px; font-size: 13px;">← Back to Events</button>
+                    </div>
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                            <div>
+                                <h2 style="font-size: 20px; font-weight: 600; margin: 0 0 8px 0;">${escapeHtml(event.Title || 'Unnamed Event')}</h2>
+                                <div style="color: #888; font-size: 13px;">
+                                    ${formatDatetime(event.EventDate)} · ${escapeHtml(event.Location || 'TBD')}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 20px 0;">
+                            <div style="padding: 12px; background: rgba(40, 167, 69, 0.1); border-radius: 4px;">
+                                <div style="font-size: 11px; color: #888; margin-bottom: 4px;">ACCEPTED</div>
+                                <div style="font-size: 24px; font-weight: 600; color: #28a745;">${responseGroups.accepted.length}</div>
+                            </div>
+                            <div style="padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 4px;">
+                                <div style="font-size: 11px; color: #888; margin-bottom: 4px;">TENTATIVE</div>
+                                <div style="font-size: 24px; font-weight: 600; color: #ffc107;">${responseGroups.tentative.length}</div>
+                            </div>
+                            <div style="padding: 12px; background: rgba(220, 53, 69, 0.1); border-radius: 4px;">
+                                <div style="font-size: 11px; color: #888; margin-bottom: 4px;">DECLINED</div>
+                                <div style="font-size: 24px; font-weight: 600; color: #dc3545;">${responseGroups.declined.length}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Render each response group
+                for (const [responseType, rsvps] of Object.entries(responseGroups)) {
+                    const statusColors = {
+                        'accepted': { bg: 'rgba(40, 167, 69, 0.05)', border: '#28a745', label: 'Accepted' },
+                        'tentative': { bg: 'rgba(255, 193, 7, 0.05)', border: '#ffc107', label: 'Tentative' },
+                        'declined': { bg: 'rgba(220, 53, 69, 0.05)', border: '#dc3545', label: 'Declined' }
+                    };
+                    const colors = statusColors[responseType];
+
+                    html += `<div class="card" style="margin-top: 15px; border-left: 4px solid ${colors.border};">
+                        <div style="color: ${colors.border}; font-weight: 600; margin-bottom: 12px;">${colors.label} (${rsvps.length})</div>`;
+
+                    if (rsvps.length === 0) {
+                        html += '<div style="color: #888; font-size: 13px;">No responses</div>';
+                    } else {
+                        rsvps.forEach(rsvp => {
+                            const respondedDate = rsvp.ResponseDate ? new Date(rsvp.ResponseDate).toLocaleDateString() : 'N/A';
+                            html += `
+                                <div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 500;">${escapeHtml(rsvp.AttendeeName || 'Anonymous')}</div>
+                                        <div style="font-size: 12px; color: #888;">${escapeHtml(rsvp.AttendeeEmail || 'no-email')}</div>
+                                    </div>
+                                    <div style="font-size: 12px; color: #888;">${respondedDate}</div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += '</div>';
+                }
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading RSVPs:', error);
+                container.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-secondary" onclick="renderCalendar()" style="padding: 6px 16px; font-size: 13px;">← Back to Events</button>
+                    </div>
+                    <div class="error-message">Failed to load RSVPs: ${error.message}</div>
+                `;
+            }
         }
 
         function renderMessages() {

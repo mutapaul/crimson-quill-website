@@ -39,6 +39,22 @@ module.exports = async function handler(req, res) {
     // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    // Check if user has logged out after token was issued
+    const logoutCookie = cookies
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('cq_logged_out='));
+
+    if (logoutCookie) {
+      const logoutTimestamp = parseInt(logoutCookie.split('=')[1], 10);
+      const tokenIssuedAt = decoded.iat * 1000; // Convert from seconds to milliseconds
+
+      // If logout timestamp is greater than token issued time, token is revoked
+      if (logoutTimestamp >= tokenIssuedAt) {
+        return res.status(401).json({ authenticated: false, error: 'Session revoked' });
+      }
+    }
+
     return res.status(200).json({
       authenticated: true,
       email: decoded.email,

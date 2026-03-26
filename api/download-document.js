@@ -5,24 +5,13 @@
  */
 
 const jwt = require('jsonwebtoken');
+const { createClient } = require('@vercel/kv');
+const { checkRateLimit } = require('./lib/rate-limit');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 let tokenCache = { token: null, expiresAt: 0 };
 let siteIdCache = {};
 let driveIdCache = {};
-
-// Simple in-memory rate limiter for serverless
-const rateLimitMap = new Map();
-function checkRateLimit(key, maxRequests, windowMs) {
-  const now = Date.now();
-  const windowStart = now - windowMs;
-  let requests = rateLimitMap.get(key) || [];
-  requests = requests.filter(t => t > windowStart);
-  if (requests.length >= maxRequests) return false;
-  requests.push(now);
-  rateLimitMap.set(key, requests);
-  return true;
-}
 
 const SITE_PATHS = {
   client: 'cqadvocates.sharepoint.com:/sites/CQClientPortal',
@@ -189,15 +178,22 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Apply rate limiting: 100 downloads per hour per user
-  const rateLimitKey = `download:${session.email.toLowerCase()}`;
-  if (!checkRateLimit(rateLimitKey, 100, 3600000)) { // 100 per hour
-    return res.status(429).json({
-      error: 'Rate limit exceeded. Maximum 100 downloads per hour per user.',
-    });
-  }
-
   try {
+    // Initialize Vercel KV
+    const kv = createClient({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
+    });
+
+    // Apply rate limiting: 100 downloads per hour per user
+    const rateLimitKey = `download:${session.email.toLowerCase()}`;
+    const allowed = await checkRateLimit(kv, rateLimitKey, 100, 3600); // 100 per hour (3600 seconds)
+    if (!allowed) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Maximum 100 downloads per hour per user.',
+      });
+    }
+
     let { driveId, itemId, mode } = req.query;
 
     // itemId is always required

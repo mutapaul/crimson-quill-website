@@ -2217,6 +2217,9 @@
                 // Step 2: Pre-fetch all data and filter to this client
                 await loadClientData();
 
+                // Step 2b: Load RSVP statuses from backend
+                await loadRsvpStatuses();
+
                 // Step 3: Render the dashboard with filtered data
                 await loadDashboard();
                 hideLoadingOverlay();
@@ -2797,19 +2800,20 @@
                                 <span class="badge badge-normal">${escapeHtml(category)}</span>
                             </div>
                             ${event.Description ? `<div style="margin-top: 10px; font-size: 14px; color: var(--gray);">${escapeHtml(event.Description)}</div>` : ''}
-                            <div style="margin-top:10px;display:flex;gap:8px;">
-                                <button onclick="submitRsvp('${eventId}', 'attending')"
+                            <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+                                <button onclick="submitRsvp(event, '${eventId}', 'attending')"
                                     style="padding:6px 14px;background:${rsvpStatus==='attending'?'#28a745':'white'};color:${rsvpStatus==='attending'?'white':'#333'};border:1px solid ${rsvpStatus==='attending'?'#28a745':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
                                     ✓ Attending
                                 </button>
-                                <button onclick="submitRsvp('${eventId}', 'maybe')"
+                                <button onclick="submitRsvp(event, '${eventId}', 'maybe')"
                                     style="padding:6px 14px;background:${rsvpStatus==='maybe'?'#ffc107':'white'};color:${rsvpStatus==='maybe'?'white':'#333'};border:1px solid ${rsvpStatus==='maybe'?'#ffc107':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
                                     ? Maybe
                                 </button>
-                                <button onclick="submitRsvp('${eventId}', 'declined')"
+                                <button onclick="submitRsvp(event, '${eventId}', 'declined')"
                                     style="padding:6px 14px;background:${rsvpStatus==='declined'?'#dc3545':'white'};color:${rsvpStatus==='declined'?'white':'#333'};border:1px solid ${rsvpStatus==='declined'?'#dc3545':'#ddd'};border-radius:4px;cursor:pointer;font-size:12px;">
                                     ✕ Decline
                                 </button>
+                                ${rsvpStatus ? `<span style="font-size:11px;color:var(--gray);">${getRsvpSyncIndicator('${eventId}')}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -2875,36 +2879,113 @@
             }
         }
 
-        function submitRsvp(eventId, response) {
+        function submitRsvp(evt, eventId, response) {
+            // Map button responses to API enum values
+            const responseMap = {
+                'attending': 'accepted',
+                'maybe': 'tentative',
+                'declined': 'declined'
+            };
+            const apiResponse = responseMap[response] || response;
+
+            // Update local cache immediately for optimistic UI
             const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
-            rsvps[eventId] = { response, updatedAt: new Date().toISOString() };
+            rsvps[eventId] = { response: response, apiResponse: apiResponse, updatedAt: new Date().toISOString(), synced: false };
             localStorage.setItem('cq_rsvps', JSON.stringify(rsvps));
             showToast(`RSVP updated: ${response}`, 'success');
 
             // Send RSVP to server
-            // TODO: Add server endpoint /api/submit-rsvp to persist RSVP data in backend
-            // Until then, RSVP is stored in localStorage
             if (typeof fetch !== 'undefined') {
+                const btn = evt?.target;
+                if (btn) {
+                    btn.disabled = true;
+                    const originalText = btn.textContent;
+                    btn.textContent = '...';
+                }
+
                 fetch('/api/submit-rsvp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         eventId: eventId,
-                        response: response,
-                        updatedAt: new Date().toISOString()
+                        response: apiResponse
                     }),
                     credentials: 'include'
-                }).catch(() => {
-                    // If API call fails, local storage backup is still in place
+                })
+                .then(resp => {
+                    if (resp.ok) {
+                        return resp.json();
+                    }
+                    throw new Error(`API error: ${resp.status}`);
+                })
+                .then(data => {
+                    // Mark as synced
+                    const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
+                    if (rsvps[eventId]) {
+                        rsvps[eventId].synced = true;
+                    }
+                    localStorage.setItem('cq_rsvps', JSON.stringify(rsvps));
+                })
+                .catch(error => {
+                    console.warn('RSVP sync failed, using local storage:', error);
+                    showToast('RSVP saved locally (sync pending)', 'warning');
+                })
+                .finally(() => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    }
+                    loadCalendar();
                 });
             }
-
-            loadCalendar();
         }
 
         function getRsvpStatus(eventId) {
             const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
             return rsvps[eventId]?.response || null;
+        }
+
+        function getRsvpSyncIndicator(eventId) {
+            const rsvps = JSON.parse(localStorage.getItem('cq_rsvps') || '{}');
+            const rsvpData = rsvps[eventId];
+            if (!rsvpData) return '';
+            if (rsvpData.synced) {
+                return '✓ Synced';
+            } else {
+                return '⟳ Pending sync...';
+            }
+        }
+
+        // Load RSVP statuses from backend when portal loads
+        async function loadRsvpStatuses() {
+            try {
+                const resp = await fetch('/api/sharepoint?site=client&list=EventRSVPs', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.items && Array.isArray(data.items)) {
+                        const rsvps = {};
+                        data.items.forEach(item => {
+                            if (item.EventID && item.Response) {
+                                rsvps[item.EventID] = {
+                                    response: item.Response === 'accepted' ? 'attending' : (item.Response === 'tentative' ? 'maybe' : 'declined'),
+                                    apiResponse: item.Response,
+                                    updatedAt: item.ResponseDate,
+                                    synced: true
+                                };
+                            }
+                        });
+                        if (Object.keys(rsvps).length > 0) {
+                            localStorage.setItem('cq_rsvps', JSON.stringify(rsvps));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to load RSVP statuses:', error);
+                // Silently fail - local storage will be used
+            }
         }
 
         async function loadTasks() {
@@ -3427,18 +3508,31 @@
         }
 
         function logout() {
-            // Clear cookies
-            document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-            document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            // Call server-side logout endpoint to revoke token
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            })
+                .then(() => {
+                    // Clear localStorage session data
+                    localStorage.removeItem('cq_client');
+                    localStorage.removeItem('cq_portal_type');
+                    localStorage.removeItem('cq_login_email');
+                    localStorage.removeItem('cq_rsvps');
 
-            // Clear localStorage session data
-            localStorage.removeItem('cq_client');
-            localStorage.removeItem('cq_portal_type');
-            localStorage.removeItem('cq_login_email');
-            localStorage.removeItem('cq_rsvps');
-
-            // Redirect to login
-            window.location.href = '/login';
+                    // Redirect to login
+                    window.location.href = '/login';
+                })
+                .catch((error) => {
+                    console.error('Logout error:', error);
+                    // Still clear local data and redirect even if server call fails
+                    localStorage.removeItem('cq_client');
+                    localStorage.removeItem('cq_portal_type');
+                    localStorage.removeItem('cq_login_email');
+                    localStorage.removeItem('cq_rsvps');
+                    window.location.href = '/login';
+                });
         }
 
         function escapeHtml(text) {
