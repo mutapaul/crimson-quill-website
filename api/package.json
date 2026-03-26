@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "API functions for CQ Client Portal (Azure Functions v4)",
-  "main": "src/functions/*.js",
+  "main": "src/functions/register-all.js",
   "engines": {
     "node": ">=18.0.0"
   },
