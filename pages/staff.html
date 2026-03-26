@@ -2187,6 +2187,10 @@
                             <option value="">Select a client...</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Lead Lawyer</label>
+                        <input type="text" name="leadLawyer" class="form-input" readonly id="invoiceLeadLawyerField" style="background: var(--off-white);" placeholder="Auto-populated from matter">
+                    </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
                             <label class="form-label">Invoice Date</label>
@@ -3205,9 +3209,13 @@
                 String(msg.Matter_x0020_ID || '') === String(matter.Matter_x0020_ID || '')
             );
 
-            // Get related invoices
+            // Get related invoices (match against all possible matter ID field names)
             const invoices = (portalData.invoices || []);
-            const matterInvoices = invoices.filter(inv => String(inv.matterId) === String(matterId));
+            const matterIdStr = String(matter.Matter_x0020_ID || matterId);
+            const matterInvoices = invoices.filter(inv => {
+                const invMatter = String(inv.MatterID || inv.Matter_x0020_ID || inv.matterId || inv.matterNumber || '');
+                return invMatter === matterIdStr || invMatter === String(matterId);
+            });
 
             const content = document.getElementById('matterDetailContent');
             content.innerHTML = `
@@ -3317,20 +3325,25 @@
                 <div class="card" style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <h3 style="font-size: 16px; font-weight: 600;">Invoices</h3>
-                        <button class="btn btn-gold btn-sm" onclick="closeMatterDetail(); switchTab('billing'); setTimeout(() => openNewInvoiceModal(), 300);">+ Create Invoice</button>
+                        <button class="btn btn-gold btn-sm" onclick="closeMatterDetail(); switchTab('billing'); setTimeout(() => openNewInvoiceModal('${escapeHtml(matter.Matter_x0020_ID || '')}'), 300);">+ Create Invoice</button>
                     </div>
                     ${matterInvoices.length > 0 ? `
                         <table class="data-table">
                             <thead><tr><th>Invoice #</th><th>Date</th><th>Amount</th><th>Status</th></tr></thead>
                             <tbody>
-                                ${matterInvoices.map(inv => `
+                                ${matterInvoices.map(inv => {
+                                    const invNum = inv.InvoiceNumber || inv.invoiceNumber || inv.Invoice_x0020_Number || inv.Title || '—';
+                                    const invDate = inv.Invoice_x0020_Date || inv.date || inv.DueDate || inv.Due_x0020_Date;
+                                    const invTotal = inv.Amount || inv.totalAmount || inv.Total_x0020_Amount || 0;
+                                    const invStatus = inv.PaymentStatus || inv.Payment_x0020_Status || inv.status || inv.Status || 'Draft';
+                                    return `
                                     <tr>
-                                        <td>${escapeHtml(inv.invoiceNumber || '—')}</td>
-                                        <td>${formatDate(inv.date)}</td>
-                                        <td>${formatCurrencyUGX(inv.totalAmount || 0)}</td>
-                                        <td><span class="badge ${inv.status === 'Paid' ? 'badge-active' : inv.status === 'Sent' ? 'badge-pending' : 'badge-medium'}">${escapeHtml(inv.status || 'Draft')}</span></td>
-                                    </tr>
-                                `).join('')}
+                                        <td>${escapeHtml(invNum)}</td>
+                                        <td>${formatDate(invDate)}</td>
+                                        <td>${formatCurrencyUGX(invTotal)}</td>
+                                        <td><span class="badge ${invStatus === 'Paid' ? 'badge-active' : invStatus === 'Sent' ? 'badge-pending' : 'badge-medium'}">${escapeHtml(invStatus)}</span></td>
+                                    </tr>`;
+                                }).join('')}
                             </tbody>
                         </table>
                     ` : '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No invoices for this matter yet</div>'}
@@ -4482,7 +4495,11 @@
         function generateNextInvoiceNumber(matterID) {
             if (!matterID) return 'Select a matter first';
             const invoices = (portalData.invoices || []);
-            const matterInvoices = invoices.filter(inv => (inv.Matter_x0020_ID || inv.matterNumber) === matterID);
+            // Match against ALL possible field name variants for matter ID
+            const matterInvoices = invoices.filter(inv => {
+                const invMatter = String(inv.MatterID || inv.Matter_x0020_ID || inv.matterId || inv.matterNumber || '');
+                return invMatter === String(matterID);
+            });
             const nextNum = matterInvoices.length + 1;
             return `${matterID}-INV-${String(nextNum).padStart(3, '0')}`;
         }
@@ -4492,6 +4509,8 @@
             const selectedOption = matterSelect.options[matterSelect.selectedIndex];
             if (!matterSelect.value) {
                 document.getElementById('invoiceNumberField').value = 'Select a matter first';
+                // Clear auto-populated fields
+                document.getElementById('invoiceClientSelect').value = '';
                 return;
             }
             // Get matter by Matter_x0020_ID (dropdown value)
@@ -4499,11 +4518,29 @@
             const matterID = matter ? (matter.Matter_x0020_ID || 'CQ-M000') : matterSelect.value || 'CQ-M000';
             document.getElementById('invoiceNumberField').value = generateNextInvoiceNumber(matterID);
 
-            // Auto-select client
-            if (matter && matter.Client_x0020_Name) {
-                const clientSelect = document.getElementById('invoiceClientSelect');
-                for (let opt of clientSelect.options) {
-                    if (opt.value === matter.Client_x0020_Name) { clientSelect.value = matter.Client_x0020_Name; break; }
+            if (matter) {
+                // Auto-populate client from matter
+                if (matter.Client_x0020_Name) {
+                    const clientSelect = document.getElementById('invoiceClientSelect');
+                    for (let opt of clientSelect.options) {
+                        if (opt.value === matter.Client_x0020_Name) { clientSelect.value = matter.Client_x0020_Name; break; }
+                    }
+                }
+
+                // Auto-populate lead lawyer from matter
+                const lawyerField = document.getElementById('invoiceLeadLawyerField');
+                if (lawyerField) {
+                    lawyerField.value = matter.Lead_x0020_Lawyer || matter.LeadLawyer || '';
+                }
+
+                // Auto-populate service description with matter title and practice area
+                const descField = document.getElementById('invoiceDescriptionField');
+                if (descField && (!descField.value || descField.value.trim() === '')) {
+                    const parts = [];
+                    if (matter.Title) parts.push('Legal services in the matter of ' + matter.Title);
+                    if (matter.Practice_x0020_Area) parts.push('Practice Area: ' + matter.Practice_x0020_Area);
+                    if (matter.Case_x0020_Number) parts.push('Case No: ' + matter.Case_x0020_Number);
+                    descField.value = parts.join('\n');
                 }
             }
         }
@@ -4859,11 +4896,12 @@
             document.getElementById('staffModal').classList.remove('active');
         }
 
-        function openNewInvoiceModal() {
+        function openNewInvoiceModal(preselectedMatterId) {
             editingInvoiceId = null;
             document.getElementById('invoiceForm').reset();
             document.getElementById('invoiceIdField').value = '';
             document.getElementById('invoiceNumberField').value = 'Select a matter first';
+            document.getElementById('invoiceLeadLawyerField').value = '';
             document.querySelector('#invoiceModal .modal-title').textContent = 'New Invoice';
             document.getElementById('invoiceFormMessages').innerHTML = '';
             document.getElementById('generatePdfBtn').style.display = 'none';
@@ -4875,6 +4913,13 @@
             document.getElementById('customFieldsContainer').innerHTML = '';
             document.getElementById('invoiceTotalField').textContent = 'UGX 0';
             document.getElementById('invoiceModal').classList.add('active');
+
+            // If a matter was preselected, auto-populate everything from it
+            if (preselectedMatterId) {
+                const matterSelect = document.getElementById('invoiceMatterSelect');
+                matterSelect.value = preselectedMatterId;
+                updateInvoiceNumber();
+            }
         }
 
         function closeInvoiceModal() {
@@ -5565,7 +5610,14 @@
 
             document.getElementById('invoiceNumberField').value = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '';
             document.getElementById('invoiceClientSelect').value = invoice.client || invoice.Client_x0020_Name || '';
-            document.getElementById('invoiceMatterSelect').value = invoice.matterId || invoice.Matter_x0020_ID || '';
+            document.getElementById('invoiceMatterSelect').value = invoice.matterId || invoice.Matter_x0020_ID || invoice.MatterID || '';
+            // Auto-populate lead lawyer from the linked matter
+            const linkedMatterId = invoice.matterId || invoice.Matter_x0020_ID || invoice.MatterID || '';
+            const linkedMatter = portalData.matters.find(m => m.Matter_x0020_ID === linkedMatterId || String(m.id) === String(linkedMatterId));
+            const lawyerField = document.getElementById('invoiceLeadLawyerField');
+            if (lawyerField) {
+                lawyerField.value = (linkedMatter ? (linkedMatter.Lead_x0020_Lawyer || linkedMatter.LeadLawyer || '') : '');
+            }
             const invoiceDate = invoice.date || invoice.Invoice_x0020_Date;
             document.getElementById('invoiceDateField').value = invoiceDate ? (invoiceDate.split('T')[0]) : '';
             const dueDate = invoice.dueDate || invoice.Due_x0020_Date;
