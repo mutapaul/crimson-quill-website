@@ -1,5 +1,5 @@
 const { Resend } = require('resend');
-const { createClient } = require('@vercel/kv');
+const { kv: kvStore } = require('./_lib/kv-compat');
 const { isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser } = require('./_lib/graph');
 const { generateOTP, storeOTP, checkRateLimit } = require('./_lib/otp');
 const { validateCSRFToken } = require('./_lib/csrf');
@@ -54,10 +54,7 @@ module.exports = async function handler(req, res) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Initialize Vercel KV
-    const kv = createClient({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+    const kv = kvStore;
 
     // Check rate limit
     const allowed = await checkRateLimit(kv, normalizedEmail);

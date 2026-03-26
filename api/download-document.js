@@ -5,7 +5,7 @@
  */
 
 const jwt = require('jsonwebtoken');
-const { createClient } = require('@vercel/kv');
+const { kv: kvStore } = require('./_lib/kv-compat');
 const { checkRateLimit } = require('./_lib/rate-limit');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -180,10 +180,7 @@ module.exports = async function handler(req, res) {
 
   try {
     // Initialize Vercel KV
-    const kv = createClient({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+    const kv = kvStore;
 
     // Apply rate limiting: 100 downloads per hour per user
     const rateLimitKey = `download:${session.email.toLowerCase()}`;

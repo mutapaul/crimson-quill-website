@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { createClient } = require('@vercel/kv');
+const { kv: kvStore } = require('./_lib/kv-compat');
 const { getOTP, incrementAttempts, deleteOTP } = require('./_lib/otp');
 const { validateCSRFToken } = require('./_lib/csrf');
 
@@ -88,10 +88,7 @@ module.exports = async function handler(req, res) {
     const normalizedEmail = trimmedEmail.toLowerCase();
 
     // Initialize Vercel KV
-    const kv = createClient({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+    const kv = kvStore;
 
     // Retrieve stored OTP
     const otpData = await getOTP(kv, normalizedEmail);

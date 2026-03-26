@@ -1,5 +1,5 @@
 const { Resend } = require('resend');
-const { createClient } = require('@vercel/kv');
+const { kv: kvStore } = require('./_lib/kv-compat');
 const jwt = require('jsonwebtoken');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -534,10 +534,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Initialize Vercel KV
-    const kv = createClient({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+    const kv = kvStore;
 
     // Check rate limit (per sender email from session)
     const allowed = await checkEventInviteRateLimit(kv, session.email);
