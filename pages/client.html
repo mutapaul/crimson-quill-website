@@ -2493,8 +2493,22 @@
         }
 
         // Client portal folder path tracking
-        let clientCurrentMatter = null;
+        let clientCurrentMatter = null;  // Display title for UI
+        let clientCurrentFolder = null;  // Actual SharePoint folder name (matter ID)
         let clientFolderPath = '';
+
+        // Get the SharePoint folder name for a matter — must match staff portal's getMatterDisplayId
+        function getMatterFolderName(matter) {
+            if (!matter) return '';
+            return matter.matterId || matter.Matter_x0020_ID || matter.Title || '';
+        }
+
+        // Look up folder name from a display title
+        function folderNameFromTitle(displayTitle) {
+            const matters = portalData.matters?.items || [];
+            const matter = matters.find(m => m.Title === displayTitle);
+            return matter ? getMatterFolderName(matter) : displayTitle;
+        }
 
         async function loadDocuments(matterFilter, folderPath) {
             const container = document.getElementById('documents');
@@ -2506,8 +2520,9 @@
             // If a specific matter is selected, load its folder contents
             if (matterFilter) {
                 clientCurrentMatter = matterFilter;
+                clientCurrentFolder = folderNameFromTitle(matterFilter);
                 clientFolderPath = folderPath || '';
-                await loadMatterDocuments(container, matterFilter, clientFolderPath, matters);
+                await loadMatterDocuments(container, matterFilter, clientCurrentFolder, clientFolderPath, matters);
                 return;
             }
 
@@ -2547,9 +2562,10 @@
             }
         }
 
-        async function loadMatterDocuments(container, matterTitle, folderPath, matters) {
+        async function loadMatterDocuments(container, displayTitle, folderName, folderPath, matters) {
             try {
-                const params = new URLSearchParams({ matterTitle });
+                // Use folderName (matter ID) for the API call — this matches the SharePoint folder structure
+                const params = new URLSearchParams({ matterTitle: folderName });
                 if (folderPath) params.set('folderPath', folderPath);
 
                 const resp = await fetchWithRetry('/api/upload-document?' + params.toString(), {
@@ -2561,15 +2577,17 @@
                 if (resp.ok) {
                     const data = await resp.json();
                     items = data.items || [];
+                } else {
+                    console.warn('Document listing returned status ' + resp.status + ' for folder: ' + folderName);
                 }
 
                 let html = '<div class="card">';
 
                 // Header with buttons
                 html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">';
-                html += '<div class="card-title" style="margin: 0;">Documents — ' + escapeHtml(matterTitle) + '</div>';
+                html += '<div class="card-title" style="margin: 0;">Documents — ' + escapeHtml(displayTitle) + '</div>';
                 html += '<div style="display: flex; gap: 8px;">';
-                html += '<button class="btn btn-secondary" onclick="createClientFolder(\'' + matterTitle.replace(/'/g, "\\'") + '\')" style="padding: 8px 12px; font-size: 12px;">+ New Folder</button>';
+                html += '<button class="btn btn-secondary" onclick="createClientFolder(\'' + displayTitle.replace(/'/g, "\\'") + '\')" style="padding: 8px 12px; font-size: 12px;">+ New Folder</button>';
                 html += '<button class="btn btn-gold" onclick="openUploadModal()" style="padding: 8px 12px; font-size: 12px;">+ Upload</button>';
                 html += '</div></div>';
 
@@ -2579,7 +2597,7 @@
                 html += ' <span style="color:#999;">›</span> ';
 
                 if (folderPath) {
-                    html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + matterTitle.replace(/'/g, "\\'") + '\')">' + escapeHtml(matterTitle) + '</span>';
+                    html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + displayTitle.replace(/'/g, "\\'") + '\')">' + escapeHtml(displayTitle) + '</span>';
                     const parts = folderPath.split('/').filter(Boolean);
                     parts.forEach((part, idx) => {
                         html += ' <span style="color:#999;">›</span> ';
@@ -2587,12 +2605,12 @@
                             html += '<span style="font-weight:600;">' + escapeHtml(part) + '</span>';
                         } else {
                             const pathToHere = parts.slice(0, idx + 1).join('/');
-                            html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + matterTitle.replace(/'/g, "\\'") + '\', \'' + pathToHere.replace(/'/g, "\\'") + '\')">' + escapeHtml(part) + '</span>';
+                            html += '<span style="cursor:pointer;color:var(--gold);" onclick="loadDocuments(\'' + displayTitle.replace(/'/g, "\\'") + '\', \'' + pathToHere.replace(/'/g, "\\'") + '\')">' + escapeHtml(part) + '</span>';
                         }
                     });
                     html += ' <button onclick="clientNavigateUp()" style="margin-left:auto;background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#666;">↑ Up</button>';
                 } else {
-                    html += '<span style="font-weight:600;">' + escapeHtml(matterTitle) + '</span>';
+                    html += '<span style="font-weight:600;">' + escapeHtml(displayTitle) + '</span>';
                     html += ' <button onclick="loadDocuments()" style="margin-left:auto;background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#666;">← Back</button>';
                 }
                 html += '</div>';
@@ -2655,13 +2673,15 @@
             loadDocuments(clientCurrentMatter, parts.join('/'));
         }
 
-        function createClientFolder(matterTitle) {
+        function createClientFolder(displayTitle) {
+            // Resolve the actual SharePoint folder name from the display title
+            const spFolderName = folderNameFromTitle(displayTitle);
             // Custom modal instead of prompt()
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
             overlay.innerHTML = '<div style="background:white;padding:30px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.3);min-width:400px;">' +
                 '<h3 style="margin:0 0 20px 0;font-size:18px;font-weight:600;">Create New Folder</h3>' +
-                (clientFolderPath ? '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + matterTitle + '/' + clientFolderPath + '</strong></div>' : '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + matterTitle + '</strong></div>') +
+                (clientFolderPath ? '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + displayTitle + '/' + clientFolderPath + '</strong></div>' : '<div style="margin-bottom:12px;padding:8px 12px;background:#f8f6f0;border-radius:4px;font-size:13px;">📁 Location: <strong>' + displayTitle + '</strong></div>') +
                 '<div style="margin-bottom:20px;">' +
                 '<label style="display:block;font-weight:600;margin-bottom:8px;">Folder Name</label>' +
                 '<input type="text" id="clientNewFolderInput" placeholder="Enter folder name" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;">' +
@@ -2698,7 +2718,7 @@
                         body: JSON.stringify({
                             action: 'createFolder',
                             folderName: folderName,
-                            matterTitle: matterTitle,
+                            matterTitle: spFolderName,
                             folderPath: clientFolderPath || ''
                         }),
                         credentials: 'include'
@@ -2725,7 +2745,7 @@
             const matters = portalData.matters?.items || [];
             matters.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = m.Title || '';
+                opt.value = getMatterFolderName(m);
                 opt.textContent = m.Title || 'Untitled';
                 matterSelect.appendChild(opt);
             });
@@ -2734,14 +2754,34 @@
 
         async function submitCreateFolder(e) {
             e.preventDefault();
-            const matterTitle = document.getElementById('newFolderMatter').value;
+            const spFolderName = document.getElementById('newFolderMatter').value; // Already the SP folder name
             const folderName = document.getElementById('newFolderName').value.trim();
-            if (!matterTitle || !folderName) {
+            if (!spFolderName || !folderName) {
                 showToast('Please select a matter and enter a folder name', 'error');
                 return;
             }
             document.getElementById('createFolderModal').classList.remove('show');
-            await createClientFolder(matterTitle);
+            try {
+                showToast('Creating folder...', 'info');
+                const resp = await fetchWithRetry('/api/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'createFolder',
+                        folderName: folderName,
+                        matterTitle: spFolderName,
+                        folderPath: ''
+                    }),
+                    credentials: 'include'
+                });
+                if (resp.ok) {
+                    showToast('Folder created successfully', 'success');
+                } else {
+                    showToast('Failed to create folder', 'error');
+                }
+            } catch (error) {
+                showToast('Error creating folder: ' + error.message, 'error');
+            }
         }
 
         async function loadCalendar() {
@@ -3695,8 +3735,8 @@
                 const matters = data.items || [];
                 matters.forEach(matter => {
                     const option = document.createElement('option');
-                    option.value = matter.Matter_x0020_ID || matter.Title || '';
-                    option.textContent = `${matter.Title || 'Untitled'}${matter.Matter_x0020_ID ? ' (' + matter.Matter_x0020_ID + ')' : ''}`;
+                    option.value = getMatterFolderName(matter);
+                    option.textContent = `${matter.Title || 'Untitled'}${matter.matterId ? ' (' + matter.matterId + ')' : ''}`;
                     matterSelect.appendChild(option);
                 });
             } catch (error) {
@@ -3779,11 +3819,11 @@
                 return;
             }
 
-            // Find matter title
+            // Find matter by folder name (matter ID)
             const matter = (portalData.matters?.items || []).find(m =>
-                (m.Matter_x0020_ID || m.Title || '') === matterId
+                getMatterFolderName(m) === matterId
             );
-            const matterTitle = matter ? (matter.Title || matterId) : matterId;
+            const matterTitle = matter ? getMatterFolderName(matter) : matterId;
 
             // Validate file types
             const allowedTypes = ['pdf','docx','xlsx','png','jpg','jpeg','txt','csv','msg'];
@@ -3804,10 +3844,7 @@
                         continue;
                     }
 
-                    if (file.size > 5 * 1024 * 1024) {
-                        progressText.textContent = 'Skipped ' + file.name + ' (too large, max 5MB)';
-                        continue;
-                    }
+                    // No file size limit — large files use chunked upload via SharePoint
 
                     progressText.textContent = 'Uploading ' + (i + 1) + ' of ' + selectedFiles.length + ': ' + file.name;
                     progressFill.style.width = ((i + 1) / selectedFiles.length * 100) + '%';
@@ -3825,8 +3862,8 @@
                         matterId: matterId,
                         matterTitle: matterTitle
                     };
-                    // If we're browsing inside a matter folder, upload to that folder
-                    if (clientCurrentMatter === matterTitle && clientFolderPath) {
+                    // If we're browsing inside a matter folder, upload to that subfolder
+                    if (clientCurrentFolder === matterTitle && clientFolderPath) {
                         body.folderPath = clientFolderPath;
                     }
 
@@ -3841,10 +3878,10 @@
                         successCount++;
                         // Create entry in SharePoint "Client Documents" list
                         try {
-                            const matter = (portalData.matters?.items || []).find(m =>
-                                (m.Title || m.Matter_x0020_ID || '') === matterTitle
+                            const uploadMatter = (portalData.matters?.items || []).find(m =>
+                                getMatterFolderName(m) === matterTitle
                             );
-                            const matterRef = matter ? (matter.Matter_x0020_ID || matter.Title || matterId) : matterId;
+                            const matterRef = uploadMatter ? getMatterFolderName(uploadMatter) : matterId;
 
                             await fetchWithRetry('/api/sharepoint-write', {
                                 method: 'POST',
