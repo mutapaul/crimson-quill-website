@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 const { createClient } = require('@vercel/kv');
-const { isEmailInGroup, isFirmEmail, isRegisteredClient } = require('./lib/graph');
+const { isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser } = require('./lib/graph');
 const { generateOTP, storeOTP, checkRateLimit } = require('./lib/otp');
 const { validateCSRFToken } = require('./lib/csrf');
 
@@ -99,6 +99,11 @@ module.exports = async function handler(req, res) {
       // 3. Check if email is registered in the SharePoint Clients list
       if (!hasAccess) {
         hasAccess = await isRegisteredClient(normalizedEmail);
+      }
+
+      // 4. Check if email has matter-specific access (matter-only users)
+      if (!hasAccess) {
+        hasAccess = await isMatterAccessUser(normalizedEmail);
       }
     }
 

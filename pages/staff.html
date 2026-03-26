@@ -2263,6 +2263,42 @@
         </div>
     </div>
 
+    <!-- Matter Access Modal -->
+    <div class="modal-overlay" id="accessModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Grant Matter Access</div>
+                <button class="modal-close" onclick="closeAccessModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="accessFormMessages"></div>
+                <form id="accessForm" onsubmit="saveAccessUser(event)">
+                    <div class="form-group">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" name="email" class="form-input" id="accessEmailField" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Name (Optional)</label>
+                        <input type="text" name="personName" class="form-input" id="accessNameField" placeholder="e.g., John Smith">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Access Level *</label>
+                        <select name="accessLevel" class="form-select" id="accessLevelField" required>
+                            <option value="View Only">View Only (can view/download)</option>
+                            <option value="Contributor">Contributor (can view/upload)</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="matterId" id="accessMatterIdField">
+                    <input type="hidden" name="matterTitle" id="accessMatterTitleField">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAccessModal()">Cancel</button>
+                <button class="btn btn-gold" onclick="document.getElementById('accessForm').requestSubmit()">Add Access</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirm Delete Modal -->
     <div class="modal-overlay" id="confirmDeleteModal">
         <div class="modal-content" style="max-width: 450px;">
@@ -3414,6 +3450,18 @@
                     </div>
                 </div>
 
+                <!-- Authorized External Users -->
+                <div class="card" style="margin-bottom: 20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div class="card-title" style="margin:0;">External Access</div>
+                        <button class="btn btn-gold" onclick="openAddAccessModal(${matter.id})" style="padding:6px 16px;font-size:12px;">+ Add Person</button>
+                    </div>
+                    <p style="color:var(--gray-light);font-size:13px;margin-bottom:12px;">People added here can log in and access only this matter's documents.</p>
+                    <div id="matterAccessList-${matter.id}">
+                        <div class="loading-spinner"><div class="mini-spinner"></div></div>
+                    </div>
+                </div>
+
                 <!-- Matter Documents & Folders -->
                 <div class="card" style="margin-bottom: 20px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -3470,6 +3518,9 @@
                     <button class="btn btn-danger" onclick="deleteMatter(${matter.id})">Delete Matter</button>
                 </div>
             `;
+
+            // Load matter access list after rendering detail view
+            loadMatterAccess(matter.id);
         }
 
         function closeMatterDetail() {
@@ -3525,6 +3576,170 @@
                 localStorage.setItem('cq_matter_teams', JSON.stringify(assignments));
             }
             document.getElementById('matterTeamList').innerHTML = renderMatterTeam(matterId);
+        }
+
+        // ===== MATTER ACCESS (AUTHORIZED USERS) MANAGEMENT =====
+        async function loadMatterAccess(matterId) {
+            const container = document.getElementById(`matterAccessList-${matterId}`);
+            if (!container) return; // Element not in DOM yet
+
+            try {
+                container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
+
+                // Get the matter to get Matter_x0020_ID
+                const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+                if (!matter) {
+                    container.innerHTML = '<div style="color: #888; font-size: 13px;">Matter not found</div>';
+                    return;
+                }
+
+                const matterIdStr = String(matter.Matter_x0020_ID || matter.matterId || matterId);
+
+                // Fetch MatterAccess list from SharePoint
+                const resp = await fetchWithRetry(`/api/sharepoint?site=client&list=MatterAccess&top=500`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`API error: ${resp.status}`);
+                }
+
+                const data = await resp.json();
+                const items = (data.items || []).filter(item =>
+                    String(item.Matter_x0020_ID || '') === matterIdStr
+                );
+
+                if (items.length === 0) {
+                    container.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 20px;">No external users have been granted access to this matter.</div>';
+                    return;
+                }
+
+                // Render access list
+                const html = items.map(item => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--silver);">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 14px;">${escapeHtml(item.Email || '')}</div>
+                            ${item.PersonName ? `<div style="color: var(--gray-light); font-size: 12px;">${escapeHtml(item.PersonName)}</div>` : ''}
+                            <div style="color: #999; font-size: 12px; margin-top: 4px;">
+                                <span class="badge" style="padding: 2px 8px; font-size: 11px; background: ${item.AccessLevel === 'Contributor' ? 'rgba(184,134,11,0.15)' : 'rgba(0,0,0,0.05)'}; color: var(--text-primary);">${escapeHtml(item.AccessLevel || 'View Only')}</span>
+                                <span style="margin-left: 12px;">Added ${formatDate(item.GrantedDate)} by ${escapeHtml(item.GrantedBy || '—')}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-danger" onclick="removeAccessUser(${item.id}, ${matterId})" style="margin-left: 10px;">Remove</button>
+                    </div>
+                `).join('');
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading matter access:', error);
+                container.innerHTML = '<div style="color: #c0392b; font-size: 13px;">Failed to load access list</div>';
+            }
+        }
+
+        function openAddAccessModal(matterId) {
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+            if (!matter) {
+                showToast('Matter not found', 'error');
+                return;
+            }
+
+            document.getElementById('accessForm').reset();
+            document.getElementById('accessMatterIdField').value = String(matterId);
+            document.getElementById('accessMatterTitleField').value = escapeHtml(matter.Title || '');
+            document.getElementById('accessFormMessages').innerHTML = '';
+            document.getElementById('accessModal').classList.add('active');
+        }
+
+        function closeAccessModal() {
+            document.getElementById('accessModal').classList.remove('active');
+        }
+
+        async function saveAccessUser(event) {
+            event.preventDefault();
+
+            const matterId = document.getElementById('accessMatterIdField').value;
+            const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+            if (!matter) {
+                showToast('Matter not found', 'error');
+                return;
+            }
+
+            const email = document.getElementById('accessEmailField').value.trim();
+            const personName = document.getElementById('accessNameField').value.trim();
+            const accessLevel = document.getElementById('accessLevelField').value;
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showToast('Invalid email address', 'error');
+                return;
+            }
+
+            const currentUserEmail = getCookie('cq_user') ? decodeURIComponent(getCookie('cq_user')) : '';
+            const matterIdStr = String(matter.Matter_x0020_ID || matter.matterId || matterId);
+
+            try {
+                const resp = await fetchWithRetry('/api/sharepoint-write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'MatterAccess',
+                        fields: {
+                            Title: email,
+                            Email: email,
+                            PersonName: personName || email,
+                            Matter_x0020_ID: matterIdStr,
+                            MatterTitle: matter.Title || '',
+                            AccessLevel: accessLevel,
+                            GrantedBy: currentUserEmail,
+                            GrantedDate: new Date().toISOString()
+                        }
+                    })
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`API error: ${resp.status}`);
+                }
+
+                showToast(`Access granted to ${email}`, 'success');
+                closeAccessModal();
+                loadMatterAccess(matterId);
+            } catch (error) {
+                console.error('Error saving access user:', error);
+                showToast('Failed to grant access', 'error');
+            }
+        }
+
+        async function removeAccessUser(itemId, matterId) {
+            if (!confirm('Are you sure you want to remove this person\'s access?')) {
+                return;
+            }
+
+            try {
+                const resp = await fetchWithRetry('/api/sharepoint-write', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'MatterAccess',
+                        itemId: itemId
+                    })
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`API error: ${resp.status}`);
+                }
+
+                showToast('Access removed successfully', 'success');
+                loadMatterAccess(matterId);
+            } catch (error) {
+                console.error('Error removing access user:', error);
+                showToast('Failed to remove access', 'error');
+            }
         }
 
         // ===== MATTER FILE MANAGEMENT =====

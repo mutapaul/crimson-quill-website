@@ -2109,6 +2109,12 @@
                 'MessageBody': 'messageBody',
                 'Matter_x0020_Status': 'matterStatus',
                 'MatterStatus': 'matterStatus',
+                'Access_x0020_Level': 'accessLevel',
+                'AccessLevel': 'accessLevel',
+                'Person_x0020_Name': 'personName',
+                'PersonName': 'personName',
+                'Matter_x0020_Title': 'matterTitle',
+                'MatterTitle': 'matterTitle',
             };
 
             for (const [spName, cleanName] of Object.entries(fieldMap)) {
@@ -2224,6 +2230,11 @@
                 await loadDashboard();
                 hideLoadingOverlay();
 
+                // Step 4: If matter-only user, activate restricted mode
+                if (clientProfile.accessType === 'matter-only') {
+                    activateRestrictedMode();
+                }
+
                 // Start periodic session check (every 5 minutes)
                 startPeriodicSessionCheck();
             } catch (error) {
@@ -2275,6 +2286,28 @@
                     console.log('Client profile resolved:', clientProfile.name);
                 } else {
                     console.warn('No matching client found for:', clientProfile.email);
+
+                    // If not found as a registered client, check MatterAccess list
+                    try {
+                        const accessData = await fetchList('MatterAccess');
+                        const accessItems = (accessData.items || []).map(normalizeSharePointItem);
+                        const myAccess = accessItems.filter(item =>
+                            (item.Email || item.Title || '').toLowerCase().trim() === clientProfile.email.toLowerCase().trim()
+                        );
+
+                        if (myAccess.length > 0) {
+                            clientProfile.accessType = 'matter-only';
+                            clientProfile.name = myAccess[0].PersonName || clientProfile.email;
+                            clientProfile.authorizedMatters = myAccess.map(a => ({
+                                matterId: a.Matter_x0020_ID || a.matterId,
+                                matterTitle: a.MatterTitle || a.matterTitle,
+                                accessLevel: a.AccessLevel || a.accessLevel || 'View Only'
+                            }));
+                            console.log('Matter-only user resolved:', clientProfile.name, 'with', myAccess.length, 'authorized matters');
+                        }
+                    } catch (error) {
+                        console.error('MatterAccess lookup failed:', error);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to resolve client profile:', error);
@@ -2287,6 +2320,36 @@
          */
         async function loadClientData() {
             try {
+                // Special handling for matter-only users
+                if (clientProfile.accessType === 'matter-only') {
+                    // Only load matters this user has been granted access to
+                    const mattersData = await fetchList('Matters');
+                    const allMatters = (mattersData.items || []).map(normalizeSharePointItem);
+
+                    const authorizedIds = new Set(clientProfile.authorizedMatters.map(a => a.matterId));
+                    const myMatters = allMatters.filter(m =>
+                        authorizedIds.has(m.matterId || m.Matter_x0020_ID)
+                    );
+
+                    const myMatterIds = new Set(myMatters.map(m => m.matterId || m.Matter_x0020_ID).filter(Boolean));
+                    myMatters.forEach(m => {
+                        if (m.Title) myMatterIds.add(m.Title);
+                        if (m.matterId || m.Matter_x0020_ID) myMatterIds.add(m.matterId || m.Matter_x0020_ID);
+                    });
+
+                    clientProfile.matterIds = [...myMatterIds];
+                    clientProfile.matterNames = new Set(myMatters.map(m => m.Title));
+
+                    portalData.matters = { items: myMatters, listName: 'Matters' };
+                    portalData.messages = { items: [], listName: 'Messages' };
+                    portalData.events = { items: [], listName: 'Events' };
+                    portalData.billing = { items: [], listName: 'Billing Records' };
+
+                    console.log(`Matter-only user data loaded: ${myMatters.length} matters`);
+                    updateNotificationBadge();
+                    return;
+                }
+
                 // Fetch all lists in parallel
                 const [mattersData, messagesData, eventsData, billingData] = await Promise.all([
                     fetchList('Matters'),
@@ -2356,6 +2419,42 @@
 
         function hideLoadingOverlay() {
             document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+
+        /**
+         * Activate restricted mode for matter-only users
+         * Hides all tabs except Documents and auto-switches to Documents tab
+         */
+        function activateRestrictedMode() {
+            // Hide all nav items except documents
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.dataset.tab !== 'documents') {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Switch to documents tab
+            switchTab('documents');
+
+            // Update welcome message to indicate restricted access
+            const userNameEl = document.getElementById('userName');
+            if (userNameEl) {
+                userNameEl.textContent = clientProfile.name || 'Document Access';
+            }
+
+            // Check access level for upload permissions
+            const canUpload = clientProfile.authorizedMatters && clientProfile.authorizedMatters.some(a =>
+                a.accessLevel === 'Contributor'
+            );
+
+            if (!canUpload) {
+                // Hide upload buttons for view-only users
+                const style = document.createElement('style');
+                style.textContent = '.btn-gold[onclick*="openUploadModal"], .btn-secondary[onclick*="createClientFolder"] { display: none !important; }';
+                document.head.appendChild(style);
+            }
+
+            console.log('Restricted mode activated for matter-only user');
         }
 
         // ============================================================================

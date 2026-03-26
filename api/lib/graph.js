@@ -173,4 +173,48 @@ async function getSiteIdByPath(token, sitePath) {
   return data.id;
 }
 
-module.exports = { getGraphToken, graphGet, isEmailInGroup, isFirmEmail, isRegisteredClient };
+/**
+ * Check if an email has matter-specific access via the MatterAccess list.
+ * Matter-access users are external users invited by staff to view specific matters' documents.
+ * @param {string} email - User email address to check
+ * @returns {boolean} True if the email exists in the MatterAccess list
+ */
+async function isMatterAccessUser(email) {
+  try {
+    const token = await getGraphToken();
+    const siteId = await getSiteIdByPath(token, 'cqadvocates.sharepoint.com:/sites/CQClientPortal');
+
+    // Get the MatterAccess list
+    const listsResp = await graphGet(`/sites/${siteId}/lists`);
+    const matterAccessList = listsResp.value.find(
+      (l) => l.displayName === 'MatterAccess' || l.displayName.toLowerCase() === 'matteraccess'
+    );
+
+    if (!matterAccessList) {
+      console.log('MatterAccess list not found (this is optional)');
+      return false;
+    }
+
+    // Query for the specific email
+    const items = await graphGet(
+      `/sites/${siteId}/lists/${matterAccessList.id}/items?$expand=fields&$top=500`
+    );
+
+    if (!items.value || items.value.length === 0) {
+      return false;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const match = items.value.find((item) => {
+      const itemEmail = (item.fields.Email || item.fields.Title || '').toLowerCase().trim();
+      return itemEmail === normalizedEmail;
+    });
+
+    return !!match;
+  } catch (error) {
+    console.error('Error checking matter-access user:', error.message);
+    return false;
+  }
+}
+
+module.exports = { getGraphToken, graphGet, isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser };
