@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Crimson & Quill website with OTP authentication",
+  "scripts": {
+    "build": "echo 'Static site — no build step required'"
+  },
   "dependencies": {
     "resend": "^3.2.0",
     "@vercel/kv": "^1.0.1",
