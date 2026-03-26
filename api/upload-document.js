@@ -7,7 +7,7 @@
 
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@vercel/kv');
-const { checkRateLimit } = require('./lib/rate-limit');
+const { checkRateLimit } = require('./_lib/rate-limit');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 let tokenCache = { token: null, expiresAt: 0 };

@@ -1,8 +1,8 @@
 const { Resend } = require('resend');
 const { createClient } = require('@vercel/kv');
-const { isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser } = require('./lib/graph');
-const { generateOTP, storeOTP, checkRateLimit } = require('./lib/otp');
-const { validateCSRFToken } = require('./lib/csrf');
+const { isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser } = require('./_lib/graph');
+const { generateOTP, storeOTP, checkRateLimit } = require('./_lib/otp');
+const { validateCSRFToken } = require('./_lib/csrf');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

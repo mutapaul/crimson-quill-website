@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@vercel/kv');
-const { getOTP, incrementAttempts, deleteOTP } = require('./lib/otp');
-const { validateCSRFToken } = require('./lib/csrf');
+const { getOTP, incrementAttempts, deleteOTP } = require('./_lib/otp');
+const { validateCSRFToken } = require('./_lib/csrf');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
