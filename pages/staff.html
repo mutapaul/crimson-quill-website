@@ -5608,29 +5608,42 @@
             document.getElementById('generatePdfBtn').style.display = 'inline-block';
             document.getElementById('sendInvoiceBtn').style.display = 'inline-block';
 
-            document.getElementById('invoiceNumberField').value = invoice.invoiceNumber || invoice.Invoice_x0020_Number || '';
-            document.getElementById('invoiceClientSelect').value = invoice.client || invoice.Client_x0020_Name || '';
-            document.getElementById('invoiceMatterSelect').value = invoice.matterId || invoice.Matter_x0020_ID || invoice.MatterID || '';
+            // Use ALL possible field name variants (camelCase from local save + SharePoint normalized names)
+            const invNumber = invoice.InvoiceNumber || invoice.invoiceNumber || invoice.Invoice_x0020_Number || invoice.Title || '';
+            const invClient = invoice.ClientName || invoice.Client_x0020_Name || invoice.client || '';
+            const invMatter = invoice.MatterID || invoice.Matter_x0020_ID || invoice.matterId || invoice.matterNumber || '';
+            const invDate = invoice.Invoice_x0020_Date || invoice.date || '';
+            const invDueDate = invoice.DueDate || invoice.Due_x0020_Date || invoice.dueDate || '';
+            const invFees = invoice.Professional_x0020_Fees || invoice.professionalFees || 0;
+            const invDisbursements = invoice.Disbursements || invoice.disbursements || 0;
+            const invVat = invoice.VAT_x0020_Amount || invoice.vatAmount || 0;
+            const invAmountPaid = invoice.Amount_x0020_Paid || invoice.amountPaid || 0;
+            const invStatus = invoice.PaymentStatus || invoice.Payment_x0020_Status || invoice.status || invoice.Status || 'Draft';
+            const invNotes = invoice.Description || invoice.notes || '';
+            const invDescription = invoice.serviceDescription || invoice.Description || '';
+
+            document.getElementById('invoiceNumberField').value = invNumber;
+            document.getElementById('invoiceClientSelect').value = invClient;
+            document.getElementById('invoiceMatterSelect').value = invMatter;
+
             // Auto-populate lead lawyer from the linked matter
-            const linkedMatterId = invoice.matterId || invoice.Matter_x0020_ID || invoice.MatterID || '';
-            const linkedMatter = portalData.matters.find(m => m.Matter_x0020_ID === linkedMatterId || String(m.id) === String(linkedMatterId));
+            const linkedMatter = portalData.matters.find(m => m.Matter_x0020_ID === invMatter || String(m.id) === String(invMatter));
             const lawyerField = document.getElementById('invoiceLeadLawyerField');
             if (lawyerField) {
                 lawyerField.value = (linkedMatter ? (linkedMatter.Lead_x0020_Lawyer || linkedMatter.LeadLawyer || '') : '');
             }
-            const invoiceDate = invoice.date || invoice.Invoice_x0020_Date;
-            document.getElementById('invoiceDateField').value = invoiceDate ? (invoiceDate.split('T')[0]) : '';
-            const dueDate = invoice.dueDate || invoice.Due_x0020_Date;
-            document.getElementById('invoiceDueDateField').value = dueDate ? (dueDate.split('T')[0]) : '';
-            document.getElementById('invoiceFeesField').value = invoice.professionalFees || invoice.Professional_x0020_Fees || 0;
-            document.getElementById('invoiceDisbursementsField').value = invoice.disbursements || invoice.Disbursements || 0;
-            document.getElementById('invoiceVatField').value = invoice.vatAmount || invoice.VAT_x0020_Amount || 0;
-            document.getElementById('invoiceAmountPaidField').value = invoice.amountPaid || invoice.Amount_x0020_Paid || 0;
-            document.querySelector('#invoiceForm select[name="status"]').value = invoice.status || invoice.Status || 'Draft';
-            document.querySelector('#invoiceForm textarea[name="notes"]').value = invoice.notes || invoice.Description || '';
+
+            document.getElementById('invoiceDateField').value = invDate ? (invDate.split('T')[0]) : '';
+            document.getElementById('invoiceDueDateField').value = invDueDate ? (invDueDate.split('T')[0]) : '';
+            document.getElementById('invoiceFeesField').value = invFees;
+            document.getElementById('invoiceDisbursementsField').value = invDisbursements;
+            document.getElementById('invoiceVatField').value = invVat;
+            document.getElementById('invoiceAmountPaidField').value = invAmountPaid;
+            document.querySelector('#invoiceForm select[name="status"]').value = invStatus;
+            document.querySelector('#invoiceForm textarea[name="notes"]').value = invNotes;
             const serviceDescriptionField = document.getElementById('invoiceDescriptionField');
             if (serviceDescriptionField) {
-                serviceDescriptionField.value = invoice.serviceDescription || '';
+                serviceDescriptionField.value = invDescription;
             }
 
             document.getElementById('invoiceModal').classList.add('active');
@@ -5829,38 +5842,63 @@
         }
 
         async function sendInvoiceToClient() {
+            // Read from form fields (which editInvoice now correctly populates)
             const invoiceNumber = document.getElementById('invoiceNumberField').value;
             const clientName = document.getElementById('invoiceClientSelect').value;
-            const matterSelect = document.getElementById('invoiceMatterSelect');
-            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value) || m.Matter_x0020_ID === matterSelect.value);
-            const matterTitle = matter ? matter.Title : '';
-            const invoiceDate = document.getElementById('invoiceDateField').value;
+            const matterSelectValue = document.getElementById('invoiceMatterSelect').value;
             const dueDate = document.getElementById('invoiceDueDateField').value;
-            const serviceDescription = document.getElementById('invoiceDescriptionField') ? document.getElementById('invoiceDescriptionField').value : 'Services rendered';
             const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || 0;
             const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || 0;
             const vat = parseInt(document.getElementById('invoiceVatField').value) || 0;
             const total = professionalFees + disbursements + vat;
-            const status = document.querySelector('#invoiceForm select[name="status"]').value;
+
+            // Also get the invoice data object as fallback
+            const invoiceId = document.getElementById('invoiceIdField').value;
+            const invoiceObj = invoiceId ? portalData.invoices.find(i => String(i.id) === String(invoiceId)) : null;
+
+            // Resolve matter reference
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelectValue) || m.Matter_x0020_ID === matterSelectValue);
+            const matterRef = matter ? (matter.Matter_x0020_ID || matter.Title) : matterSelectValue;
+
+            // Use form values with fallback to invoice object
+            const finalInvoiceNumber = invoiceNumber || (invoiceObj ? (invoiceObj.InvoiceNumber || invoiceObj.invoiceNumber || invoiceObj.Title) : '');
+            const finalClientName = clientName || (invoiceObj ? (invoiceObj.ClientName || invoiceObj.Client_x0020_Name) : '');
+            const finalDueDate = dueDate || (invoiceObj ? (invoiceObj.DueDate || invoiceObj.Due_x0020_Date || invoiceObj.dueDate || '') : '');
+            const finalTotal = total || (invoiceObj ? (invoiceObj.Amount || invoiceObj.totalAmount || 0) : 0);
+            const finalMatterRef = matterRef || (invoiceObj ? (invoiceObj.MatterID || invoiceObj.Matter_x0020_ID || '') : '');
+
+            // Validate we have the required fields
+            if (!finalInvoiceNumber || !finalClientName || !finalMatterRef || !finalTotal || !finalDueDate) {
+                const missing = [];
+                if (!finalInvoiceNumber) missing.push('invoice number');
+                if (!finalClientName) missing.push('client');
+                if (!finalMatterRef) missing.push('matter reference');
+                if (!finalTotal) missing.push('total amount');
+                if (!finalDueDate) missing.push('due date');
+                showToast('Cannot send invoice. Missing: ' + missing.join(', ') + '. Please fill in all fields and save first.', 'error');
+                return;
+            }
 
             // Get client email from client name
-            const client = portalData.clients.find(c => c.Title === clientName);
-            const clientEmail = client ? client.Email : '';
+            const client = portalData.clients.find(c => c.Title === finalClientName);
+            const clientEmail = client ? (client.Email || client.email || '') : '';
 
             if (!clientEmail) {
-                showToast('Client email not found. Please ensure client has an email address.', 'error');
+                showToast('Client email not found for "' + finalClientName + '". Please ensure the client has an email address in the system.', 'error');
                 return;
             }
 
             try {
+                showToast('Sending invoice to ' + clientEmail + '...', 'info');
+
                 const invoiceDetails = {
                     email: clientEmail,
-                    clientName: clientName,
-                    invoiceNumber: invoiceNumber,
-                    matterReference: matter ? (matter.Matter_x0020_ID || matterTitle) : matterTitle,
-                    totalAmount: total,
+                    clientName: finalClientName,
+                    invoiceNumber: finalInvoiceNumber,
+                    matterReference: finalMatterRef,
+                    totalAmount: finalTotal,
                     currency: 'UGX',
-                    dueDate: dueDate
+                    dueDate: finalDueDate
                 };
 
                 const resp = await fetchWithRetry('/api/send-invoice-email', {
@@ -5872,6 +5910,11 @@
 
                 if (resp.ok) {
                     showToast('Invoice email sent to ' + clientEmail, 'success');
+                    // Update invoice status to "Sent" if currently "Draft"
+                    const statusSelect = document.querySelector('#invoiceForm select[name="status"]');
+                    if (statusSelect && statusSelect.value === 'Draft') {
+                        statusSelect.value = 'Sent';
+                    }
                 } else {
                     const error = await resp.json();
                     showToast('Failed to send invoice email: ' + (error.error || 'Unknown error'), 'error');
@@ -5882,20 +5925,23 @@
         }
 
         function generateInvoicePDF() {
-            const invoiceNumber = document.getElementById('invoiceNumberField').value;
-            const clientName = document.getElementById('invoiceClientSelect').value;
-            const matterSelect = document.getElementById('invoiceMatterSelect');
-            const matter = portalData.matters.find(m => String(m.id) === String(matterSelect.value) || m.Matter_x0020_ID === matterSelect.value);
+            const invoiceId = document.getElementById('invoiceIdField').value;
+            const invoiceObj = invoiceId ? portalData.invoices.find(i => String(i.id) === String(invoiceId)) : null;
+
+            const invoiceNumber = document.getElementById('invoiceNumberField').value || (invoiceObj ? (invoiceObj.InvoiceNumber || invoiceObj.invoiceNumber || '') : '');
+            const clientName = document.getElementById('invoiceClientSelect').value || (invoiceObj ? (invoiceObj.ClientName || invoiceObj.Client_x0020_Name || '') : '');
+            const matterSelectValue = document.getElementById('invoiceMatterSelect').value;
+            const matter = portalData.matters.find(m => String(m.id) === String(matterSelectValue) || m.Matter_x0020_ID === matterSelectValue);
             const matterTitle = matter ? matter.Title : '';
-            const matterRef = matter ? (matter.Matter_x0020_ID || '') : '';
-            const invoiceDate = document.getElementById('invoiceDateField').value;
-            const dueDate = document.getElementById('invoiceDueDateField').value;
-            const serviceDescription = document.getElementById('invoiceDescriptionField') ? document.getElementById('invoiceDescriptionField').value : 'Services rendered';
-            const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || 0;
-            const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || 0;
-            const vat = parseInt(document.getElementById('invoiceVatField').value) || 0;
+            const matterRef = matter ? (matter.Matter_x0020_ID || '') : (invoiceObj ? (invoiceObj.MatterID || invoiceObj.Matter_x0020_ID || '') : '');
+            const invoiceDate = document.getElementById('invoiceDateField').value || (invoiceObj ? (invoiceObj.Invoice_x0020_Date || invoiceObj.date || '') : '');
+            const dueDate = document.getElementById('invoiceDueDateField').value || (invoiceObj ? (invoiceObj.DueDate || invoiceObj.Due_x0020_Date || '') : '');
+            const serviceDescription = (document.getElementById('invoiceDescriptionField') ? document.getElementById('invoiceDescriptionField').value : '') || (invoiceObj ? (invoiceObj.Description || invoiceObj.serviceDescription || 'Services rendered') : 'Services rendered');
+            const professionalFees = parseInt(document.getElementById('invoiceFeesField').value) || (invoiceObj ? (invoiceObj.Professional_x0020_Fees || invoiceObj.professionalFees || 0) : 0);
+            const disbursements = parseInt(document.getElementById('invoiceDisbursementsField').value) || (invoiceObj ? (invoiceObj.Disbursements || invoiceObj.disbursements || 0) : 0);
+            const vat = parseInt(document.getElementById('invoiceVatField').value) || (invoiceObj ? (invoiceObj.VAT_x0020_Amount || invoiceObj.vatAmount || 0) : 0);
             const total = professionalFees + disbursements + vat;
-            const amountPaid = parseInt(document.getElementById('invoiceAmountPaidField').value) || 0;
+            const amountPaid = parseInt(document.getElementById('invoiceAmountPaidField').value) || (invoiceObj ? (invoiceObj.Amount_x0020_Paid || invoiceObj.amountPaid || 0) : 0);
             const amountPayable = total - amountPaid;
 
             // Collect custom fields
