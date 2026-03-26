@@ -8,6 +8,12 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 let tokenCache = { token: null, expiresAt: 0 };
+let siteIdCache = {};
+let driveIdCache = {};
+
+const SITE_PATHS = {
+  client: 'cqadvocates.sharepoint.com:/sites/CQClientPortal',
+};
 
 /** Get access token from Azure AD using client_credentials */
 async function getAccessToken() {
@@ -41,6 +47,44 @@ async function getAccessToken() {
   tokenCache.token = data.access_token;
   tokenCache.expiresAt = Date.now() + (data.expires_in * 1000) - 300000; // 5min buffer
   return data.access_token;
+}
+
+/** Resolve SharePoint site ID */
+async function getSiteId(siteKey, token) {
+  if (siteIdCache[siteKey] && Date.now() < (siteIdCache[siteKey].expiresAt || 0)) {
+    return siteIdCache[siteKey].id;
+  }
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${SITE_PATHS[siteKey]}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Failed to resolve site (${resp.status}): ${errText}`);
+  }
+  const data = await resp.json();
+  siteIdCache[siteKey] = { id: data.id, expiresAt: Date.now() + 86400000 };
+  return data.id;
+}
+
+/** Get drive ID for Client Documents library */
+async function getDriveId(siteId, token) {
+  if (driveIdCache['client-docs'] && Date.now() < (driveIdCache['client-docs'].expiresAt || 0)) {
+    return driveIdCache['client-docs'].id;
+  }
+  const resp = await fetch(
+    `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Failed to get drives (${resp.status}): ${errText}`);
+  }
+  const data = await resp.json();
+  const lib = data.value.find(d => d.name === 'Client Documents' || d.name === 'Documents');
+  if (!lib) throw new Error('Client Documents library not found');
+  driveIdCache['client-docs'] = { id: lib.id, expiresAt: Date.now() + 86400000 };
+  return lib.id;
 }
 
 /** Get file metadata from SharePoint */
@@ -124,17 +168,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { driveId, itemId } = req.query;
+    let { driveId, itemId, mode } = req.query;
 
-    // Validate required query parameters
-    if (!driveId || !itemId) {
+    // itemId is always required
+    if (!itemId) {
       return res.status(400).json({
-        error: 'Missing required query parameters: driveId, itemId',
+        error: 'Missing required query parameter: itemId',
       });
     }
 
     // Get access token
     const token = await getAccessToken();
+
+    // If no driveId provided, resolve it from SharePoint site
+    if (!driveId) {
+      const siteId = await getSiteId('client', token);
+      driveId = await getDriveId(siteId, token);
+    }
 
     // Get file metadata
     const fileMetadata = await getFileMetadata(driveId, itemId, token);
@@ -158,8 +208,13 @@ export default async function handler(req, res) {
 
     // Set response headers
     res.setHeader('Content-Type', mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileMetadata.name)}"`);
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    // inline mode: display in browser; download mode: save to disk
+    if (mode === 'inline') {
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileMetadata.name)}"`);
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileMetadata.name)}"`);
+    }
+    res.setHeader('Cache-Control', 'private, max-age=300');
 
     // Stream file content
     const arrayBuf = await fileResp.arrayBuffer();
