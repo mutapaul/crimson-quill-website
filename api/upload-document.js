@@ -196,6 +196,15 @@ async function listFolderContents(driveId, matterTitle, token, folderPath) {
   return data.value || [];
 }
 
+/** Sanitize path to prevent traversal attacks */
+function sanitizePath(p) {
+  if (!p) return p;
+  // Reject path traversal
+  if (p.includes('..')) throw new Error('Invalid path');
+  // Remove leading slashes
+  return p.replace(/^\/+/, '');
+}
+
 /** Validate session from JWT cookie */
 function validateSession(req) {
   try {
@@ -214,8 +223,21 @@ function validateSession(req) {
   }
 }
 
+// Simple in-memory rate limiter for serverless
+const rateLimitMap = new Map();
+function checkRateLimit(key, maxRequests, windowMs) {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  let requests = rateLimitMap.get(key) || [];
+  requests = requests.filter(t => t > windowStart);
+  if (requests.length >= maxRequests) return false;
+  requests.push(now);
+  rateLimitMap.set(key, requests);
+  return true;
+}
+
 /** Main handler */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -226,10 +248,25 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // Only allow POST for uploads and GET for listing
+  if (!['POST', 'GET'].includes(req.method)) {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   // Validate session
   const session = validateSession(req);
   if (!session) {
     return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Apply rate limiting: 20 uploads per hour per user
+  if (req.method === 'POST') {
+    const rateLimitKey = `upload:${session.email.toLowerCase()}`;
+    if (!checkRateLimit(rateLimitKey, 20, 3600000)) { // 20 per hour
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Maximum 20 uploads per hour per user.',
+      });
+    }
   }
 
   try {
@@ -240,13 +277,25 @@ export default async function handler(req, res) {
 
     // ===== GET: List folder contents =====
     if (req.method === 'GET') {
-      const { matterTitle, folderPath } = req.query;
+      let { matterTitle, folderPath } = req.query;
 
+      // Validate matterTitle is provided and is a string
       if (!matterTitle) {
         return res.status(400).json({ error: 'Missing required parameter: matterTitle' });
       }
 
-      const items = await listFolderContents(driveId, matterTitle, token, folderPath || '');
+      if (typeof matterTitle !== 'string' || !matterTitle.trim()) {
+        return res.status(400).json({ error: 'matterTitle must be a non-empty string' });
+      }
+
+      try {
+        matterTitle = sanitizePath(matterTitle.trim());
+        folderPath = sanitizePath(folderPath || '');
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid path' });
+      }
+
+      const items = await listFolderContents(driveId, matterTitle, token, folderPath);
 
       return res.status(200).json({
         success: true,
@@ -269,11 +318,28 @@ export default async function handler(req, res) {
 
       // --- Create folder ---
       if (action === 'createFolder') {
-        const { folderName, matterTitle, folderPath } = req.body;
+        let { folderName, matterTitle, folderPath } = req.body;
 
+        // Validate required fields
         if (!folderName || !matterTitle) {
           return res.status(400).json({
             error: 'Missing required fields: folderName, matterTitle',
+          });
+        }
+
+        // Validate types
+        if (typeof folderName !== 'string' || typeof matterTitle !== 'string') {
+          return res.status(400).json({
+            error: 'folderName and matterTitle must be strings',
+          });
+        }
+
+        // Trim and validate non-empty
+        folderName = folderName.trim();
+        matterTitle = matterTitle.trim();
+        if (!folderName || !matterTitle) {
+          return res.status(400).json({
+            error: 'folderName and matterTitle cannot be empty strings',
           });
         }
 
@@ -283,12 +349,19 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Invalid folder name' });
         }
 
+        try {
+          matterTitle = sanitizePath(matterTitle);
+          folderPath = sanitizePath(folderPath || '');
+        } catch (err) {
+          return res.status(400).json({ error: 'Invalid path' });
+        }
+
         const folder = await createSharePointFolder(
           driveId,
           matterTitle,
           sanitizedName,
           token,
-          folderPath || ''
+          folderPath
         );
 
         return res.status(201).json({
@@ -305,11 +378,28 @@ export default async function handler(req, res) {
 
       // --- Create upload session for large files (browser uploads directly to SharePoint) ---
       if (action === 'createUploadSession') {
-        const { fileName, matterTitle, folderPath, fileSize } = req.body;
+        let { fileName, matterTitle, folderPath, fileSize } = req.body;
 
+        // Validate required fields
         if (!fileName || !matterTitle) {
           return res.status(400).json({
             error: 'Missing required fields: fileName, matterTitle',
+          });
+        }
+
+        // Validate types
+        if (typeof fileName !== 'string' || typeof matterTitle !== 'string') {
+          return res.status(400).json({
+            error: 'fileName and matterTitle must be strings',
+          });
+        }
+
+        // Trim and validate non-empty
+        fileName = fileName.trim();
+        matterTitle = matterTitle.trim();
+        if (!fileName || !matterTitle) {
+          return res.status(400).json({
+            error: 'fileName and matterTitle cannot be empty strings',
           });
         }
 
@@ -319,6 +409,13 @@ export default async function handler(req, res) {
           return res.status(400).json({
             error: `File type .${sessionFileExt} not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`,
           });
+        }
+
+        try {
+          matterTitle = sanitizePath(matterTitle);
+          folderPath = sanitizePath(folderPath || '');
+        } catch (err) {
+          return res.status(400).json({ error: 'Invalid path' });
         }
 
         const encodedMatterTitle = encodeURIComponent(matterTitle);
@@ -363,12 +460,29 @@ export default async function handler(req, res) {
       }
 
       // --- Upload file (default action — for small files via base64) ---
-      const { fileName, fileData, matterId, matterTitle, category, folderPath } = req.body;
+      let { fileName, fileData, matterId, matterTitle, category, folderPath } = req.body;
 
       // Validate required fields
       if (!fileName || !fileData || !matterId || !matterTitle) {
         return res.status(400).json({
           error: 'Missing required fields: fileName, fileData, matterId, matterTitle',
+        });
+      }
+
+      // Validate types
+      if (typeof fileName !== 'string' || typeof fileData !== 'string' || typeof matterId !== 'string' || typeof matterTitle !== 'string') {
+        return res.status(400).json({
+          error: 'fileName, fileData, matterId, and matterTitle must be strings',
+        });
+      }
+
+      // Trim and validate non-empty
+      fileName = fileName.trim();
+      matterId = matterId.trim();
+      matterTitle = matterTitle.trim();
+      if (!fileName || !matterId || !matterTitle) {
+        return res.status(400).json({
+          error: 'fileName, matterId, and matterTitle cannot be empty strings',
         });
       }
 
@@ -378,6 +492,13 @@ export default async function handler(req, res) {
         return res.status(400).json({
           error: `File type .${fileExtension} not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`,
         });
+      }
+
+      try {
+        matterTitle = sanitizePath(matterTitle);
+        folderPath = sanitizePath(folderPath || '');
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid path' });
       }
 
       // Decode base64 file data
@@ -395,7 +516,7 @@ export default async function handler(req, res) {
         fileBuffer,
         matterTitle,
         token,
-        folderPath || ''
+        folderPath
       );
 
       return res.status(201).json({
@@ -414,6 +535,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('Document upload error:', error.message);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'An internal error occurred' });
   }
 }

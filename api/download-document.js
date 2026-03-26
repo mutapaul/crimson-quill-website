@@ -11,6 +11,19 @@ let tokenCache = { token: null, expiresAt: 0 };
 let siteIdCache = {};
 let driveIdCache = {};
 
+// Simple in-memory rate limiter for serverless
+const rateLimitMap = new Map();
+function checkRateLimit(key, maxRequests, windowMs) {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  let requests = rateLimitMap.get(key) || [];
+  requests = requests.filter(t => t > windowStart);
+  if (requests.length >= maxRequests) return false;
+  requests.push(now);
+  rateLimitMap.set(key, requests);
+  return true;
+}
+
 const SITE_PATHS = {
   client: 'cqadvocates.sharepoint.com:/sites/CQClientPortal',
 };
@@ -104,6 +117,15 @@ async function getFileMetadata(driveId, itemId, token) {
   return resp.json();
 }
 
+/** Sanitize path to prevent traversal attacks */
+function sanitizePath(p) {
+  if (!p) return p;
+  // Reject path traversal
+  if (p.includes('..')) throw new Error('Invalid path');
+  // Remove leading slashes
+  return p.replace(/^\/+/, '');
+}
+
 /** Validate session from JWT cookie */
 function validateSession(req) {
   try {
@@ -146,7 +168,7 @@ function getMimeType(fileName) {
 }
 
 /** Main handler */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -167,6 +189,14 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  // Apply rate limiting: 100 downloads per hour per user
+  const rateLimitKey = `download:${session.email.toLowerCase()}`;
+  if (!checkRateLimit(rateLimitKey, 100, 3600000)) { // 100 per hour
+    return res.status(429).json({
+      error: 'Rate limit exceeded. Maximum 100 downloads per hour per user.',
+    });
+  }
+
   try {
     let { driveId, itemId, mode } = req.query;
 
@@ -175,6 +205,40 @@ export default async function handler(req, res) {
       return res.status(400).json({
         error: 'Missing required query parameter: itemId',
       });
+    }
+
+    // Validate itemId is a non-empty string
+    if (typeof itemId !== 'string' || !itemId.trim()) {
+      return res.status(400).json({
+        error: 'itemId must be a non-empty string',
+      });
+    }
+
+    itemId = itemId.trim();
+
+    // Validate driveId if provided
+    if (driveId && (typeof driveId !== 'string' || !driveId.trim())) {
+      return res.status(400).json({
+        error: 'driveId must be a non-empty string',
+      });
+    }
+
+    if (driveId) {
+      driveId = driveId.trim();
+    }
+
+    // Validate mode if provided (must be 'inline' or 'download')
+    if (mode && !['inline', 'download'].includes(mode)) {
+      return res.status(400).json({
+        error: 'mode must be either "inline" or "download"',
+      });
+    }
+
+    // Sanitize itemId to prevent path traversal
+    try {
+      itemId = sanitizePath(itemId);
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid itemId' });
     }
 
     // Get access token
@@ -224,7 +288,7 @@ export default async function handler(req, res) {
 
     // Prevent multiple response writes
     if (!res.headersSent) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: 'An internal error occurred' });
     }
   }
 }

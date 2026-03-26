@@ -3,6 +3,10 @@
  * Fetches SharePoint list data via Microsoft Graph API with Azure AD authentication
  */
 
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // In-memory caches (persist across warm invocations)
 let tokenCache = { token: null, expiresAt: 0 };
 let siteIdCache = {};
@@ -71,7 +75,7 @@ async function getSiteId(siteKey) {
 }
 
 /** Main handler */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -80,17 +84,64 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // Verify session
-  const cookies = (req.headers.cookie || '').split(';').map(c => c.trim());
-  if (!cookies.some(c => c.startsWith('cq_session='))) {
+  try {
+    const cookies = (req.headers.cookie || '').split(';').map(c => c.trim());
+    const sessionCookie = cookies.find(c => c.startsWith('cq_session='));
+    if (!sessionCookie) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = sessionCookie.split('=')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // Session verified, user is authenticated
+  } catch (err) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { site, list, top, matterTitle, folderPath } = req.query;
+  let { site, list, top, matterTitle, folderPath } = req.query;
+
+  // Validate required parameters
   if (!site || !list) {
     return res.status(400).json({ error: 'Missing site or list parameter' });
   }
+
+  // Validate types
+  if (typeof site !== 'string' || typeof list !== 'string') {
+    return res.status(400).json({ error: 'site and list must be strings' });
+  }
+
+  // Trim and validate non-empty
+  site = site.trim();
+  list = list.trim();
+  if (!site || !list) {
+    return res.status(400).json({ error: 'site and list cannot be empty strings' });
+  }
+
   if (!['client', 'staff'].includes(site)) {
     return res.status(400).json({ error: 'Invalid site: must be client or staff' });
+  }
+
+  // Validate optional matterTitle if provided
+  if (matterTitle && typeof matterTitle !== 'string') {
+    return res.status(400).json({ error: 'matterTitle must be a string' });
+  }
+
+  if (matterTitle) {
+    matterTitle = matterTitle.trim();
+    if (!matterTitle) {
+      return res.status(400).json({ error: 'matterTitle cannot be empty string' });
+    }
+  }
+
+  // Validate optional folderPath if provided
+  if (folderPath && typeof folderPath !== 'string') {
+    return res.status(400).json({ error: 'folderPath must be a string' });
+  }
+
+  if (folderPath) {
+    folderPath = folderPath.trim();
+    if (!folderPath) {
+      return res.status(400).json({ error: 'folderPath cannot be empty string' });
+    }
   }
 
   const topCount = Math.min(Math.max(parseInt(top) || 100, 1), 500);
@@ -165,6 +216,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('SharePoint proxy error:', error.message);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'An internal error occurred' });
   }
 }

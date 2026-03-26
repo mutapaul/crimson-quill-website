@@ -2064,6 +2064,63 @@
             throw lastError;
         }
 
+        // ============================================================================
+        // SHAREPOINT FIELD NORMALIZATION
+        // ============================================================================
+        // SharePoint field normalization utility
+        function normalizeSharePointItem(item) {
+            if (!item) return item;
+            const normalized = { ...item };
+
+            // Map SP-encoded names to clean camelCase
+            const fieldMap = {
+                'Matter_x0020_ID': 'matterId',
+                'MatterID': 'matterId',
+                'Matter_x0020_Number': 'matterNumber',
+                'MatterNumber': 'matterNumber',
+                'Client_x0020_Name': 'clientName',
+                'ClientName': 'clientName',
+                'Lead_x0020_Lawyer': 'leadLawyer',
+                'LeadLawyer': 'leadLawyer',
+                'Invoice_x0020_Number': 'invoiceNumber',
+                'InvoiceNumber': 'invoiceNumber',
+                'Due_x0020_Date': 'dueDate',
+                'DueDate': 'dueDate',
+                'Professional_x0020_Fees': 'professionalFees',
+                'ProfessionalFees': 'professionalFees',
+                'Disbursements': 'disbursements',
+                'Tax_x0020_Amount': 'taxAmount',
+                'TaxAmount': 'taxAmount',
+                'Total_x0020_Amount': 'totalAmount',
+                'TotalAmount': 'totalAmount',
+                'Service_x0020_Description': 'serviceDescription',
+                'ServiceDescription': 'serviceDescription',
+                'Matter_x0020_Type': 'matterType',
+                'MatterType': 'matterType',
+                'Practice_x0020_Area': 'practiceArea',
+                'PracticeArea': 'practiceArea',
+                'Date_x0020_Opened': 'dateOpened',
+                'DateOpened': 'dateOpened',
+                'Record_x0020_Type': 'recordType',
+                'RecordType': 'recordType',
+                'Payment_x0020_Status': 'paymentStatus',
+                'PaymentStatus': 'paymentStatus',
+                'Message_x0020_Body': 'messageBody',
+                'MessageBody': 'messageBody',
+                'Matter_x0020_Status': 'matterStatus',
+                'MatterStatus': 'matterStatus',
+            };
+
+            for (const [spName, cleanName] of Object.entries(fieldMap)) {
+                if (normalized[spName] !== undefined && normalized[cleanName] === undefined) {
+                    normalized[cleanName] = normalized[spName];
+                }
+            }
+
+            // Also preserve original field for backward compat
+            return normalized;
+        }
+
         // API FUNCTIONS
         // ============================================================================
         async function fetchList(listName) {
@@ -2128,6 +2185,24 @@
                     window.location.href = '/login?type=client';
                     return;
                 }
+
+                // Verify session with server to check portalType and validate JWT
+                const sessionRes = await fetch('/api/check-session', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const sessionData = await sessionRes.json();
+                if (!sessionData.authenticated) {
+                    window.location.href = '/login?type=client';
+                    return;
+                }
+                // Check that user has correct portal type for this page
+                if (sessionData.portalType !== 'client') {
+                    // User is logged in but not as client, redirect to login
+                    window.location.href = '/login?type=client';
+                    return;
+                }
+
                 const decodedEmail = decodeURIComponent(userEmail);
                 clientProfile.email = decodedEmail.toLowerCase().trim();
 
@@ -2145,11 +2220,38 @@
                 // Step 3: Render the dashboard with filtered data
                 await loadDashboard();
                 hideLoadingOverlay();
+
+                // Start periodic session check (every 5 minutes)
+                startPeriodicSessionCheck();
             } catch (error) {
                 console.error('Initialization error:', error);
                 hideLoadingOverlay();
                 showError('Failed to initialize portal');
             }
+        }
+
+        /**
+         * Check session periodically and redirect to login if session expired
+         */
+        function startPeriodicSessionCheck() {
+            setInterval(async () => {
+                try {
+                    const sessionRes = await fetch('/api/check-session', {
+                        method: 'GET',
+                        credentials: 'include'
+                    });
+                    const sessionData = await sessionRes.json();
+                    if (!sessionData.authenticated) {
+                        // Session expired, show notification and redirect
+                        showToast('Your session has expired. Please log in again.', 'warning');
+                        setTimeout(() => {
+                            logout();
+                        }, 2000);
+                    }
+                } catch (error) {
+                    console.warn('Session check error (continuing):', error);
+                }
+            }, 5 * 60 * 1000); // Check every 5 minutes
         }
 
         /**
@@ -2190,25 +2292,26 @@
                     fetchList('Billing Records').catch(e => ({ items: [] }))
                 ]);
 
-                const allMatters = mattersData.items || [];
-                const allMessages = messagesData.items || [];
-                const allEvents = eventsData.items || [];
-                const allBilling = billingData.items || [];
+                // Normalize all data from SharePoint
+                const allMatters = (mattersData.items || []).map(normalizeSharePointItem);
+                const allMessages = (messagesData.items || []).map(normalizeSharePointItem);
+                const allEvents = (eventsData.items || []).map(normalizeSharePointItem);
+                const allBilling = (billingData.items || []).map(normalizeSharePointItem);
 
                 // Filter matters by client name
                 const myMatters = clientProfile.name
                     ? allMatters.filter(m =>
-                        (m.Client_x0020_Name || '').toLowerCase().trim() === clientProfile.name.toLowerCase().trim()
+                        (m.clientName || m.Client_x0020_Name || '').toLowerCase().trim() === clientProfile.name.toLowerCase().trim()
                     )
                     : [];
 
                 // Build set of this client's matter identifiers for cross-filtering
                 const myMatterTitles = new Set(myMatters.map(m => m.Title));
-                const myMatterIds = new Set(myMatters.map(m => m.Matter_x0020_ID).filter(Boolean));
+                const myMatterIds = new Set(myMatters.map(m => m.matterId || m.Matter_x0020_ID).filter(Boolean));
                 // Also add matter titles as IDs since some records use Title as the reference
                 myMatters.forEach(m => {
                     if (m.Title) myMatterIds.add(m.Title);
-                    if (m.Matter_x0020_ID) myMatterIds.add(m.Matter_x0020_ID);
+                    if (m.matterId || m.Matter_x0020_ID) myMatterIds.add(m.matterId || m.Matter_x0020_ID);
                 });
 
                 clientProfile.matterIds = [...myMatterIds];
@@ -2216,27 +2319,18 @@
 
                 // Filter messages by this client's matters
                 const myMessages = allMessages.filter(msg => {
-                    const msgMatter = msg.Matter_x0020_ID || '';
+                    const msgMatter = msg.matterId || msg.Matter_x0020_ID || '';
                     return myMatterIds.has(msgMatter);
                 });
 
                 // Filter events by this client's matters
                 const myEvents = allEvents.filter(evt => {
-                    const evtMatter = evt.Matter_x0020_ID || '';
+                    const evtMatter = evt.matterId || evt.Matter_x0020_ID || '';
                     return myMatterIds.has(evtMatter);
                 });
 
-                // Normalize billing SP field names and filter by client matters
-                const normalizedBilling = allBilling.map(b => ({
-                    ...b,
-                    RecordType: b.Record_x0020_Type || b.RecordType || 'Invoice',
-                    PaymentStatus: b.Payment_x0020_Status || b.PaymentStatus || 'Pending',
-                    MatterID: b.Matter_x0020_ID || b.MatterID || '',
-                    DueDate: b.Due_x0020_Date || b.DueDate || '',
-                    ClientName: b.ClientName || b.Client_x0020_Name || '',
-                    InvoiceNumber: b.InvoiceNumber || b.Invoice_x0020_Number || '',
-                }));
-                const myBilling = normalizedBilling.filter(b => myMatterIds.has(b.Matter_x0020_ID || b.MatterID || ''));
+                // Filter billing by client matters (already normalized)
+                const myBilling = allBilling.filter(b => myMatterIds.has(b.matterId || b.Matter_x0020_ID || ''));
 
                 // Store filtered data
                 portalData.matters = { items: myMatters, listName: 'Matters' };
@@ -2785,6 +2879,25 @@
             rsvps[eventId] = { response, updatedAt: new Date().toISOString() };
             localStorage.setItem('cq_rsvps', JSON.stringify(rsvps));
             showToast(`RSVP updated: ${response}`, 'success');
+
+            // Send RSVP to server
+            // TODO: Add server endpoint /api/submit-rsvp to persist RSVP data in backend
+            // Until then, RSVP is stored in localStorage
+            if (typeof fetch !== 'undefined') {
+                fetch('/api/submit-rsvp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        eventId: eventId,
+                        response: response,
+                        updatedAt: new Date().toISOString()
+                    }),
+                    credentials: 'include'
+                }).catch(() => {
+                    // If API call fails, local storage backup is still in place
+                });
+            }
+
             loadCalendar();
         }
 
@@ -3313,9 +3426,18 @@
         }
 
         function logout() {
-            document.cookie = 'cq_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            document.cookie = 'cq_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            window.location.href = '/';
+            // Clear cookies
+            document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+
+            // Clear localStorage session data
+            localStorage.removeItem('cq_client');
+            localStorage.removeItem('cq_portal_type');
+            localStorage.removeItem('cq_login_email');
+            localStorage.removeItem('cq_rsvps');
+
+            // Redirect to login
+            window.location.href = '/login';
         }
 
         function escapeHtml(text) {
@@ -3802,7 +3924,108 @@
         }
 
         function downloadInvoicePDF() {
-            showToast('PDF download feature coming soon', 'info');
+            // Get invoice data from modal display
+            const invoiceContent = document.getElementById('invoiceContent');
+            if (!invoiceContent) return;
+
+            // Extract invoice details from the displayed content
+            const invoiceNumber = invoiceContent.querySelector('[data-invoice-number]')?.textContent || 'Invoice';
+            const clientName = invoiceContent.querySelector('[data-client-name]')?.textContent || 'Client';
+            const matterRef = invoiceContent.querySelector('[data-matter-ref]')?.textContent || '';
+            const invoiceDate = invoiceContent.querySelector('[data-invoice-date]')?.textContent || '';
+            const dueDate = invoiceContent.querySelector('[data-due-date]')?.textContent || '';
+            const amount = invoiceContent.querySelector('[data-amount]')?.textContent || '0';
+
+            const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+
+            const htmlContent = `<!DOCTYPE html>
+<html><head><style>
+    @page { margin: 30mm 20mm; }
+    body { font-family: 'Playfair Display', Georgia, serif; margin: 0; padding: 40px; color: #000; font-size: 13px; }
+    .logo-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #B8860B; padding-bottom: 20px; }
+    .logo-text { font-family: 'Playfair Display', Georgia, serif; font-size: 28px; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; }
+    .logo-amp { color: #B8860B; font-style: italic; }
+    .firm-subtitle { font-size: 11px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+    .firm-contact { font-size: 11px; color: #444; text-align: right; line-height: 1.8; }
+    .invoice-title { font-size: 22px; font-weight: bold; letter-spacing: 0.2em; text-transform: uppercase; margin: 25px 0 20px; color: #B8860B; }
+    .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #ddd; margin-bottom: 25px; }
+    .ref-cell { padding: 10px 15px; border-bottom: 1px solid #eee; }
+    .ref-cell:nth-child(even) { border-left: 1px solid #eee; }
+    .ref-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .ref-value { font-size: 13px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background-color: #000; color: #fff; padding: 10px 12px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { border-bottom: 1px solid #eee; padding: 10px 12px; }
+    .subtotal-row td { border-top: 2px solid #B8860B; font-weight: 600; }
+    .total-row td { background: #f8f6f0; font-weight: 700; font-size: 15px; border-top: 2px solid #000; }
+    .footer { margin-top: 50px; border-top: 1px solid #ddd; padding-top: 20px; font-size: 11px; color: #666; }
+    .bank-details { background: #f8f6f0; padding: 15px; border-radius: 4px; margin-top: 15px; }
+</style></head><body>
+    <div class="logo-section">
+        <div>
+            <div class="logo-text">Crimson <span class="logo-amp">&</span> Quill</div>
+            <div class="firm-subtitle">Advocates & Legal Consultants</div>
+        </div>
+        <div class="firm-contact">
+            Ntinda, Kiwatule Rd, Mpungu Close<br>
+            Kampala, Uganda<br>
+            Tel: +256 778 171 215<br>
+            info@cqadvocates.com<br>
+            www.cqadvocates.com
+        </div>
+    </div>
+
+    <div class="invoice-title">Tax Invoice</div>
+
+    <div class="ref-grid">
+        <div class="ref-cell"><div class="ref-label">Invoice Number</div><div class="ref-value">${invoiceNumber}</div></div>
+        <div class="ref-cell"><div class="ref-label">Invoice Date</div><div class="ref-value">${fmtDate(invoiceDate)}</div></div>
+        <div class="ref-cell"><div class="ref-label">Matter Reference</div><div class="ref-value">${matterRef}</div></div>
+        <div class="ref-cell"><div class="ref-label">Due Date</div><div class="ref-value">${fmtDate(dueDate)}</div></div>
+        <div class="ref-cell"><div class="ref-label">Bill To</div><div class="ref-value">${clientName || '—'}</div></div>
+    </div>
+
+    <table>
+        <thead><tr>
+            <th style="width: 50%;">Details</th>
+            <th style="text-align: right;">Amount (UGX)</th>
+        </tr></thead>
+        <tbody>
+            <tr>
+                <td>Professional charges as agreed</td>
+                <td style="text-align: right;">${amount}</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Total Due</strong></td>
+                <td style="text-align: right;"><strong>${amount}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p><strong>Payment should be made within 30 days of the date of this invoice.</strong></p>
+        <div class="bank-details">
+            <p><strong>Bank Payment Details:</strong></p>
+            <p>Account Name: Crimson & Quill Advocates<br>
+            Bank: [Bank Name]<br>
+            Account Number: [Account Number]<br>
+            Branch: Kampala Main Branch<br>
+            Swift Code: [Swift Code]</p>
+        </div>
+        <p style="margin-top: 20px; text-align: center; font-size: 10px; color: #999;">
+            Crimson & Quill Advocates | Advocates & Legal Consultants | TIN: [Tax ID Number]
+        </p>
+    </div>
+</body></html>`;
+
+            const printWindow = window.open('', '', 'height=900,width=800');
+            if (!printWindow) {
+                showToast('Please allow popups to download the invoice PDF', 'warning');
+                return;
+            }
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 500);
         }
 
         // ============================================================================

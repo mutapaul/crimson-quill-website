@@ -4,6 +4,10 @@
  * Uses Azure AD client_credentials auth with token caching
  */
 
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // In-memory caches (persist across warm invocations)
 let tokenCache = { token: null, expiresAt: 0 };
 let siteIdCache = {};
@@ -140,7 +144,7 @@ async function deleteItem(siteId, listId, itemId, token) {
 }
 
 /** Main handler */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
@@ -156,17 +160,37 @@ export default async function handler(req, res) {
   }
 
   // Verify session
-  const cookies = (req.headers.cookie || '').split(';').map(c => c.trim());
-  if (!cookies.some(c => c.startsWith('cq_session='))) {
+  try {
+    const cookies = (req.headers.cookie || '').split(';').map(c => c.trim());
+    const sessionCookie = cookies.find(c => c.startsWith('cq_session='));
+    if (!sessionCookie) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = sessionCookie.split('=')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // Session verified, user is authenticated
+  } catch (err) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    const { site, list, fields, itemId } = req.body;
+    let { site, list, fields, itemId } = req.body;
 
     // Validate required fields
     if (!site || !list) {
       return res.status(400).json({ error: 'Missing site or list parameter' });
+    }
+
+    // Validate types
+    if (typeof site !== 'string' || typeof list !== 'string') {
+      return res.status(400).json({ error: 'site and list must be strings' });
+    }
+
+    // Trim and validate non-empty
+    site = site.trim();
+    list = list.trim();
+    if (!site || !list) {
+      return res.status(400).json({ error: 'site and list cannot be empty strings' });
     }
 
     if (!['client', 'staff'].includes(site)) {
@@ -175,7 +199,7 @@ export default async function handler(req, res) {
 
     // Validate method-specific requirements
     if (req.method === 'POST') {
-      if (!fields || typeof fields !== 'object') {
+      if (!fields || typeof fields !== 'object' || Array.isArray(fields)) {
         return res.status(400).json({ error: 'POST requires fields object' });
       }
     }
@@ -184,7 +208,13 @@ export default async function handler(req, res) {
       if (!itemId) {
         return res.status(400).json({ error: `${req.method} requires itemId` });
       }
-      if (req.method === 'PATCH' && (!fields || typeof fields !== 'object')) {
+      // Validate itemId is a non-empty string
+      if (typeof itemId !== 'string' || !itemId.trim()) {
+        return res.status(400).json({ error: 'itemId must be a non-empty string' });
+      }
+      itemId = itemId.trim();
+
+      if (req.method === 'PATCH' && (!fields || typeof fields !== 'object' || Array.isArray(fields))) {
         return res.status(400).json({ error: 'PATCH requires fields object' });
       }
     }
@@ -224,6 +254,6 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('SharePoint write error:', error.message);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'An internal error occurred' });
   }
 }

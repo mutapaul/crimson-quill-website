@@ -2697,12 +2697,55 @@
                 window.location.href = '/login?type=staff';
                 return false;
             }
-            document.getElementById('userEmail').textContent = userCookie;
-            const role = getCurrentUserRole();
-            document.getElementById('userRole').textContent = role;
-            // Apply nav visibility immediately with cached data to prevent flash of unauthorized nav items
-            applyRoleBasedNavigation();
+            // Verify session with server to check portalType and validate JWT
+            fetch('/api/check-session', {
+                method: 'GET',
+                credentials: 'include'
+            }).then(res => res.json()).then(data => {
+                if (!data.authenticated) {
+                    window.location.href = '/login?type=staff';
+                    return;
+                }
+                // Check that user has correct portal type for this page
+                if (data.portalType !== 'staff') {
+                    // User is logged in but not as staff, redirect to login
+                    window.location.href = '/login?type=staff';
+                    return;
+                }
+                document.getElementById('userEmail').textContent = userCookie;
+                const role = getCurrentUserRole();
+                document.getElementById('userRole').textContent = role;
+                // Apply nav visibility immediately with cached data to prevent flash of unauthorized nav items
+                applyRoleBasedNavigation();
+                // Start periodic session check (every 5 minutes)
+                startPeriodicSessionCheck();
+            }).catch(err => {
+                console.error('Auth check failed:', err);
+                window.location.href = '/login?type=staff';
+            });
             return true;
+        }
+
+        /**
+         * Check session periodically and redirect to login if session expired
+         */
+        function startPeriodicSessionCheck() {
+            setInterval(() => {
+                fetch('/api/check-session', {
+                    method: 'GET',
+                    credentials: 'include'
+                }).then(res => res.json()).then(data => {
+                    if (!data.authenticated) {
+                        // Session expired, show notification and redirect
+                        showToast('Your session has expired. Please log in again.', 'warning');
+                        setTimeout(() => {
+                            logout();
+                        }, 2000);
+                    }
+                }).catch(err => {
+                    console.warn('Session check error (continuing):', err);
+                });
+            }, 5 * 60 * 1000); // Check every 5 minutes
         }
 
         function getCookie(name) {
@@ -2718,12 +2761,72 @@
         }
 
         function logout() {
+            // Clear localStorage session data
             localStorage.removeItem('cq_staff');
             localStorage.removeItem('cq_invoices');
             localStorage.removeItem('cq_matter_teams');
+            localStorage.removeItem('cq_portal_type');
+            localStorage.removeItem('cq_login_email');
+
+            // Clear cookies
             document.cookie = 'cq_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
             document.cookie = 'cq_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-            window.location.href = '/';
+
+            // Redirect to login
+            window.location.href = '/login';
+        }
+
+        // ===== SHAREPOINT FIELD NORMALIZATION =====
+        // SharePoint field normalization utility
+        function normalizeSharePointItem(item) {
+            if (!item) return item;
+            const normalized = { ...item };
+
+            // Map SP-encoded names to clean camelCase
+            const fieldMap = {
+                'Matter_x0020_ID': 'matterId',
+                'MatterID': 'matterId',
+                'Matter_x0020_Number': 'matterNumber',
+                'MatterNumber': 'matterNumber',
+                'Client_x0020_Name': 'clientName',
+                'ClientName': 'clientName',
+                'Lead_x0020_Lawyer': 'leadLawyer',
+                'LeadLawyer': 'leadLawyer',
+                'Invoice_x0020_Number': 'invoiceNumber',
+                'InvoiceNumber': 'invoiceNumber',
+                'Due_x0020_Date': 'dueDate',
+                'DueDate': 'dueDate',
+                'Professional_x0020_Fees': 'professionalFees',
+                'ProfessionalFees': 'professionalFees',
+                'Disbursements': 'disbursements',
+                'Tax_x0020_Amount': 'taxAmount',
+                'TaxAmount': 'taxAmount',
+                'Total_x0020_Amount': 'totalAmount',
+                'TotalAmount': 'totalAmount',
+                'Service_x0020_Description': 'serviceDescription',
+                'ServiceDescription': 'serviceDescription',
+                'Matter_x0020_Type': 'matterType',
+                'MatterType': 'matterType',
+                'Practice_x0020_Area': 'practiceArea',
+                'PracticeArea': 'practiceArea',
+                'Date_x0020_Opened': 'dateOpened',
+                'DateOpened': 'dateOpened',
+                'Record_x0020_Type': 'recordType',
+                'RecordType': 'recordType',
+                'Payment_x0020_Status': 'paymentStatus',
+                'PaymentStatus': 'paymentStatus',
+                'Message_x0020_Body': 'messageBody',
+                'MessageBody': 'messageBody',
+            };
+
+            for (const [spName, cleanName] of Object.entries(fieldMap)) {
+                if (normalized[spName] !== undefined && normalized[cleanName] === undefined) {
+                    normalized[cleanName] = normalized[spName];
+                }
+            }
+
+            // Also preserve original field for backward compat
+            return normalized;
         }
 
         // ===== DATA FETCHING =====
@@ -2760,21 +2863,15 @@
                     fetchList('Billing Records')
                 ]);
 
-                portalData.matters = matters || [];
-                portalData.clients = clients || [];
-                portalData.documents = documents || [];
-                portalData.events = events || [];
-                portalData.messages = messages || [];
-                // Load billing from SharePoint (normalize SP field names)
-                const spInvoices = (invoices || []).map(b => ({
-                    ...b,
-                    RecordType: b.Record_x0020_Type || b.RecordType || 'Invoice',
-                    PaymentStatus: b.Payment_x0020_Status || b.PaymentStatus || 'Pending',
-                    MatterID: b.Matter_x0020_ID || b.MatterID || '',
-                    DueDate: b.Due_x0020_Date || b.DueDate || '',
-                    ClientName: b.ClientName || b.Client_x0020_Name || '',
-                    InvoiceNumber: b.InvoiceNumber || b.Invoice_x0020_Number || '',
-                }));
+                // Apply normalization to all data
+                portalData.matters = (matters || []).map(normalizeSharePointItem);
+                portalData.clients = (clients || []).map(normalizeSharePointItem);
+                portalData.documents = (documents || []).map(normalizeSharePointItem);
+                portalData.events = (events || []).map(normalizeSharePointItem);
+                portalData.messages = (messages || []).map(normalizeSharePointItem);
+
+                // Load billing from SharePoint and normalize
+                const spInvoices = (invoices || []).map(normalizeSharePointItem);
                 portalData.invoices = spInvoices.length > 0 ? spInvoices : (portalData.invoices || []);
 
                 // Load staff from SharePoint "Staff" list
@@ -4159,7 +4256,7 @@
 
                 if (!matter) return;
 
-                const matterText = (matter.Matter_x0020_ID || '' + ' ' + matter.Title || '').toLowerCase();
+                const matterText = ((matter.matterId || matter.Matter_x0020_ID || '') + ' ' + (matter.Title || '')).toLowerCase();
                 const matterRef = matter.Matter_x0020_ID || matter.Title || '';
                 const spDocs = portalData.documents.filter(d => {
                     const docMatter = d.Matter_x0020_ID || d.MatterID || '';
@@ -4393,7 +4490,8 @@
             try {
                 const confirmed = await showConfirmModal('Are you sure you want to delete this message?');
                 if (!confirmed) {
-                    return; // Reset flag and return early
+                    isDeleting = false; // Reset flag on cancellation
+                    return;
                 }
 
                 const resp = await fetchWithRetry('/api/sharepoint-write', {
@@ -5754,6 +5852,15 @@
                 customFields: customFields
             };
             invoiceData.totalAmount = invoiceData.professionalFees + invoiceData.disbursements + invoiceData.vatAmount;
+
+            // Validate invoice number - must not be placeholder and must follow pattern
+            if (!invoiceData.invoiceNumber || invoiceData.invoiceNumber.trim() === '' ||
+                invoiceData.invoiceNumber.toLowerCase().includes('select') ||
+                invoiceData.invoiceNumber.toLowerCase().includes('placeholder')) {
+                document.getElementById('invoiceFormMessages').innerHTML = '<div class="error-message">Invoice number is required and must follow format INV-XXXX-XXX</div>';
+                setButtonLoading(btn, false);
+                return;
+            }
 
             // Write to SharePoint first (SP is the primary data source)
             try {

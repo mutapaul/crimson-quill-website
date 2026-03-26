@@ -3,6 +3,10 @@ const { createClient } = require('@vercel/kv');
 const { getOTP, incrementAttempts, deleteOTP } = require('./lib/otp');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET not configured');
+}
 const SHAREPOINT_URL = process.env.SHAREPOINT_SITE_URL || 'https://cqadvocates.sharepoint.com/sites/CQClientPortal';
 
 // Portal URLs on the main website (branded wrappers)
@@ -12,6 +16,17 @@ const PORTAL_URLS = {
 };
 
 module.exports = async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -23,11 +38,31 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Email, code, and portal type are required.' });
     }
 
-    if (!['client', 'staff'].includes(portalType)) {
+    // Validate types
+    if (typeof email !== 'string' || typeof code !== 'string' || typeof portalType !== 'string') {
+      return res.status(400).json({ error: 'email, code, and portalType must be strings.' });
+    }
+
+    // Trim and validate non-empty
+    const trimmedEmail = email.trim();
+    const trimmedCode = code.trim();
+    const trimmedPortalType = portalType.trim();
+
+    if (!trimmedEmail || !trimmedCode || !trimmedPortalType) {
+      return res.status(400).json({ error: 'Email, code, and portal type cannot be empty.' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({ error: 'Please provide a valid email address.' });
+    }
+
+    if (!['client', 'staff'].includes(trimmedPortalType)) {
       return res.status(400).json({ error: 'Invalid portal type.' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = trimmedEmail.toLowerCase();
 
     // Initialize Vercel KV
     const kv = createClient({
@@ -53,7 +88,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Verify code
-    if (otpData.code !== code.trim()) {
+    if (otpData.code !== trimmedCode) {
       await incrementAttempts(kv, normalizedEmail);
       const remaining = 2 - otpData.attempts;
       return res.status(400).json({

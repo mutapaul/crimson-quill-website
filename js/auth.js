@@ -229,9 +229,10 @@ var CQAuth = (function () {
         });
     });
 
-    // Resend code cooldown (60 seconds)
+    // Resend code cooldown (60 seconds) - persisted in sessionStorage
     var resendCooldown = 60;
     var resendInterval = null;
+    var COOLDOWN_MS = 60000; // 60 seconds
 
     function startResendTimer() {
       resendCooldown = 60;
@@ -239,20 +240,51 @@ var CQAuth = (function () {
       resendTimer.textContent = ' (' + resendCooldown + 's)';
       resendTimer.style.display = '';
 
+      // Store cooldown end time in sessionStorage
+      sessionStorage.setItem('otpCooldownEnd', Date.now() + COOLDOWN_MS);
+
       resendInterval = setInterval(function () {
         resendCooldown--;
         if (resendCooldown <= 0) {
           clearInterval(resendInterval);
           resendLink.classList.remove('disabled');
           resendTimer.style.display = 'none';
+          sessionStorage.removeItem('otpCooldownEnd');
         } else {
           resendTimer.textContent = ' (' + resendCooldown + 's)';
         }
       }, 1000);
     }
 
-    // Start initial cooldown
-    startResendTimer();
+    function resumeResendTimer() {
+      var cooldownEnd = parseInt(sessionStorage.getItem('otpCooldownEnd') || '0');
+      var now = Date.now();
+      if (cooldownEnd && now < cooldownEnd) {
+        // Cooldown still active, resume it
+        resendLink.classList.add('disabled');
+        resendTimer.style.display = '';
+
+        resendInterval = setInterval(function () {
+          var remaining = Math.ceil((cooldownEnd - Date.now()) / 1000);
+          if (remaining <= 0) {
+            clearInterval(resendInterval);
+            resendLink.classList.remove('disabled');
+            resendTimer.style.display = 'none';
+            sessionStorage.removeItem('otpCooldownEnd');
+          } else {
+            resendTimer.textContent = ' (' + remaining + 's)';
+          }
+        }, 1000);
+      }
+    }
+
+    // Check if cooldown is still active on page load
+    resumeResendTimer();
+
+    // If no cooldown active, start initial cooldown
+    if (!sessionStorage.getItem('otpCooldownEnd')) {
+      startResendTimer();
+    }
 
     // Resend click
     resendLink.addEventListener('click', function (e) {

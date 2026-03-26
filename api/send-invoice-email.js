@@ -54,6 +54,21 @@ function validateSession(req) {
 }
 
 /**
+ * Escape HTML to prevent XSS attacks
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return str.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+/**
  * Format currency amount
  */
 function formatCurrency(amount, currency) {
@@ -120,14 +135,44 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Validate types
+    if (typeof email !== 'string' || typeof clientName !== 'string' || typeof invoiceNumber !== 'string' ||
+        typeof matterReference !== 'string' || typeof currency !== 'string' || typeof dueDate !== 'string') {
+      return res.status(400).json({
+        error: 'All string fields must be strings: email, clientName, invoiceNumber, matterReference, currency, dueDate.',
+      });
+    }
+
+    // Trim string fields
+    const trimmedEmail = email.trim();
+    const trimmedClientName = clientName.trim();
+    const trimmedInvoiceNumber = invoiceNumber.trim();
+    const trimmedMatterReference = matterReference.trim();
+    const trimmedCurrency = currency.trim();
+
+    // Validate non-empty
+    if (!trimmedEmail || !trimmedClientName || !trimmedInvoiceNumber || !trimmedMatterReference || !trimmedCurrency) {
+      return res.status(400).json({
+        error: 'String fields cannot be empty.',
+      });
+    }
+
+    // Validate totalAmount is a positive number
+    const amount = parseFloat(totalAmount);
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        error: 'totalAmount must be a positive number.',
+      });
+    }
+
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       return res.status(400).json({ error: 'Please provide a valid email address.' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const formattedAmount = formatCurrency(totalAmount, currency);
+    const normalizedEmail = trimmedEmail.toLowerCase();
+    const formattedAmount = formatCurrency(amount, trimmedCurrency);
 
     // Initialize Vercel KV
     const kv = createClient({
@@ -169,7 +214,7 @@ module.exports = async function handler(req, res) {
         <!-- Main Content -->
         <div style="padding: 40px 30px; background: #FFFFFF;">
           <p style="font-size: 16px; color: #000000; line-height: 1.6; margin: 0 0 24px;">
-            Hello <strong>${clientName}</strong>,
+            Hello <strong>${escapeHtml(clientName)}</strong>,
           </p>
 
           <p style="font-size: 15px; color: #333333; line-height: 1.6; margin: 0 0 28px;">
@@ -181,11 +226,11 @@ module.exports = async function handler(req, res) {
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
               <tr style="border-bottom: 1px solid #E0E0E0;">
                 <td style="padding: 12px 0; color: #666666;">Invoice Number</td>
-                <td style="padding: 12px 0; color: #000000; font-weight: 600; text-align: right;">${invoiceNumber}</td>
+                <td style="padding: 12px 0; color: #000000; font-weight: 600; text-align: right;">${escapeHtml(invoiceNumber)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #E0E0E0;">
                 <td style="padding: 12px 0; color: #666666;">Matter Reference</td>
-                <td style="padding: 12px 0; color: #000000; font-weight: 500; text-align: right;">${matterReference}</td>
+                <td style="padding: 12px 0; color: #000000; font-weight: 500; text-align: right;">${escapeHtml(matterReference)}</td>
               </tr>
               <tr style="border-bottom: 1px solid #E0E0E0;">
                 <td style="padding: 12px 0; color: #666666;">Amount Due</td>
@@ -193,7 +238,7 @@ module.exports = async function handler(req, res) {
               </tr>
               <tr>
                 <td style="padding: 12px 0; color: #666666;">Due Date</td>
-                <td style="padding: 12px 0; color: #000000; font-weight: 600; text-align: right;">${dueDateFormatted}</td>
+                <td style="padding: 12px 0; color: #000000; font-weight: 600; text-align: right;">${escapeHtml(dueDateFormatted)}</td>
               </tr>
             </table>
           </div>
@@ -259,6 +304,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error('send-invoice-email error:', error);
-    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' });
+    return res.status(500).json({ error: 'An internal error occurred' });
   }
 };
