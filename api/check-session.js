@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -9,7 +10,7 @@ if (!JWT_SECRET) {
 module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', 'https://www.cqadvocates.com');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -18,12 +19,92 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const action = req.query.action || '';
+
+  // ── CSRF Token (GET or POST with ?action=csrf) ──
+  if (action === 'csrf') {
+    if (!['GET', 'POST'].includes(req.method)) {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+    try {
+      const csrfToken = crypto.randomBytes(32).toString('hex');
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+      const cookieOptions = [
+        `cq_csrf=${csrfToken}`,
+        'Path=/',
+        'SameSite=Strict',
+        `Max-Age=${60 * 60}`, // 1 hour
+      ];
+      if (isProduction) {
+        cookieOptions.push('Secure');
+      }
+
+      res.setHeader('Set-Cookie', cookieOptions.join('; '));
+      return res.status(200).json({ csrfToken, success: true });
+    } catch (error) {
+      console.error('csrf-token error:', error);
+      return res.status(500).json({ error: 'An internal error occurred' });
+    }
+  }
+
+  // ── Logout (POST or DELETE without ?action) ──
+  if (req.method === 'POST' || req.method === 'DELETE') {
+    try {
+      const logoutTimestamp = Date.now();
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+      const sessionCookieOptions = [
+        'cq_session=',
+        'Path=/',
+        'HttpOnly',
+        'SameSite=Lax',
+        'Max-Age=0',
+      ];
+      if (isProduction) {
+        sessionCookieOptions.push('Secure');
+      }
+
+      const logoutCookieOptions = [
+        `cq_logged_out=${logoutTimestamp}`,
+        'Path=/',
+        'HttpOnly',
+        'SameSite=Lax',
+        `Max-Age=${24 * 60 * 60}`,
+      ];
+      if (isProduction) {
+        logoutCookieOptions.push('Secure');
+      }
+
+      const userCookieOptions = [
+        'cq_user=',
+        'Path=/',
+        'SameSite=Lax',
+        'Max-Age=0',
+      ];
+      if (isProduction) {
+        userCookieOptions.push('Secure');
+      }
+
+      res.setHeader('Set-Cookie', [
+        sessionCookieOptions.join('; '),
+        logoutCookieOptions.join('; '),
+        userCookieOptions.join('; '),
+      ]);
+
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('logout error:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred.' });
+    }
+  }
+
+  // ── Check Session (GET) ──
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // Parse cookie
     const cookies = req.headers.cookie || '';
     const sessionCookie = cookies
       .split(';')
@@ -35,8 +116,6 @@ module.exports = async function handler(req, res) {
     }
 
     const token = sessionCookie.split('=')[1];
-
-    // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // Check if user has logged out after token was issued
@@ -47,9 +126,8 @@ module.exports = async function handler(req, res) {
 
     if (logoutCookie) {
       const logoutTimestamp = parseInt(logoutCookie.split('=')[1], 10);
-      const tokenIssuedAt = decoded.iat * 1000; // Convert from seconds to milliseconds
+      const tokenIssuedAt = decoded.iat * 1000;
 
-      // If logout timestamp is greater than token issued time, token is revoked
       if (logoutTimestamp >= tokenIssuedAt) {
         return res.status(401).json({ authenticated: false, error: 'Session revoked' });
       }

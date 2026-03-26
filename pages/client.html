@@ -3648,7 +3648,7 @@
 
         function logout() {
             // Call server-side logout endpoint to revoke token
-            fetch('/api/logout', {
+            fetch('/api/check-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

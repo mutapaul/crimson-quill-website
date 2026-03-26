@@ -288,7 +288,7 @@
 
     async function initCSRFProtection() {
       try {
-        const response = await fetch('/api/csrf-token', {
+        const response = await fetch('/api/check-session?action=csrf', {
           method: 'GET',
           credentials: 'include',
         });
