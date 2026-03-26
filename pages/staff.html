@@ -3410,6 +3410,10 @@
             return getMatterDisplayId(matter);
         }
 
+        // Threshold: files above this use chunked upload sessions (avoids Vercel body limit)
+        const CHUNKED_UPLOAD_THRESHOLD = 3 * 1024 * 1024; // 3 MB
+        const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB chunks (Graph API recommends multiples of 320 KiB)
+
         async function uploadFileToSharePoint(file, matterId, category, folderPath) {
             const matterTitle = getMatterTitle(matterId);
 
@@ -3421,7 +3425,17 @@
                 return false;
             }
 
-            // Read file as base64
+            if (file.size > CHUNKED_UPLOAD_THRESHOLD) {
+                // === LARGE FILE: Chunked upload session (browser → SharePoint directly) ===
+                return await uploadLargeFile(file, matterId, matterTitle, category, folderPath);
+            } else {
+                // === SMALL FILE: Base64 through Vercel API (existing flow) ===
+                return await uploadSmallFile(file, matterId, matterTitle, category, folderPath);
+            }
+        }
+
+        /** Small file upload: base64 via Vercel API (files ≤ 3MB) */
+        async function uploadSmallFile(file, matterId, matterTitle, category, folderPath) {
             const fileData = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -3446,37 +3460,118 @@
             });
 
             if (resp.ok) {
-                const fileResult = await resp.json();
-                // Create entry in SharePoint "Client Documents" list
-                try {
-                    const matter = portalData.matters.find(m => String(m.id) === String(matterId));
-                    const matterRef = matter ? getMatterDisplayId(matter) : String(matterId);
-
-                    await fetchWithRetry('/api/sharepoint-write', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            site: 'client',
-                            list: 'Client Documents',
-                            fields: {
-                                Title: file.name,
-                                Category: category || 'Other',
-                                Matter_x0020_ID: matterRef,
-                                Name: file.name,
-                                FileSize: file.size
-                            }
-                        }),
-                        credentials: 'include'
-                    });
-                } catch (listErr) {
-                    console.warn('Failed to create document list entry:', listErr);
-                }
-                // Refresh data
+                await recordDocumentMetadata(file, matterId, category);
                 await loadAllData();
                 return true;
             } else {
                 const err = await resp.json();
                 throw new Error(err.error || 'Upload failed');
+            }
+        }
+
+        /** Large file upload: chunked upload session via Graph API (files > 3MB, no size limit) */
+        async function uploadLargeFile(file, matterId, matterTitle, category, folderPath) {
+            // Step 1: Ask Vercel API to create an upload session on SharePoint
+            const sessionResp = await fetchWithRetry('/api/upload-document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'createUploadSession',
+                    fileName: file.name,
+                    matterTitle: matterTitle,
+                    folderPath: folderPath || '',
+                    fileSize: file.size
+                }),
+                credentials: 'include'
+            });
+
+            if (!sessionResp.ok) {
+                const err = await sessionResp.json();
+                throw new Error(err.error || 'Failed to create upload session');
+            }
+
+            const sessionData = await sessionResp.json();
+            const uploadUrl = sessionData.uploadUrl;
+
+            // Step 2: Upload file in chunks directly to SharePoint (bypasses Vercel entirely)
+            const totalSize = file.size;
+            let offset = 0;
+
+            while (offset < totalSize) {
+                const end = Math.min(offset + CHUNK_SIZE, totalSize);
+                const chunk = file.slice(offset, end);
+                const contentRange = `bytes ${offset}-${end - 1}/${totalSize}`;
+
+                let chunkResp;
+                let retries = 0;
+                const maxRetries = 3;
+
+                while (retries <= maxRetries) {
+                    try {
+                        chunkResp = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Length': String(end - offset),
+                                'Content-Range': contentRange,
+                            },
+                            body: chunk,
+                        });
+
+                        // 202 = more chunks expected, 200/201 = upload complete
+                        if (chunkResp.ok || chunkResp.status === 202) break;
+
+                        // 5xx = server error, retry
+                        if (chunkResp.status >= 500 && retries < maxRetries) {
+                            retries++;
+                            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
+                            continue;
+                        }
+
+                        const errText = await chunkResp.text();
+                        throw new Error(`Chunk upload failed (${chunkResp.status}): ${errText}`);
+                    } catch (err) {
+                        if (retries < maxRetries && (err.message.includes('network') || err.message.includes('Failed to fetch'))) {
+                            retries++;
+                            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
+                            continue;
+                        }
+                        throw err;
+                    }
+                }
+
+                offset = end;
+            }
+
+            // Step 3: Record metadata in SharePoint list
+            await recordDocumentMetadata(file, matterId, category);
+            await loadAllData();
+            return true;
+        }
+
+        /** Record document metadata in SharePoint "Client Documents" list */
+        async function recordDocumentMetadata(file, matterId, category) {
+            try {
+                const matter = portalData.matters.find(m => String(m.id) === String(matterId));
+                const matterRef = matter ? getMatterDisplayId(matter) : String(matterId);
+
+                await fetchWithRetry('/api/sharepoint-write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Client Documents',
+                        fields: {
+                            Title: file.name,
+                            Category: category || 'Other',
+                            Matter_x0020_ID: matterRef,
+                            Name: file.name,
+                            FileSize: file.size
+                        }
+                    }),
+                    credentials: 'include'
+                });
+            } catch (listErr) {
+                console.warn('Failed to create document list entry:', listErr);
             }
         }
 
@@ -3749,11 +3844,6 @@
                     showToast('Uploading ' + files.length + ' file(s)...', 'info');
 
                     for (const file of files) {
-                        if (file.size > 5 * 1024 * 1024) {
-                            showToast('File "' + file.name + '" too large. Maximum 5MB.', 'warning');
-                            processed++;
-                            continue;
-                        }
                         try {
                             const success = await uploadFileToSharePoint(file, matterId, selectedCategory, currentPath);
                             processed++;
@@ -3807,7 +3897,7 @@
 
                     const ext = file.name.split('.').pop().toLowerCase();
                     const allowedTypes = ['pdf','docx','xlsx','png','jpg','jpeg','txt','csv','msg'];
-                    if (!allowedTypes.includes(ext) || file.size > 5 * 1024 * 1024) {
+                    if (!allowedTypes.includes(ext)) {
                         failed++;
                         continue;
                     }
@@ -3820,7 +3910,8 @@
                     }
 
                     const progress = ((uploaded + failed) / files.length * 100).toFixed(0);
-                    document.getElementById('folderUploadProgress').textContent = 'Uploaded ' + uploaded + ' of ' + files.length + (failed ? ' (' + failed + ' failed)' : '');
+                    const currentFile = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
+                    document.getElementById('folderUploadProgress').textContent = 'Uploaded ' + uploaded + ' of ' + files.length + (failed ? ' (' + failed + ' failed)' : '') + ' — ' + currentFile;
                     document.getElementById('folderUploadBar').style.width = progress + '%';
                 }
 

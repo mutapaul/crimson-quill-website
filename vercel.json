@@ -3,7 +3,7 @@
     "trailingSlash": false,
     "functions": {
         "api/upload-document.js": {
-            "maxDuration": 60
+            "maxDuration": 120
         },
         "api/download-document.js": {
             "maxDuration": 60

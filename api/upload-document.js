@@ -303,7 +303,66 @@ export default async function handler(req, res) {
         });
       }
 
-      // --- Upload file (default action) ---
+      // --- Create upload session for large files (browser uploads directly to SharePoint) ---
+      if (action === 'createUploadSession') {
+        const { fileName, matterTitle, folderPath, fileSize } = req.body;
+
+        if (!fileName || !matterTitle) {
+          return res.status(400).json({
+            error: 'Missing required fields: fileName, matterTitle',
+          });
+        }
+
+        // Validate file type
+        const sessionFileExt = fileName.split('.').pop().toLowerCase();
+        if (!ALLOWED_FILE_TYPES.includes(sessionFileExt)) {
+          return res.status(400).json({
+            error: `File type .${sessionFileExt} not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`,
+          });
+        }
+
+        const encodedMatterTitle = encodeURIComponent(matterTitle);
+        const encodedFileName = encodeURIComponent(fileName);
+
+        let itemPath = `Client Portal/${encodedMatterTitle}`;
+        if (folderPath) {
+          const encodedFolderPath = folderPath.split('/').map(s => encodeURIComponent(s)).join('/');
+          itemPath += `/${encodedFolderPath}`;
+        }
+        itemPath += `/${encodedFileName}`;
+
+        const sessionResp = await fetch(
+          `https://graph.microsoft.com/v1.0/drives/${driveId}/root:/${itemPath}:/createUploadSession`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              item: {
+                '@microsoft.graph.conflictBehavior': 'rename',
+                name: fileName,
+              },
+            }),
+          }
+        );
+
+        if (!sessionResp.ok) {
+          const errText = await sessionResp.text();
+          throw new Error(`Upload session creation failed (${sessionResp.status}): ${errText}`);
+        }
+
+        const sessionData = await sessionResp.json();
+
+        return res.status(200).json({
+          success: true,
+          uploadUrl: sessionData.uploadUrl,
+          expirationDateTime: sessionData.expirationDateTime,
+        });
+      }
+
+      // --- Upload file (default action — for small files via base64) ---
       const { fileName, fileData, matterId, matterTitle, category, folderPath } = req.body;
 
       // Validate required fields
