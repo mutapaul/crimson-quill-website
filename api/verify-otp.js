@@ -153,8 +153,11 @@ module.exports = async function handler(req, res) {
     }
 
     // User info cookie (readable by JS for display purposes)
+    // NOTE: Do NOT use encodeURIComponent here — Azure Functions' cookie handler
+    // will re-encode the value, causing double-encoding (%40 → %2540).
+    // The @ character is valid in cookie values per RFC 6265.
     const userCookieOptions = [
-      `cq_user=${encodeURIComponent(normalizedEmail)}`,
+      `cq_user=${normalizedEmail}`,
       'Path=/',
       'SameSite=Lax',
       `Max-Age=${24 * 60 * 60}`,

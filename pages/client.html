@@ -2217,7 +2217,17 @@
                     return;
                 }
 
-                const decodedEmail = decodeURIComponent(userEmail);
+                // Decode URI component — handles both legacy encoded cookies (%40) and plain cookies (@)
+                let decodedEmail;
+                try {
+                    decodedEmail = decodeURIComponent(userEmail);
+                    // If still contains %40 after one decode, decode again (double-encoding fix)
+                    if (decodedEmail.includes('%40')) {
+                        decodedEmail = decodeURIComponent(decodedEmail);
+                    }
+                } catch(e) {
+                    decodedEmail = userEmail;
+                }
                 clientProfile.email = decodedEmail.toLowerCase().trim();
                 console.log('[CQ-Debug] Client email resolved:', clientProfile.email);
 
