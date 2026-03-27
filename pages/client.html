@@ -777,6 +777,374 @@
         }
 
         /* ============================================
+           CHAT INTERFACE STYLES
+           ============================================ */
+        .client-chat-container {
+            display: flex;
+            height: 100%;
+            max-height: calc(100vh - 300px);
+            background: var(--off-white);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .client-chat-sidebar {
+            width: 280px;
+            border-right: 1px solid var(--silver);
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .client-chat-sidebar-header {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--silver);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .client-chat-sidebar-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .client-chat-sidebar-new {
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .client-chat-threads {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-md);
+        }
+
+        .client-chat-thread {
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            background: var(--white);
+            border: 1px solid var(--silver);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            position: relative;
+        }
+
+        .client-chat-thread:hover {
+            border-color: var(--gold);
+            background: rgba(184, 134, 11, 0.05);
+        }
+
+        .client-chat-thread.active {
+            border-color: var(--gold);
+            background: rgba(184, 134, 11, 0.1);
+        }
+
+        .client-chat-thread.has-unread::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+        }
+
+        .client-chat-thread-matter {
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--dark);
+            margin-bottom: 4px;
+        }
+
+        .client-chat-thread-preview {
+            font-size: 12px;
+            color: var(--gray-light);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 6px;
+        }
+
+        .client-chat-thread-time {
+            font-size: 11px;
+            color: var(--gray-light);
+        }
+
+        .client-chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+        }
+
+        .client-chat-area-header {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--silver);
+            background: var(--off-white);
+        }
+
+        .client-chat-area-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .client-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .client-chat-bubble {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .client-chat-bubble.mine {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .client-chat-bubble.theirs {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .client-chat-bubble-sender {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--gray-light);
+        }
+
+        .client-chat-bubble.mine .client-chat-bubble-sender {
+            text-align: right;
+        }
+
+        .client-chat-bubble.theirs .client-chat-bubble-sender {
+            text-align: left;
+        }
+
+        .client-chat-bubble-content {
+            padding: var(--space-md) var(--space-lg);
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .client-chat-bubble.mine .client-chat-bubble-content {
+            background: rgba(184, 134, 11, 0.15);
+            color: var(--dark);
+            border-bottom-right-radius: 4px;
+        }
+
+        .client-chat-bubble.theirs .client-chat-bubble-content {
+            background: #1A1A2E;
+            color: var(--white);
+            border-bottom-left-radius: 4px;
+        }
+
+        .client-chat-bubble-timestamp {
+            font-size: 11px;
+            color: var(--gray-light);
+            margin-top: 4px;
+        }
+
+        .client-chat-bubble.mine .client-chat-bubble-timestamp {
+            text-align: right;
+        }
+
+        .client-chat-bubble.theirs .client-chat-bubble-timestamp {
+            text-align: left;
+        }
+
+        .client-chat-bubble.unread .client-chat-bubble-content {
+            box-shadow: inset 0 0 0 2px var(--gold);
+        }
+
+        .client-chat-compose {
+            padding: var(--space-lg);
+            border-top: 1px solid var(--silver);
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .client-chat-textarea {
+            width: 100%;
+            padding: var(--space-md);
+            border: 1px solid var(--silver);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            resize: vertical;
+            min-height: 44px;
+            max-height: 120px;
+        }
+
+        .client-chat-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.1);
+        }
+
+        .client-chat-compose-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: flex-end;
+        }
+
+        .client-chat-compose-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+            color: var(--gold);
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .client-chat-compose-btn:hover {
+            transform: scale(1.1);
+            color: var(--gold-light);
+        }
+
+        .client-chat-send-btn {
+            padding: 8px 16px;
+            background: var(--gold);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-size: 13px;
+        }
+
+        .client-chat-send-btn:hover {
+            background: var(--gold-light);
+        }
+
+        .client-chat-send-btn:disabled {
+            background: var(--gray-light);
+            cursor: not-allowed;
+        }
+
+        .client-chat-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--gray-light);
+        }
+
+        .client-chat-empty-icon {
+            font-size: 48px;
+            margin-bottom: var(--space-lg);
+        }
+
+        .client-chat-empty-text {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .client-chat-container {
+                background: #0F0F0F;
+            }
+
+            .client-chat-sidebar {
+                background: #1A1A1A;
+            }
+
+            .client-chat-thread {
+                background: #262626;
+                border-color: #404040;
+            }
+
+            .client-chat-thread:hover,
+            .client-chat-thread.active {
+                background: rgba(184, 134, 11, 0.15);
+                border-color: var(--gold);
+            }
+
+            .client-chat-area {
+                background: #1A1A1A;
+            }
+
+            .client-chat-area-header {
+                background: #262626;
+                border-color: #404040;
+            }
+
+            .client-chat-messages {
+                background: #1A1A1A;
+            }
+
+            .client-chat-textarea {
+                background: #262626;
+                border-color: #404040;
+                color: var(--white);
+            }
+
+            .client-chat-textarea:focus {
+                border-color: var(--gold);
+            }
+
+            .client-chat-compose {
+                background: #1A1A1A;
+                border-color: #404040;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .client-chat-container {
+                max-height: calc(100vh - 200px);
+            }
+
+            .client-chat-sidebar {
+                display: none;
+            }
+
+            .client-chat-sidebar.show {
+                display: flex;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 280px;
+                height: 100%;
+                z-index: 10;
+            }
+
+            .client-chat-bubble {
+                max-width: 85%;
+            }
+        }
+
+        /* ============================================
            MODAL
            ============================================ */
         .modal {
@@ -1887,6 +2255,182 @@
          * @param {number} originalIdx - Original index in the full messages array (for detail toggling)
          * @returns {string} HTML string for the message item
          */
+        // Chat interface state
+        let currentClientThread = null;
+        let clientMessagePollInterval = null;
+
+        function startClientMessagePolling() {
+            if (clientMessagePollInterval) clearInterval(clientMessagePollInterval);
+            clientMessagePollInterval = setInterval(async () => {
+                try {
+                    const resp = await fetch('/api/sharepoint?site=client&list=Messages', { credentials: 'include' });
+                    const data = await resp.json();
+                    if (data.value) {
+                        const oldCount = (portalData.messages?.items || []).length;
+                        portalData.messages.items = data.value;
+                        const newCount = data.value.length;
+                        if (newCount > oldCount) {
+                            showToast('New message received', 'info');
+                        }
+                        if (currentClientThread) {
+                            renderClientChatThread(currentClientThread);
+                            updateClientThreadSidebar();
+                        }
+                        updateUnreadBadge();
+                    }
+                } catch(e) { /* silent */ }
+            }, 10000);
+        }
+
+        function stopClientMessagePolling() {
+            if (clientMessagePollInterval) {
+                clearInterval(clientMessagePollInterval);
+                clientMessagePollInterval = null;
+            }
+        }
+
+        function groupMessagesByMatter() {
+            const messagesData = portalData.messages || { items: [] };
+            const messages = messagesData.items || [];
+            const grouped = {};
+
+            messages.forEach(msg => {
+                const matterId = msg.Matter_x0020_ID || 'Unknown';
+                if (!grouped[matterId]) {
+                    grouped[matterId] = [];
+                }
+                grouped[matterId].push(msg);
+            });
+
+            // Sort messages within each thread by Created date (oldest first)
+            Object.keys(grouped).forEach(matterId => {
+                grouped[matterId].sort((a, b) => new Date(a.Created) - new Date(b.Created));
+            });
+
+            return grouped;
+        }
+
+        function selectClientThread(matterId) {
+            currentClientThread = matterId;
+            updateClientThreadSidebar();
+            renderClientChatThread(matterId);
+        }
+
+        function updateClientThreadSidebar() {
+            const sidebar = document.querySelector('.client-chat-threads');
+            if (!sidebar) return;
+
+            const grouped = groupMessagesByMatter();
+            const threads = Object.keys(grouped).sort();
+
+            sidebar.innerHTML = threads.map(matterId => {
+                const threadMessages = grouped[matterId];
+                const lastMsg = threadMessages[threadMessages.length - 1];
+                const matterTitle = matterId;
+                const preview = (lastMsg.Message_x0020_Body || '').substring(0, 40) + (lastMsg.Message_x0020_Body?.length > 40 ? '...' : '');
+                const timeStr = timeAgo(lastMsg.Created);
+
+                // Check if thread has unread messages
+                const hasUnread = threadMessages.some(m => !m.Read && m.SenderEmail !== (clientProfile.email || ''));
+
+                const activeClass = currentClientThread === matterId ? 'active' : '';
+                const unreadClass = hasUnread ? 'has-unread' : '';
+
+                return `
+                    <div class="client-chat-thread ${activeClass} ${unreadClass}" onclick="selectClientThread('${escapeHtml(matterId)}')">
+                        <div class="client-chat-thread-matter">${escapeHtml(matterTitle)}</div>
+                        <div class="client-chat-thread-preview">${escapeHtml(preview)}</div>
+                        <div class="client-chat-thread-time">${timeStr}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderClientChatThread(matterId) {
+            const grouped = groupMessagesByMatter();
+            const threadMessages = grouped[matterId] || [];
+            const messagesContainer = document.querySelector('.client-chat-messages');
+            const headerContainer = document.querySelector('.client-chat-area-header');
+
+            if (!messagesContainer || !headerContainer) return;
+
+            // Update header
+            headerContainer.innerHTML = `<div class="client-chat-area-title">${escapeHtml(matterId)}</div>`;
+
+            if (threadMessages.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="client-chat-empty">
+                        <div class="client-chat-empty-icon">💬</div>
+                        <div class="client-chat-empty-text">No messages yet</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render messages
+            messagesContainer.innerHTML = threadMessages.map((msg, idx) => {
+                const clientEmail = clientProfile.email || '';
+                const senderEmail = msg.SenderEmail || msg.Author_x0020_Email || '';
+                const isClientMessage = senderEmail.toLowerCase() === clientEmail.toLowerCase();
+                const sender = isClientMessage ? 'You' : 'Staff';
+                const bubbleClass = isClientMessage ? 'mine' : 'theirs';
+                const unreadClass = (!msg.Read && !isClientMessage) ? 'unread' : '';
+
+                // Mark as read if unread and from staff
+                if (!msg.Read && !isClientMessage && msg.id) {
+                    setTimeout(() => markMessageReadClient(msg.id,
+                        (portalData.messages?.items || []).findIndex(m => m === msg)), 100);
+                }
+
+                return `
+                    <div class="client-chat-bubble ${bubbleClass} ${unreadClass}">
+                        <div class="client-chat-bubble-sender">${sender}</div>
+                        <div class="client-chat-bubble-content">${escapeHtml(msg.Message_x0020_Body || 'No content')}</div>
+                        <div class="client-chat-bubble-timestamp">${formatDate(msg.Created)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Auto-scroll to bottom
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 0);
+        }
+
+        async function sendClientChatMessage(matterId, body) {
+            if (!body || !body.trim()) return;
+
+            try {
+                await fetchWithRetry('/api/sharepoint-write', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        site: 'client',
+                        list: 'Messages',
+                        fields: {
+                            Title: `Message in ${matterId}`,
+                            Message_x0020_Body: body,
+                            Matter_x0020_ID: matterId,
+                            Priority: 'Normal',
+                            Read: false,
+                            SenderEmail: clientProfile.email
+                        }
+                    })
+                });
+
+                // Refresh messages
+                await loadMessages();
+                renderClientChatThread(matterId);
+                updateClientThreadSidebar();
+                updateUnreadBadge();
+                showToast('Message sent', 'success');
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showToast('Failed to send message', 'error');
+            }
+        }
+
         function renderMessageHTML(message, originalIdx) {
             const clientEmail = clientProfile.email || '';
             const priority = message.Priority || 'Normal';
@@ -1934,58 +2478,14 @@
         }
 
         function filterMessages() {
-            const search = (document.getElementById('messageSearch')?.value || '').toLowerCase();
-            const priority = document.getElementById('messagePriorityFilter')?.value || '';
-            const myMatterIds = new Set(clientProfile.matterIds || []);
-
-            const messagesData = portalData.messages || { items: [] };
-            const messages = messagesData.items || [];
-            const filtered = messages.filter(m => {
-                // Safety: only show messages for this client's matters
-                const msgMatter = m.Matter_x0020_ID || '';
-                if (!msgMatter || (myMatterIds.size > 0 && !myMatterIds.has(msgMatter))) return false;
-
-                const matchesSearch = !search ||
-                    (m.Title || '').toLowerCase().includes(search) ||
-                    (m.Message_x0020_Body || '').toLowerCase().includes(search) ||
-                    (m.SenderEmail || m.Author_x0020_Email || '').toLowerCase().includes(search);
-                const matchesPriority = !priority || (m.Priority || '').toLowerCase() === priority.toLowerCase();
-                return matchesSearch && matchesPriority;
-            });
-
-            renderFilteredMessages(filtered);
+            // In the new chat interface, filtering happens via thread selection
+            // This function is kept for backward compatibility but is now a no-op
+            // since search/filter is no longer part of the chat view
         }
 
         function renderFilteredMessages(filtered) {
-            let html = '';
-
-            if (filtered.length === 0) {
-                html = '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">No messages match your search.</div></div>';
-            } else {
-                filtered.forEach((message) => {
-                    // Find original index in full messages array for detail toggling
-                    const messagesData = portalData.messages || { items: [] };
-                    const originalIdx = (messagesData.items || []).findIndex(m => m === message);
-
-                    // Use the consolidated helper function
-                    html += renderMessageHTML(message, originalIdx);
-                });
-            }
-            
-            const container = document.getElementById('messages');
-            container.innerHTML = '<div class="card"><div class="card-title">Messages</div>' + 
-                '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>' +
-                '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">' +
-                '<input type="text" id="messageSearch" placeholder="Search messages..." ' +
-                'style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" ' +
-                'oninput="debouncedFilterMessages()">' +
-                '<select id="messagePriorityFilter" onchange="filterMessages()" ' +
-                'style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;">' +
-                '<option value="">All Priorities</option>' +
-                '<option value="High">High</option>' +
-                '<option value="Medium">Medium</option>' +
-                '<option value="Low">Low</option>' +
-                '</select></div>' + html + '</div>';
+            // This function is kept for backward compatibility but is now deprecated
+            // The chat interface doesn't use traditional message filtering
         }
 
 
@@ -3287,32 +3787,96 @@
                     });
                 }
 
-                // Sort messages by Created date descending (newest first)
-                messages.sort((a, b) => new Date(b.Created) - new Date(a.Created));
-
-                let html = '<div class="card"><div class="card-title">Messages</div>';
-                html += '<button class="btn btn-gold" style="margin-bottom: 20px;" onclick="openMessageModal()">New Message</button>';
-                html += '<div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center;">';
-                html += '<input type="text" id="messageSearch" placeholder="Search messages..." style="flex:1; padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;" oninput="debouncedFilterMessages()">';
-                html += '<select id="messagePriorityFilter" onchange="filterMessages()" style="padding: 10px 14px; border: 1px solid var(--silver); border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;"><option value="">All Priorities</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>';
-                html += '</div>';
-
                 if (messages.length === 0) {
-                    html += '<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">No Messages</div><div class="empty-state-text">You have no messages at this time.</div></div>';
+                    container.innerHTML = `
+                        <div style="padding: 40px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                            <div style="font-size: 18px; font-weight: 600; color: var(--dark); margin-bottom: 8px;">No Messages</div>
+                            <div style="color: var(--gray); margin-bottom: 20px;">You have no messages at this time.</div>
+                            <button class="btn btn-gold" onclick="openMessageModal()">Start a Conversation</button>
+                        </div>
+                    `;
                 } else {
-                    messages.forEach((message, index) => {
-                        // Use the consolidated helper function
-                        html += renderMessageHTML(message, index);
-                    });
+                    // Group messages and get first matter
+                    const grouped = groupMessagesByMatter();
+                    const firstMatter = Object.keys(grouped).sort()[0];
+
+                    // Set current thread to first matter
+                    currentClientThread = firstMatter;
+
+                    // Render the chat interface
+                    container.innerHTML = `
+                        <div style="display: flex; flex-direction: column; height: 100%; gap: var(--space-md);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+                                <h3 style="margin: 0; font-size: 18px; color: var(--dark);">Messages</h3>
+                                <button class="btn btn-gold" style="padding: 8px 16px; font-size: 13px;" onclick="openMessageModal()">+ New Conversation</button>
+                            </div>
+                            <div class="client-chat-container">
+                                <div class="client-chat-sidebar">
+                                    <div class="client-chat-sidebar-header">
+                                        <div class="client-chat-sidebar-title">Conversations</div>
+                                        <button class="client-chat-sidebar-new" onclick="openMessageModal()" title="New conversation">+</button>
+                                    </div>
+                                    <div class="client-chat-threads"></div>
+                                </div>
+                                <div class="client-chat-area">
+                                    <div class="client-chat-area-header"></div>
+                                    <div class="client-chat-messages"></div>
+                                    <div class="client-chat-compose">
+                                        <textarea class="client-chat-textarea" id="clientChatInput" placeholder="Type a message..." rows="2"></textarea>
+                                        <div class="client-chat-compose-actions">
+                                            <button class="client-chat-send-btn" onclick="submitClientChatMessage()">Send</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize the chat
+                    updateClientThreadSidebar();
+                    renderClientChatThread(firstMatter);
+
+                    // Set up auto-resize for textarea
+                    const textarea = document.getElementById('clientChatInput');
+                    if (textarea) {
+                        textarea.addEventListener('input', function() {
+                            this.style.height = 'auto';
+                            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+                        });
+                        textarea.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' && e.ctrlKey) {
+                                submitClientChatMessage();
+                            }
+                        });
+                    }
+
+                    // Start polling for new messages
+                    startClientMessagePolling();
                 }
 
-                html += '</div>';
-                container.innerHTML = html;
                 updateUnreadBadge();
             } catch (error) {
                 container.innerHTML = `<div class="error-message">Failed to load messages: ${error.message}</div>`;
                 updateUnreadBadge();
             }
+        }
+
+        function submitClientChatMessage() {
+            const textarea = document.getElementById('clientChatInput');
+            const message = textarea ? textarea.value.trim() : '';
+
+            if (!currentClientThread || !message) {
+                showToast('Please enter a message', 'warning');
+                return;
+            }
+
+            sendClientChatMessage(currentClientThread, message).then(() => {
+                if (textarea) {
+                    textarea.value = '';
+                    textarea.style.height = 'auto';
+                }
+            });
         }
 
         async function loadBilling() {
@@ -3502,6 +4066,11 @@
 
             if (window.innerWidth <= 768) {
                 document.getElementById('sidebar').classList.remove('open');
+            }
+
+            // Stop message polling when leaving messages tab
+            if (tabName !== 'messages') {
+                stopClientMessagePolling();
             }
 
             switch (tabName) {
