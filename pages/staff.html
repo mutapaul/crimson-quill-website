@@ -5464,6 +5464,16 @@
                     }
                 }
 
+                // Also check for invite tags
+                if (bodyHtml.includes('[INVITE:')) {
+                    const inviteMatch = bodyHtml.match(/\[INVITE:\s*([^\|]+)\|\s*([^\]]+)\]/);
+                    if (inviteMatch) {
+                        const [, email, name] = inviteMatch;
+                        attachmentHtml += `<div class="bubble-event" style="border-left: 3px solid #3B82F6;">👤 <strong>${escapeHtml(name)}</strong> (${escapeHtml(email)}) invited to conversation</div>`;
+                        bodyHtml = bodyHtml.replace(/\[INVITE:[^\]]*\]/, '').trim();
+                    }
+                }
+
                 messagesHtml += `
                     <div class="chat-bubble ${bubbleClass} ${isUnread ? 'unread' : ''}">
                         <div class="bubble-sender">${escapeHtml(senderName)}</div>

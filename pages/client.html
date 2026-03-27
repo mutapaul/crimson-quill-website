@@ -1009,26 +1009,163 @@
 
         .client-chat-compose-actions {
             display: flex;
-            gap: var(--space-sm);
-            justify-content: flex-end;
+            gap: var(--space-xs, 4px);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .client-chat-compose-tools {
+            display: flex;
+            gap: 2px;
+            align-items: center;
         }
 
         .client-chat-compose-btn {
             background: none;
-            border: none;
-            font-size: 18px;
+            border: 1px solid transparent;
+            font-size: 13px;
             cursor: pointer;
-            padding: 8px;
-            color: var(--gold);
-            transition: all var(--transition-base);
+            padding: 6px 10px;
+            color: var(--text-secondary, #666);
+            transition: all 0.15s ease;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
+            border-radius: 6px;
+            font-weight: 500;
         }
 
         .client-chat-compose-btn:hover {
-            transform: scale(1.1);
-            color: var(--gold-light);
+            background: var(--gold-subtle, rgba(184, 134, 11, 0.08));
+            color: var(--gold);
+            border-color: var(--gold-subtle, rgba(184, 134, 11, 0.15));
+        }
+
+        .client-chat-compose-btn svg {
+            flex-shrink: 0;
+        }
+
+        /* Inline panels for link/event/invite */
+        .client-chat-inline-panel {
+            display: none;
+            padding: 12px 16px;
+            background: var(--off-white, #F8F9FC);
+            border: 1px solid var(--silver);
+            border-radius: 8px;
+            margin-top: 8px;
+            animation: fadeSlideIn 0.15s ease;
+        }
+
+        .client-chat-inline-panel.visible {
+            display: block;
+        }
+
+        .client-chat-inline-panel label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary, #666);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .client-chat-inline-panel input,
+        .client-chat-inline-panel textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--silver);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            margin-bottom: 8px;
+        }
+
+        .client-chat-inline-panel input:focus,
+        .client-chat-inline-panel textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        .client-chat-inline-panel-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .client-chat-inline-panel-actions button {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Rich content cards in bubbles */
+        .client-bubble-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.05);
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        .client-bubble-attachment-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .client-bubble-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.05);
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--gold);
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .client-bubble-link:hover {
+            background: rgba(0,0,0,0.08);
+        }
+
+        .client-bubble-event {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.05);
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        .client-bubble-event-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--gold-subtle, rgba(184, 134, 11, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .client-chat-send-btn {
@@ -2289,6 +2426,167 @@
             }
         }
 
+        // ============================================================================
+        // RICH MESSAGE CONTENT RENDERING
+        // ============================================================================
+        function renderClientMessageContent(body) {
+            if (!body) return escapeHtml('No content');
+            let html = escapeHtml(body);
+
+            // Detect [DOCUMENT: filename]
+            html = html.replace(/\[DOCUMENT:\s*(.+?)\]/g, function(match, filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const iconColor = ext === 'pdf' ? '#EF4444' : ['doc','docx'].includes(ext) ? '#3B82F6' : ['xls','xlsx'].includes(ext) ? '#10B981' : '#9CA3AF';
+                return '<div class="client-bubble-attachment"><div class="client-bubble-attachment-icon" style="background:' + iconColor + '20;border:1px solid ' + iconColor + '40;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + iconColor + '" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div><div><div style="font-weight:600;">' + filename + '</div><div style="font-size:11px;color:inherit;opacity:0.7;">' + ext.toUpperCase() + ' Document</div></div></div>';
+            });
+
+            // Detect [LINK: url]
+            html = html.replace(/\[LINK:\s*(.+?)\]/g, function(match, url) {
+                const displayUrl = url.length > 45 ? url.substring(0, 45) + '...' : url;
+                return '<a href="' + url + '" target="_blank" rel="noopener" class="client-bubble-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>' + displayUrl + '</a>';
+            });
+
+            // Detect [EVENT: title | date | time]
+            html = html.replace(/\[EVENT:\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\]/g, function(match, title, date, time) {
+                return '<div class="client-bubble-event"><div class="client-bubble-event-icon">&#128197;</div><div><div style="font-weight:600;">' + title + '</div><div style="font-size:12px;opacity:0.8;">' + date + ' at ' + time + '</div></div></div>';
+            });
+
+            // Detect [INVITE: email | name]
+            html = html.replace(/\[INVITE:\s*(.+?)\s*\|\s*(.+?)\]/g, function(match, email, name) {
+                return '<div class="client-bubble-event"><div class="client-bubble-event-icon" style="background:rgba(59,130,246,0.1);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg></div><div><div style="font-weight:600;">' + name + ' invited</div><div style="font-size:12px;opacity:0.8;">' + email + '</div></div></div>';
+            });
+
+            // Convert plain URLs to clickable links
+            html = html.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">$2</a>');
+
+            return html;
+        }
+
+        // ============================================================================
+        // COMPOSE TOOL FUNCTIONS
+        // ============================================================================
+        function clientAttachDocument() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,.docx,.xlsx,.png,.jpg,.jpeg,.txt,.csv,.msg,.doc,.xls';
+            input.onchange = async function() {
+                if (!input.files.length || !currentClientThread) return;
+                const file = input.files[0];
+                const filename = file.name;
+
+                showToast('Uploading ' + filename + '...', 'info');
+
+                try {
+                    // Upload the file to the matter's SharePoint folder
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('matterId', currentClientThread);
+                    formData.append('category', 'Correspondence');
+
+                    const uploadResp = await fetchWithRetry('/api/upload-document', {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    });
+
+                    if (!uploadResp.ok) throw new Error('Upload failed');
+
+                    // Send a message with the document tag
+                    await sendClientChatMessage(currentClientThread, '[DOCUMENT: ' + filename + ']');
+                    showToast('Document shared successfully', 'success');
+                } catch (error) {
+                    console.error('Error uploading document:', error);
+                    showToast('Failed to upload document. Please try again.', 'error');
+                }
+            };
+            input.click();
+        }
+
+        function clientShareLink() {
+            const panel = document.getElementById('clientChatInlinePanel');
+            if (!panel) return;
+
+            if (panel.classList.contains('visible') && panel.dataset.mode === 'link') {
+                panel.classList.remove('visible');
+                return;
+            }
+
+            panel.dataset.mode = 'link';
+            panel.innerHTML = '<label>Share a link</label><input type="url" id="clientLinkUrl" placeholder="https://..." autofocus><div class="client-chat-inline-panel-actions"><button onclick="document.getElementById(\'clientChatInlinePanel\').classList.remove(\'visible\')" style="background:var(--silver);color:var(--text-primary, #333);">Cancel</button><button onclick="clientInsertLink()" style="background:var(--gold);color:white;">Share Link</button></div>';
+            panel.classList.add('visible');
+            setTimeout(() => document.getElementById('clientLinkUrl')?.focus(), 50);
+        }
+
+        function clientInsertLink() {
+            const url = document.getElementById('clientLinkUrl')?.value?.trim();
+            if (!url) { showToast('Please enter a URL', 'warning'); return; }
+            const textarea = document.getElementById('clientChatInput');
+            if (textarea) {
+                const prefix = textarea.value.trim() ? textarea.value.trim() + '\n' : '';
+                textarea.value = prefix + '[LINK: ' + url + ']';
+            }
+            document.getElementById('clientChatInlinePanel').classList.remove('visible');
+        }
+
+        function clientScheduleEvent() {
+            const panel = document.getElementById('clientChatInlinePanel');
+            if (!panel) return;
+
+            if (panel.classList.contains('visible') && panel.dataset.mode === 'event') {
+                panel.classList.remove('visible');
+                return;
+            }
+
+            panel.dataset.mode = 'event';
+            panel.innerHTML = '<label>Request a meeting</label><input type="text" id="clientEventTitle" placeholder="Meeting title..." style="margin-bottom:6px;"><input type="date" id="clientEventDate" style="margin-bottom:6px;"><input type="time" id="clientEventTime" style="margin-bottom:6px;"><div class="client-chat-inline-panel-actions"><button onclick="document.getElementById(\'clientChatInlinePanel\').classList.remove(\'visible\')" style="background:var(--silver);color:var(--text-primary, #333);">Cancel</button><button onclick="clientInsertEvent()" style="background:var(--gold);color:white;">Send Request</button></div>';
+            panel.classList.add('visible');
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const dateInput = document.getElementById('clientEventDate');
+            if (dateInput) dateInput.value = tomorrow.toISOString().split('T')[0];
+            setTimeout(() => document.getElementById('clientEventTitle')?.focus(), 50);
+        }
+
+        function clientInsertEvent() {
+            const title = document.getElementById('clientEventTitle')?.value?.trim();
+            const date = document.getElementById('clientEventDate')?.value;
+            const time = document.getElementById('clientEventTime')?.value || '09:00';
+            if (!title || !date) { showToast('Please enter a title and date', 'warning'); return; }
+            const textarea = document.getElementById('clientChatInput');
+            if (textarea) {
+                const prefix = textarea.value.trim() ? textarea.value.trim() + '\n' : '';
+                textarea.value = prefix + '[EVENT: ' + title + ' | ' + date + ' | ' + time + ']';
+            }
+            document.getElementById('clientChatInlinePanel').classList.remove('visible');
+            // Auto-send since this is a meeting request
+            submitClientChatMessage();
+        }
+
+        function clientInvitePerson() {
+            const panel = document.getElementById('clientChatInlinePanel');
+            if (!panel) return;
+
+            if (panel.classList.contains('visible') && panel.dataset.mode === 'invite') {
+                panel.classList.remove('visible');
+                return;
+            }
+
+            panel.dataset.mode = 'invite';
+            panel.innerHTML = '<label>Invite someone to this conversation</label><input type="text" id="clientInviteName" placeholder="Person\'s name..." style="margin-bottom:6px;"><input type="email" id="clientInviteEmail" placeholder="Email address..." style="margin-bottom:6px;"><div class="client-chat-inline-panel-actions"><button onclick="document.getElementById(\'clientChatInlinePanel\').classList.remove(\'visible\')" style="background:var(--silver);color:var(--text-primary, #333);">Cancel</button><button onclick="clientSendInvite()" style="background:var(--gold);color:white;">Send Invite</button></div>';
+            panel.classList.add('visible');
+            setTimeout(() => document.getElementById('clientInviteName')?.focus(), 50);
+        }
+
+        function clientSendInvite() {
+            const name = document.getElementById('clientInviteName')?.value?.trim();
+            const email = document.getElementById('clientInviteEmail')?.value?.trim();
+            if (!name || !email) { showToast('Please enter both name and email', 'warning'); return; }
+            // Send the invite as a special message
+            sendClientChatMessage(currentClientThread, '[INVITE: ' + email + ' | ' + name + ']\nI\'ve requested that ' + name + ' (' + email + ') be added to this matter\'s communications.');
+            document.getElementById('clientChatInlinePanel').classList.remove('visible');
+        }
+
         function groupMessagesByMatter() {
             const messagesData = portalData.messages || { items: [] };
             const messages = messagesData.items || [];
@@ -2385,7 +2683,7 @@
                 return `
                     <div class="client-chat-bubble ${bubbleClass} ${unreadClass}">
                         <div class="client-chat-bubble-sender">${sender}</div>
-                        <div class="client-chat-bubble-content">${escapeHtml(msg.Message_x0020_Body || 'No content')}</div>
+                        <div class="client-chat-bubble-content">${renderClientMessageContent(msg.Message_x0020_Body || 'No content')}</div>
                         <div class="client-chat-bubble-timestamp">${formatDate(msg.Created)}</div>
                     </div>
                 `;
@@ -3823,9 +4121,31 @@
                                     <div class="client-chat-area-header"></div>
                                     <div class="client-chat-messages"></div>
                                     <div class="client-chat-compose">
-                                        <textarea class="client-chat-textarea" id="clientChatInput" placeholder="Type a message..." rows="2"></textarea>
+                                        <textarea class="client-chat-textarea" id="clientChatInput" placeholder="Type a message... (Ctrl+Enter to send)" rows="2"></textarea>
+                                        <div id="clientChatInlinePanel" class="client-chat-inline-panel"></div>
                                         <div class="client-chat-compose-actions">
-                                            <button class="client-chat-send-btn" onclick="submitClientChatMessage()">Send</button>
+                                            <div class="client-chat-compose-tools">
+                                                <button class="client-chat-compose-btn" onclick="clientAttachDocument()" title="Share a document">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                                                    Attach File
+                                                </button>
+                                                <button class="client-chat-compose-btn" onclick="clientShareLink()" title="Share a link">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                                    Link
+                                                </button>
+                                                <button class="client-chat-compose-btn" onclick="clientScheduleEvent()" title="Request a meeting">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                                    Meeting
+                                                </button>
+                                                <button class="client-chat-compose-btn" onclick="clientInvitePerson()" title="Add someone to this conversation">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                                    Invite
+                                                </button>
+                                            </div>
+                                            <button class="client-chat-send-btn" onclick="submitClientChatMessage()">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                                Send
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
