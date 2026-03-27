@@ -2278,6 +2278,7 @@
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         <span id="notifBadge" style="position:absolute;top:-6px;right:-8px;background:#dc3545;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;">0</span>
                     </div>
+                    <div class="user-avatar" id="userAvatar">C</div>
                     <div class="user-info">
                         <div class="user-email" id="userName">Welcome</div>
                         <div class="user-role">Client</div>
@@ -2661,9 +2662,17 @@
                     const resp = await fetch('/api/sharepoint?site=client&list=Messages', { credentials: 'include' });
                     const data = await resp.json();
                     if (data.value) {
+                        // SECURITY: Filter polled messages to only this client's matters
+                        const myMatterIds = new Set(clientProfile.matterIds || []);
+                        const filteredMessages = myMatterIds.size > 0
+                            ? data.value.map(normalizeSharePointItem).filter(msg => {
+                                const msgMatter = msg.matterId || msg.Matter_x0020_ID || '';
+                                return myMatterIds.has(msgMatter);
+                              })
+                            : [];
                         const oldCount = (portalData.messages?.items || []).length;
-                        portalData.messages.items = data.value;
-                        const newCount = data.value.length;
+                        portalData.messages.items = filteredMessages;
+                        const newCount = filteredMessages.length;
                         if (newCount > oldCount) {
                             showToast('New message received', 'info');
                         }
@@ -3654,8 +3663,7 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const data = portalData.matters || await fetchList('Matters');
-                portalData.matters = data;
+                const data = portalData.matters || { items: [] };
 
                 const matters = data.items || [];
 
@@ -4018,8 +4026,7 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const data = portalData.events || await fetchList('Events');
-                portalData.events = data;
+                const data = portalData.events || { items: [] };
 
                 const events = (data.items || []).sort((a, b) => {
                     const dateA = new Date(a.EventDate || a.Created);
@@ -4509,7 +4516,7 @@
             container.innerHTML = '<div class="loading-spinner"><div class="mini-spinner"></div></div>';
 
             try {
-                const data = portalData.billing || await fetchList('Billing Records');
+                const data = portalData.billing || { items: [] };
 
                 // Filter billing records to only this client's matters
                 const allRecords = data.items || [];
@@ -5084,7 +5091,7 @@
             matterSelect.innerHTML = '<option value="">-- Choose a matter --</option>';
 
             try {
-                const data = portalData.matters || await fetchList('Matters');
+                const data = portalData.matters || { items: [] };
                 const matters = data.items || [];
                 matters.forEach(matter => {
                     const option = document.createElement('option');
