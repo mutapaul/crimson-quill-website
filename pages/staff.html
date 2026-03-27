@@ -462,6 +462,303 @@
             color: var(--primary);
         }
 
+        /* ===== MATTER FILE BROWSER ===== */
+        .file-browser {
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: var(--bg-card);
+        }
+
+        .file-browser-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .file-browser-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--bg-surface);
+            padding: 0 16px;
+        }
+
+        .file-browser-tab {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+
+        .file-browser-tab:hover {
+            color: var(--text-primary);
+            background: var(--gold-subtle);
+        }
+
+        .file-browser-tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        .file-browser-tab .tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            background: var(--gold-subtle);
+            color: var(--gold);
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 11px;
+        }
+
+        .file-browser-tab.active .tab-count {
+            background: var(--gold);
+            color: white;
+        }
+
+        .file-browser-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
+            gap: 8px;
+        }
+
+        .file-browser-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            flex-wrap: wrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .breadcrumb-item {
+            color: var(--gold);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .breadcrumb-item:hover {
+            background: var(--gold-subtle);
+        }
+
+        .breadcrumb-item.current {
+            color: var(--text-primary);
+            cursor: default;
+        }
+
+        .breadcrumb-item.current:hover {
+            background: transparent;
+        }
+
+        .breadcrumb-sep {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        .file-browser-body {
+            min-height: 120px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            gap: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-item:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        .file-item-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .file-item-icon.folder {
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            border: 1px solid #F59E0B;
+        }
+
+        .file-item-icon.pdf {
+            background: linear-gradient(135deg, #FEE2E2, #FECACA);
+            border: 1px solid #EF4444;
+        }
+
+        .file-item-icon.doc {
+            background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+            border: 1px solid #3B82F6;
+        }
+
+        .file-item-icon.sheet {
+            background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+            border: 1px solid #10B981;
+        }
+
+        .file-item-icon.image {
+            background: linear-gradient(135deg, #EDE9FE, #DDD6FE);
+            border: 1px solid #8B5CF6;
+        }
+
+        .file-item-icon.generic {
+            background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+            border: 1px solid #9CA3AF;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .file-item-icon.folder {
+                background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+                border-color: rgba(245, 158, 11, 0.4);
+            }
+            .file-item-icon.pdf {
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+                border-color: rgba(239, 68, 68, 0.4);
+            }
+            .file-item-icon.doc {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+                border-color: rgba(59, 130, 246, 0.4);
+            }
+            .file-item-icon.sheet {
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+                border-color: rgba(16, 185, 129, 0.4);
+            }
+            .file-item-icon.image {
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+                border-color: rgba(139, 92, 246, 0.4);
+            }
+            .file-item-icon.generic {
+                background: linear-gradient(135deg, rgba(156, 163, 175, 0.2), rgba(156, 163, 175, 0.1));
+                border-color: rgba(156, 163, 175, 0.4);
+            }
+        }
+
+        .file-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .file-item-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .file-item:hover .file-item-actions {
+            opacity: 1;
+        }
+
+        .file-action-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .file-action-btn.download {
+            background: var(--gold-subtle);
+            color: var(--gold);
+        }
+
+        .file-action-btn.download:hover {
+            background: var(--gold);
+            color: white;
+        }
+
+        .file-action-btn.delete {
+            background: rgba(239, 68, 68, 0.08);
+            color: #EF4444;
+        }
+
+        .file-action-btn.delete:hover {
+            background: #EF4444;
+            color: white;
+        }
+
+        .file-browser-empty {
+            padding: 48px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .file-browser-empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .file-browser-empty-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .file-browser-empty-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
         /* ===== BUTTONS ===== */
         .btn {
             display: inline-flex;
@@ -1555,7 +1852,6 @@
                 <div class="nav-item" data-tab="matters">Matters</div>
                 <div class="nav-item" data-tab="clients">Clients</div>
                 <div class="nav-item" data-tab="staff">Staff Management</div>
-                <div class="nav-item" data-tab="documents">Documents</div>
                 <div class="nav-item" data-tab="calendar">Calendar</div>
                 <div class="nav-item" data-tab="messages">Messages<span id="messagesBadge" class="nav-badge"></span></div>
                 <div class="nav-item" data-tab="billing">Billing & Invoices</div>
@@ -1718,16 +2014,7 @@
                 </div>
 
                 <!-- DOCUMENTS TAB -->
-                <div class="tab-content" id="documents-tab">
-                    <div class="page-header">
-                        <h1>Documents</h1>
-                        <p>All documents are organized by matter. Click on a matter to manage its files.</p>
-                    </div>
-
-                    <div id="documentsOverview">
-                        <div style="color: #888; font-size: 13px; padding: 20px; text-align: center;">Loading...</div>
-                    </div>
-                </div>
+                <!-- Documents tab removed — documents are now only accessible within matters -->
 
                 <!-- CALENDAR TAB -->
                 <div class="tab-content" id="calendar-tab">
@@ -2958,7 +3245,6 @@
                 populateMatterSelects();
                 renderMatters();
                 renderClients();
-                renderDocuments();
                 renderCalendar();
                 renderMessages();
                 renderStaff();
@@ -3463,19 +3749,42 @@
                 </div>
 
                 <!-- Matter Documents & Folders -->
-                <div class="card" style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 style="font-size: 16px; font-weight: 600;">Documents & Files</h3>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-sm btn-secondary" onclick="createMatterFolder(${matter.id})">+ New Folder</button>
-                            <button class="btn btn-sm btn-secondary" onclick="uploadMatterFolder(${matter.id})" title="Upload an entire folder with its structure">Upload Folder</button>
-                            <button class="btn btn-sm btn-gold" onclick="uploadMatterFile(${matter.id})">Upload File</button>
+                <div class="file-browser" style="margin-bottom: 20px;">
+                    <div class="file-browser-tabs">
+                        <div class="file-browser-tab active" data-fb-tab="files" data-matter="${matter.id}" onclick="switchFileBrowserTab(${matter.id}, 'files')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                            Files & Folders
+                            <span class="tab-count" id="fileCount_${matter.id}">—</span>
+                        </div>
+                        <div class="file-browser-tab" data-fb-tab="recent" data-matter="${matter.id}" onclick="switchFileBrowserTab(${matter.id}, 'recent')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            Recent Uploads
                         </div>
                     </div>
-
-                    <!-- Folder/File Browser -->
-                    <div id="matterFileBrowser_${matter.id}">
-                        <div style="text-align:center;padding:20px;"><div class="mini-spinner"></div> Loading documents...</div>
+                    <div class="file-browser-toolbar">
+                        <div class="file-browser-breadcrumb" id="fileBreadcrumb_${matter.id}">
+                            <span class="breadcrumb-item current">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                                Root
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-sm btn-secondary" onclick="createMatterFolder(${matter.id})" style="font-size:12px;padding:6px 12px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                                New Folder
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="uploadMatterFolder(${matter.id})" title="Upload an entire folder with its structure" style="font-size:12px;padding:6px 12px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Upload Folder
+                            </button>
+                            <button class="btn btn-sm btn-gold" onclick="uploadMatterFile(${matter.id})" style="font-size:12px;padding:6px 12px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                                Upload File
+                            </button>
+                        </div>
+                    </div>
+                    <div class="file-browser-body" id="matterFileBrowser_${matter.id}">
+                        <div style="text-align:center;padding:30px;"><div class="mini-spinner"></div><div style="margin-top:8px;font-size:13px;color:var(--text-muted);">Loading documents...</div></div>
                     </div>
                     <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="matterFolderPaths[${matter.id}]='';refreshMatterFileBrowser(${matter.id});" style="display:none">
                 </div>
@@ -3967,35 +4276,105 @@
             container.innerHTML = renderMatterFiles(matterId, items, folderPath);
         }
 
+        function getFileIconClass(ext) {
+            if (ext === 'pdf') return 'pdf';
+            if (['doc','docx'].includes(ext)) return 'doc';
+            if (['xls','xlsx','csv'].includes(ext)) return 'sheet';
+            if (['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext)) return 'image';
+            return 'generic';
+        }
+
+        function getFileIconSvg(ext) {
+            if (ext === 'pdf') return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
+            if (['doc','docx'].includes(ext)) return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
+            if (['xls','xlsx','csv'].includes(ext)) return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line></svg>';
+            if (['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext)) return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+            return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>';
+        }
+
+        function switchFileBrowserTab(matterId, tab) {
+            // Toggle active tab styling
+            document.querySelectorAll('.file-browser-tab[data-matter="' + matterId + '"]').forEach(t => {
+                t.classList.toggle('active', t.getAttribute('data-fb-tab') === tab);
+            });
+            // Re-render with the right view
+            if (tab === 'files') {
+                refreshMatterFileBrowser(matterId);
+            } else if (tab === 'recent') {
+                renderRecentUploads(matterId);
+            }
+        }
+
+        function renderRecentUploads(matterId) {
+            const container = document.getElementById('matterFileBrowser_' + matterId);
+            if (!container) return;
+            const matter = portalData.matters.find(m => m.id === matterId);
+            const matterRef = getMatterDisplayId(matter);
+            const recentDocs = portalData.documents
+                .filter(d => (d.Matter_x0020_ID || d.MatterID || '') === matterRef)
+                .sort((a, b) => new Date(b.Upload_x0020_Date || b.Created || 0) - new Date(a.Upload_x0020_Date || a.Created || 0))
+                .slice(0, 10);
+
+            if (recentDocs.length === 0) {
+                container.innerHTML = '<div class="file-browser-empty"><div class="file-browser-empty-icon">&#128203;</div><div class="file-browser-empty-title">No recent uploads</div><div class="file-browser-empty-desc">Upload files to this matter to see them here.</div></div>';
+                return;
+            }
+            let html = '';
+            recentDocs.forEach(doc => {
+                const ext = (doc.Title || '').split('.').pop().toLowerCase();
+                const iconClass = getFileIconClass(ext);
+                const iconSvg = getFileIconSvg(ext);
+                const uploadDate = doc.Upload_x0020_Date || doc.Created;
+                html += '<div class="file-item">';
+                html += '<div class="file-item-icon ' + iconClass + '">' + iconSvg + '</div>';
+                html += '<div class="file-item-info">';
+                html += '<div class="file-item-name">' + escapeHtml(doc.Title || 'Unnamed') + '</div>';
+                html += '<div class="file-item-meta"><span>' + escapeHtml(doc.Category || 'Uncategorized') + '</span><span>' + (uploadDate ? formatDate(uploadDate) : 'Unknown date') + '</span></div>';
+                html += '</div></div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function updateBreadcrumb(matterId) {
+            const breadcrumbEl = document.getElementById('fileBreadcrumb_' + matterId);
+            if (!breadcrumbEl) return;
+            const folderPath = matterFolderPaths[matterId] || '';
+            let html = '<span class="breadcrumb-item' + (folderPath ? '' : ' current') + '" ' + (folderPath ? 'onclick="navigateToRoot(' + matterId + ')"' : '') + '><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg> Root</span>';
+            if (folderPath) {
+                const parts = folderPath.split('/').filter(Boolean);
+                parts.forEach((part, idx) => {
+                    html += '<span class="breadcrumb-sep">›</span>';
+                    const isLast = idx === parts.length - 1;
+                    if (isLast) {
+                        html += '<span class="breadcrumb-item current">' + escapeHtml(part) + '</span>';
+                    } else {
+                        const pathToHere = parts.slice(0, idx + 1).join('/');
+                        html += '<span class="breadcrumb-item" onclick="matterFolderPaths[' + matterId + ']=\'' + escapeHtml(pathToHere) + '\';refreshMatterFileBrowser(' + matterId + ')">' + escapeHtml(part) + '</span>';
+                    }
+                });
+            }
+            breadcrumbEl.innerHTML = html;
+        }
+
         function renderMatterFiles(matterId, spDocs, currentFolderPath) {
             const folderPath = currentFolderPath || matterFolderPaths[matterId] || '';
             const hasContent = spDocs && spDocs.length > 0;
 
-            let html = '';
+            // Update breadcrumb
+            setTimeout(() => updateBreadcrumb(matterId), 0);
 
-            // Breadcrumb navigation
-            if (folderPath) {
-                const parts = folderPath.split('/').filter(Boolean);
-                html += '<div style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:#f8f6f0;border-radius:4px;margin-bottom:8px;font-size:13px;flex-wrap:wrap;">';
-                html += '<span style="cursor:pointer;color:#B8860B;font-weight:600;" onclick="navigateToRoot(' + matterId + ')">📁 Root</span>';
-                parts.forEach((part, idx) => {
-                    html += ' <span style="color:#999;">›</span> ';
-                    if (idx === parts.length - 1) {
-                        html += '<span style="font-weight:600;">' + escapeHtml(part) + '</span>';
-                    } else {
-                        const pathToHere = parts.slice(0, idx + 1).join('/');
-                        html += '<span style="cursor:pointer;color:#B8860B;" onclick="matterFolderPaths[' + matterId + ']=\'' + escapeHtml(pathToHere) + '\';refreshMatterFileBrowser(' + matterId + ')">' + escapeHtml(part) + '</span>';
-                    }
-                });
-                html += ' <button onclick="navigateUp(' + matterId + ')" style="margin-left:auto;background:none;border:1px solid #ddd;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;color:#666;">↑ Up</button>';
-                html += '</div>';
+            // Update file count badge
+            const countEl = document.getElementById('fileCount_' + matterId);
+            if (countEl) {
+                const totalItems = spDocs ? spDocs.length : 0;
+                countEl.textContent = totalItems;
             }
 
             if (!hasContent) {
-                return html + '<div style="text-align: center; padding: 30px; color: #888; font-size: 13px;">No documents yet. Upload files or create a folder to get started.</div>';
+                return '<div class="file-browser-empty"><div class="file-browser-empty-icon">&#128194;</div><div class="file-browser-empty-title">No documents yet</div><div class="file-browser-empty-desc">Upload files or create a folder to get started.</div></div>';
             }
 
-            html += '<div style="display: flex; flex-direction: column; gap: 0;">';
+            let html = '';
 
             // Sort: folders first, then files
             const folders = spDocs.filter(d => d.isFolder);
@@ -4004,40 +4383,38 @@
             // Render folders
             folders.forEach(folder => {
                 const modifiedTime = folder.lastModifiedDateTime ? timeAgo(folder.lastModifiedDateTime) : '';
-                html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="navigateToFolder(' + matterId + ', \'' + escapeHtml(folder.name) + '\')">';
-                html += '<div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">';
-                html += '<span style="font-size:18px;">📁</span>';
-                html += '<div style="flex: 1; min-width: 0;">';
-                html += '<div style="font-size: 13px; font-weight: 600;">' + escapeHtml(folder.name) + '</div>';
-                html += '<div style="color: #888; font-size: 11px; margin-top: 2px;">' + (folder.childCount !== undefined ? folder.childCount + ' items' : 'Folder') + (modifiedTime ? ' · Modified ' + modifiedTime : '') + '</div>';
-                html += '</div></div>';
-                html += '<div style="display: flex; gap: 6px; align-items: center; margin-left: 12px;" onclick="event.stopPropagation();">';
-                html += '<button class="btn btn-sm" style="background:#dc3545;color:white;border:none;padding:4px 10px;font-size:11px;border-radius:3px;cursor:pointer;" onclick="deleteDocument(\'' + folder.id + '\', \'' + escapeHtml(folder.name) + '\')" title="Delete folder">✕</button>';
+                const itemCount = folder.childCount !== undefined ? folder.childCount + ' item' + (folder.childCount !== 1 ? 's' : '') : 'Folder';
+                html += '<div class="file-item" onclick="navigateToFolder(' + matterId + ', \'' + escapeHtml(folder.name) + '\')">';
+                html += '<div class="file-item-icon folder"><svg width="20" height="20" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="1"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>';
+                html += '<div class="file-item-info">';
+                html += '<div class="file-item-name">' + escapeHtml(folder.name) + '</div>';
+                html += '<div class="file-item-meta"><span>' + itemCount + '</span>' + (modifiedTime ? '<span>Modified ' + modifiedTime + '</span>' : '') + '</div>';
+                html += '</div>';
+                html += '<div class="file-item-actions" onclick="event.stopPropagation();">';
+                html += '<button class="file-action-btn delete" onclick="deleteDocument(\'' + folder.id + '\', \'' + escapeHtml(folder.name) + '\')" title="Delete folder">Delete</button>';
                 html += '</div></div>';
             });
 
             // Render files
             files.forEach(doc => {
                 const ext = (doc.name || '').split('.').pop().toLowerCase();
-                const icon = ext === 'pdf' ? '📕' : ext === 'docx' || ext === 'doc' ? '📘' : ext === 'xlsx' || ext === 'xls' ? '📗' : ['png','jpg','jpeg','gif','webp','svg','bmp'].includes(ext) ? '🖼️' : '📄';
+                const iconClass = getFileIconClass(ext);
+                const iconSvg = getFileIconSvg(ext);
                 const modifiedTime = doc.lastModifiedDateTime ? timeAgo(doc.lastModifiedDateTime) : 'Unknown';
-                html += '<div class="doc-row" data-doc-id="' + doc.id + '" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s;" onmouseenter="this.style.background=\'#f8f6f0\'" onmouseleave="this.style.background=\'transparent\'" onclick="previewSharePointDoc(\'' + escapeHtml(doc.webUrl || '#') + '\', \'' + escapeHtml(doc.name || 'Unnamed') + '\', \'' + escapeHtml(doc.id || '') + '\')">';
-                html += '<div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">';
-                html += '<input type="checkbox" class="doc-checkbox" data-download-url="' + (doc.webUrl || '') + '" onclick="event.stopPropagation(); toggleDocSelect(\'' + doc.id + '\'); updateBulkDownloadButton();" style="cursor: pointer;">';
-                html += '<span>' + icon + '</span>';
-                html += '<div style="flex: 1; min-width: 0;">';
-                html += '<div style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + escapeHtml(doc.name || 'Unnamed') + '</div>';
-                html += '<div style="color: #888; font-size: 11px; margin-top: 2px;">Modified ' + modifiedTime + '</div>';
+                const fileSize = doc.size ? (doc.size < 1024 * 1024 ? (doc.size / 1024).toFixed(0) + ' KB' : (doc.size / 1024 / 1024).toFixed(1) + ' MB') : '';
+
+                html += '<div class="file-item" onclick="previewSharePointDoc(\'' + escapeHtml(doc.webUrl || '#') + '\', \'' + escapeHtml(doc.name || 'Unnamed') + '\', \'' + escapeHtml(doc.id || '') + '\')">';
+                html += '<div class="file-item-icon ' + iconClass + '">' + iconSvg + '</div>';
+                html += '<div class="file-item-info">';
+                html += '<div class="file-item-name">' + escapeHtml(doc.name || 'Unnamed') + '</div>';
+                html += '<div class="file-item-meta"><span>' + modifiedTime + '</span>' + (fileSize ? '<span>' + fileSize + '</span>' : '') + '<span style="text-transform:uppercase;font-weight:600;letter-spacing:0.5px;">' + escapeHtml(ext) + '</span></div>';
                 html += '</div>';
-                html += '<span style="color: #888; font-size: 11px; white-space: nowrap;">' + (doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '') + '</span>';
-                html += '</div>';
-                html += '<div style="display: flex; gap: 6px; align-items: center; margin-left: 12px;" onclick="event.stopPropagation();">';
-                html += '<button class="btn btn-sm" style="background:#0066cc;color:white;border:none;padding:4px 10px;font-size:11px;border-radius:3px;cursor:pointer;" onclick="downloadSharePointDoc(\'/api/download-document?itemId=' + encodeURIComponent(doc.id) + '\', \'' + escapeHtml(doc.name || 'Document') + '\')" title="Download document">⬇</button>';
-                html += '<button class="btn btn-sm" style="background:#dc3545;color:white;border:none;padding:4px 10px;font-size:11px;border-radius:3px;cursor:pointer;" onclick="deleteDocument(\'' + doc.id + '\', \'' + escapeHtml(doc.name || 'Document') + '\')" title="Delete document">✕</button>';
+                html += '<div class="file-item-actions" onclick="event.stopPropagation();">';
+                html += '<button class="file-action-btn download" onclick="downloadSharePointDoc(\'/api/download-document?itemId=' + encodeURIComponent(doc.id) + '\', \'' + escapeHtml(doc.name || 'Document') + '\')" title="Download">Download</button>';
+                html += '<button class="file-action-btn delete" onclick="deleteDocument(\'' + doc.id + '\', \'' + escapeHtml(doc.name || 'Document') + '\')" title="Delete">Delete</button>';
                 html += '</div></div>';
             });
 
-            html += '</div>';
             return html;
         }
 
@@ -6591,8 +6968,6 @@
                 renderClients();
             } else if (tabName === 'staff') {
                 renderStaff();
-            } else if (tabName === 'documents') {
-                renderDocuments();
             } else if (tabName === 'calendar') {
                 renderCalendar();
             } else if (tabName === 'messages') {
