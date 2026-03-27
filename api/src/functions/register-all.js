@@ -15,6 +15,7 @@ const notifyClient     = require('../../notify-client');
 const requestOtp       = require('../../request-otp');
 const sendEventInvite  = require('../../send-event-invite');
 const sendInvoiceEmail = require('../../send-invoice-email');
+const sendMessageNotification = require('../../send-message-notification');
 const sharepointWrite  = require('../../sharepoint-write');
 const sharepoint       = require('../../sharepoint');
 const submitRsvp       = require('../../submit-rsvp');
@@ -63,6 +64,13 @@ app.http('send-invoice-email', {
   authLevel: 'anonymous',
   route: 'send-invoice-email',
   handler: wrapVercelHandler(sendInvoiceEmail),
+});
+
+app.http('send-message-notification', {
+  methods: ['POST', 'OPTIONS'],
+  authLevel: 'anonymous',
+  route: 'send-message-notification',
+  handler: wrapVercelHandler(sendMessageNotification),
 });
 
 app.http('sharepoint-write', {

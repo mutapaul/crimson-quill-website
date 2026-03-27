@@ -5573,6 +5573,61 @@
             });
         }
 
+        /**
+         * Send email notification to all relevant parties in a matter thread.
+         * Runs in background — does not block the UI.
+         */
+        function notifyMessageRecipients(matterId, messageBody, senderType) {
+            // Gather recipients: client email from the matter + assigned staff
+            const matter = portalData.matters.find(m => getMatterDisplayId(m) === matterId);
+            const recipients = [];
+
+            if (matter) {
+                // Find client email for this matter
+                const clientName = matter.Client_x0020_Name || matter.clientName || '';
+                const client = portalData.clients.find(c => (c.Title || c.Name || '') === clientName);
+                if (client && client.Email) {
+                    recipients.push(client.Email);
+                }
+
+                // Find assigned staff for this matter
+                const assignments = JSON.parse(localStorage.getItem('cq_matter_teams') || '{}');
+                const team = assignments[String(matter.id)] || [];
+                team.forEach(member => {
+                    if (member.email) recipients.push(member.email);
+                });
+            }
+
+            // Also gather anyone who has previously sent messages in this thread
+            const threadMessages = portalData.messages.filter(m => (m.Matter_x0020_ID || '') === matterId);
+            threadMessages.forEach(m => {
+                if (m.SenderEmail && !recipients.includes(m.SenderEmail)) {
+                    recipients.push(m.SenderEmail);
+                }
+            });
+
+            if (recipients.length === 0) return;
+
+            // Get current user's email from cookie
+            const senderEmail = getCookie('cq_user') || '';
+            const senderName = portalData.currentStaff?.Title || portalData.currentStaff?.Name || senderEmail;
+
+            // Fire and forget — don't block the chat
+            fetch('/api/send-message-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    recipients,
+                    senderName,
+                    senderEmail,
+                    senderType: senderType || 'staff',
+                    matterId,
+                    messagePreview: messageBody.substring(0, 300)
+                })
+            }).catch(err => console.warn('Notification send failed (non-blocking):', err));
+        }
+
         async function sendChatMessage(matterId) {
             const textarea = document.getElementById('messageCompose');
             const body = (textarea?.value || '').trim();
@@ -5604,6 +5659,8 @@
 
                 if (resp.ok) {
                     textarea.value = '';
+                    // Send email notifications (non-blocking)
+                    notifyMessageRecipients(matterId, body, 'staff');
                     await loadAllData();
                     renderChatThread(matterId);
                     showToast('Message sent', 'success');
@@ -7211,6 +7268,8 @@
 
                 if (resp.ok) {
                     document.getElementById('messageFormMessages').innerHTML = '<div class="success-message">Message sent successfully!</div>';
+                    // Send email notifications (non-blocking)
+                    notifyMessageRecipients(selectedMatter, formData.get('body'), 'staff');
                     setTimeout(() => {
                         closeMessageModal();
                         loadAllData();

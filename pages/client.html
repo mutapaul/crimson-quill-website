@@ -2717,6 +2717,9 @@
                     })
                 });
 
+                // Send email notifications to staff and other participants (non-blocking)
+                notifyClientMessageRecipients(matterId, body);
+
                 // Refresh messages
                 await loadMessages();
                 renderClientChatThread(matterId);
@@ -2727,6 +2730,50 @@
                 console.error('Error sending message:', error);
                 showToast('Failed to send message', 'error');
             }
+        }
+
+        /**
+         * Send email notification when client sends a message.
+         * Notifies staff members and any other participants in the thread.
+         * Runs in background — does not block the UI.
+         */
+        function notifyClientMessageRecipients(matterId, messageBody) {
+            const recipients = [];
+
+            // Gather all unique sender emails from this thread (staff who have replied)
+            const allMessages = (portalData.messages?.items || []);
+            const threadMessages = allMessages.filter(m => (m.Matter_x0020_ID || '') === matterId);
+            threadMessages.forEach(m => {
+                // Messages without SenderEmail are from staff — but staff emails are @cqadvocates.com
+                // Messages with SenderEmail that ends in @cqadvocates.com are also from staff
+                const sender = m.SenderEmail || '';
+                if (sender && !recipients.includes(sender) && sender.toLowerCase() !== (clientProfile.email || '').toLowerCase()) {
+                    recipients.push(sender);
+                }
+            });
+
+            // Always try to notify the firm's general inbox if no specific staff found
+            if (recipients.length === 0) {
+                recipients.push('info@cqadvocates.com');
+            }
+
+            if (recipients.length === 0) return;
+
+            const senderName = clientProfile.name || clientProfile.email || 'Client';
+
+            fetch('/api/send-message-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    recipients,
+                    senderName,
+                    senderEmail: clientProfile.email,
+                    senderType: 'client',
+                    matterId,
+                    messagePreview: messageBody.substring(0, 300)
+                })
+            }).catch(err => console.warn('Notification send failed (non-blocking):', err));
         }
 
         function renderMessageHTML(message, originalIdx) {
