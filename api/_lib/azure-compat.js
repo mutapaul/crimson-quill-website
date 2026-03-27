@@ -197,13 +197,22 @@ function wrapVercelHandler(vercelHandler) {
 
 /**
  * Parse a Set-Cookie string into an Azure Functions cookie object.
+ * Decodes URL-encoded values to prevent double-encoding by Azure's serializer.
  */
 function parseCookie(cookieStr) {
   const parts = cookieStr.split(';').map(p => p.trim());
   const [nameVal, ...attrs] = parts;
   const eqIdx = nameVal.indexOf('=');
   const name = nameVal.substring(0, eqIdx);
-  const value = nameVal.substring(eqIdx + 1);
+  let value = nameVal.substring(eqIdx + 1);
+
+  // Decode URL-encoded cookie values to prevent Azure Functions from
+  // re-encoding them (which would cause %40 → %2540 double-encoding).
+  try {
+    value = decodeURIComponent(value);
+  } catch (e) {
+    // If decoding fails, keep the original value
+  }
 
   const cookie = { name, value };
   for (const attr of attrs) {
