@@ -174,22 +174,23 @@ function wrapVercelHandler(vercelHandler) {
     // ── Convert to Azure Functions HttpResponseInit ────────────
     const responseHeaders = {};
     for (const [k, v] of Object.entries(resHeaders)) {
-      if (k === 'set-cookie' && Array.isArray(v)) {
-        // Azure Functions v4 supports cookies via the cookies property
-        // but for compatibility, set as header
-        responseHeaders[k] = v.join(', ');
-      } else {
-        responseHeaders[k] = v;
-      }
+      // Skip set-cookie from headers — use the dedicated cookies property instead.
+      // RFC 6265 forbids comma-joining Set-Cookie headers, and Azure Functions v4
+      // handles cookies correctly via the cookies array.
+      if (k === 'set-cookie') continue;
+      responseHeaders[k] = v;
     }
+
+    // Parse Set-Cookie strings into Azure Functions cookie objects
+    const parsedCookies = resHeaders['set-cookie']
+      ? resHeaders['set-cookie'].map(parseCookie)
+      : undefined;
 
     return {
       status: statusCode,
       headers: responseHeaders,
       body: resBody,
-      cookies: resHeaders['set-cookie']
-        ? resHeaders['set-cookie'].map(parseCookie)
-        : undefined,
+      cookies: parsedCookies,
     };
   };
 }

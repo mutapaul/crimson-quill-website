@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     }
     try {
       const csrfToken = crypto.randomBytes(32).toString('hex');
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Production' || process.env.WEBSITE_SITE_NAME;
 
       const cookieOptions = [
         `cq_csrf=${csrfToken}`,
@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST' || req.method === 'DELETE') {
     try {
       const logoutTimestamp = Date.now();
-      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Production' || process.env.WEBSITE_SITE_NAME;
 
       const sessionCookieOptions = [
         'cq_session=',

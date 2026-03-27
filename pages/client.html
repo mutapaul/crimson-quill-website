@@ -2186,8 +2186,13 @@
         // ============================================================================
         async function initializePage() {
             try {
+                console.log('[CQ-Debug] initializePage started');
+                console.log('[CQ-Debug] All cookies:', document.cookie);
+
                 const userEmail = getCookie('cq_user');
+                console.log('[CQ-Debug] cq_user cookie:', userEmail);
                 if (!userEmail) {
+                    console.warn('[CQ-Debug] No cq_user cookie found, redirecting to login');
                     window.location.href = '/login?type=client';
                     return;
                 }
@@ -2198,19 +2203,23 @@
                     credentials: 'include'
                 });
                 const sessionData = await sessionRes.json();
+                console.log('[CQ-Debug] Session check response:', JSON.stringify(sessionData));
                 if (!sessionData.authenticated) {
+                    console.warn('[CQ-Debug] Session not authenticated, redirecting to login');
                     window.location.href = '/login?type=client';
                     return;
                 }
                 // Check that user has correct portal type for this page
                 if (sessionData.portalType !== 'client') {
                     // User is logged in but not as client, redirect to login
+                    console.warn('[CQ-Debug] portalType is', sessionData.portalType, '(not client), redirecting');
                     window.location.href = '/login?type=client';
                     return;
                 }
 
                 const decodedEmail = decodeURIComponent(userEmail);
                 clientProfile.email = decodedEmail.toLowerCase().trim();
+                console.log('[CQ-Debug] Client email resolved:', clientProfile.email);
 
                 // Step 1: Resolve client identity from SharePoint Clients list
                 await resolveClientProfile();
@@ -2276,6 +2285,9 @@
             try {
                 const clientsData = await fetchList('Clients');
                 const clients = clientsData.items || [];
+                console.log('[CQ-Debug] Clients list fetched:', clients.length, 'clients');
+                console.log('[CQ-Debug] Client emails in list:', clients.map(c => c.Email || '(no email)'));
+                console.log('[CQ-Debug] Looking for email:', clientProfile.email);
 
                 const match = clients.find(c =>
                     (c.Email || '').toLowerCase().trim() === clientProfile.email
@@ -2283,9 +2295,9 @@
 
                 if (match) {
                     clientProfile.name = match.Title;
-                    console.log('Client profile resolved:', clientProfile.name);
+                    console.log('[CQ-Debug] Client profile resolved:', clientProfile.name);
                 } else {
-                    console.warn('No matching client found for:', clientProfile.email);
+                    console.warn('[CQ-Debug] No matching client found for:', clientProfile.email, '— checking MatterAccess');
 
                     // If not found as a registered client, check MatterAccess list
                     try {
@@ -2365,11 +2377,16 @@
                 const allBilling = (billingData.items || []).map(normalizeSharePointItem);
 
                 // Filter matters by client name
+                console.log('[CQ-Debug] clientProfile.name:', clientProfile.name);
+                console.log('[CQ-Debug] All matters count:', allMatters.length);
+                console.log('[CQ-Debug] All matters clientName values:', allMatters.map(m => m.clientName || m.Client_x0020_Name || '(none)'));
+
                 const myMatters = clientProfile.name
                     ? allMatters.filter(m =>
                         (m.clientName || m.Client_x0020_Name || '').toLowerCase().trim() === clientProfile.name.toLowerCase().trim()
                     )
                     : [];
+                console.log('[CQ-Debug] Filtered myMatters count:', myMatters.length);
 
                 // Build set of this client's matter identifiers for cross-filtering
                 const myMatterTitles = new Set(myMatters.map(m => m.Title));

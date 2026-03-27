@@ -140,7 +140,7 @@ module.exports = async function handler(req, res) {
     );
 
     // Set HTTP-only secure cookie
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Production' || process.env.WEBSITE_SITE_NAME;
     const cookieOptions = [
       `cq_session=${token}`,
       'Path=/',
