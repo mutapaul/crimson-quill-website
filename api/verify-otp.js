@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { kv: kvStore } = require('./_lib/kv-compat');
-const { getOTP, incrementAttempts, deleteOTP } = require('./_lib/otp');
+const { getOTP, incrementAttempts, deleteOTP, verifyOTPToken } = require('./_lib/otp');
 const { validateCSRFToken } = require('./_lib/csrf');
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -55,7 +55,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { email, code, portalType } = req.body;
+    const { email, code, portalType, otpToken } = req.body;
 
     if (!email || !code || !portalType) {
       return res.status(400).json({ error: 'Email, code, and portal type are required.' });
@@ -87,46 +87,59 @@ module.exports = async function handler(req, res) {
 
     const normalizedEmail = trimmedEmail.toLowerCase();
 
-    // Initialize Vercel KV
-    const kv = kvStore;
-
-    // Retrieve stored OTP
-    const otpData = await getOTP(kv, normalizedEmail);
-
-    if (!otpData) {
-      return res.status(400).json({
-        error: 'Verification code has expired. Please request a new one.',
-      });
-    }
-
     // Apply rate limiting: max 5 attempts per 10 minutes
     if (!checkOTPRateLimit(normalizedEmail, 5, 600000)) {
-      // Rate limited - invalidate OTP and require new one
-      await deleteOTP(kv, normalizedEmail);
       return res.status(429).json({
         error: 'Too many verification attempts. Please request a new code.',
       });
     }
 
-    // Check max attempts (5 per the rate limiter, but also check stored attempts as backup)
-    if (otpData.attempts >= 5) {
+    // === PRIMARY: Verify using HMAC token (stateless, survives cold starts) ===
+    let verified = false;
+
+    if (otpToken && typeof otpToken === 'string') {
+      const result = verifyOTPToken(normalizedEmail, trimmedCode, otpToken);
+      if (result.valid) {
+        verified = true;
+      } else {
+        // Token exists but verification failed - return the specific reason
+        return res.status(400).json({ error: result.reason });
+      }
+    }
+
+    // === FALLBACK: Verify using in-memory KV (works if same instance) ===
+    if (!verified) {
+      const kv = kvStore;
+      const otpData = await getOTP(kv, normalizedEmail);
+
+      if (!otpData) {
+        return res.status(400).json({
+          error: 'Verification code has expired. Please request a new one.',
+        });
+      }
+
+      if (otpData.attempts >= 5) {
+        await deleteOTP(kv, normalizedEmail);
+        return res.status(400).json({
+          error: 'Too many failed attempts. Please request a new code.',
+        });
+      }
+
+      if (otpData.code !== trimmedCode) {
+        await incrementAttempts(kv, normalizedEmail);
+        return res.status(400).json({
+          error: 'Invalid verification code. Please try again or request a new code.',
+        });
+      }
+
+      // KV verification passed
       await deleteOTP(kv, normalizedEmail);
-      return res.status(400).json({
-        error: 'Too many failed attempts. Please request a new code.',
-      });
+      verified = true;
     }
 
-    // Verify code
-    if (otpData.code !== trimmedCode) {
-      await incrementAttempts(kv, normalizedEmail);
-      // Generic error message - don't reveal remaining attempts
-      return res.status(400).json({
-        error: 'Invalid verification code. Please try again or request a new code.',
-      });
+    if (!verified) {
+      return res.status(400).json({ error: 'Verification failed. Please request a new code.' });
     }
-
-    // OTP is correct - clean up
-    await deleteOTP(kv, normalizedEmail);
 
     // Generate JWT session token
     const token = jwt.sign(

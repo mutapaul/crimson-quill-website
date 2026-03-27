@@ -1,7 +1,7 @@
 const { Resend } = require('resend');
 const { kv: kvStore } = require('./_lib/kv-compat');
 const { isEmailInGroup, isFirmEmail, isRegisteredClient, isMatterAccessUser } = require('./_lib/graph');
-const { generateOTP, storeOTP, checkRateLimit } = require('./_lib/otp');
+const { generateOTP, createOTPToken, storeOTP, checkRateLimit } = require('./_lib/otp');
 const { validateCSRFToken } = require('./_lib/csrf');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -110,8 +110,11 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Generate and store OTP
+    // Generate OTP and create signed token (stateless - no server storage needed)
     const otp = generateOTP();
+    const otpToken = createOTPToken(normalizedEmail, otp);
+
+    // Also store in KV as fallback (may work if same instance handles both requests)
     await storeOTP(kv, normalizedEmail, otp);
 
     // Send OTP via Resend
@@ -160,6 +163,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Verification code sent to your email.',
+      otpToken: otpToken,
     });
   } catch (error) {
     console.error('request-otp error:', error);

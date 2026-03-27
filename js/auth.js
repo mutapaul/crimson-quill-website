@@ -103,9 +103,12 @@ var CQAuth = (function () {
         .then(function (result) {
           setLoading(submitBtn, false);
           if (result.ok && result.data.success) {
-            // Store email and redirect to OTP page
+            // Store email, otpToken, and redirect to OTP page
             sessionStorage.setItem('cq_login_email', email);
             sessionStorage.setItem('cq_portal_type', portalType);
+            if (result.data.otpToken) {
+              sessionStorage.setItem('cq_otp_token', result.data.otpToken);
+            }
             window.location.href = '/verify-otp?type=' + portalType;
           } else {
             showError(errorMsg, result.data.error || 'Something went wrong. Please try again.');
@@ -208,13 +211,14 @@ var CQAuth = (function () {
       setLoading(verifyBtn, true);
 
       var csrfToken = getCSRFToken();
+      var storedOTPToken = sessionStorage.getItem('cq_otp_token') || '';
       fetch('/api/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
-        body: JSON.stringify({ email: email, code: code, portalType: portalType }),
+        body: JSON.stringify({ email: email, code: code, portalType: portalType, otpToken: storedOTPToken }),
       })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (result) {
@@ -228,6 +232,7 @@ var CQAuth = (function () {
             // Clean up session storage
             sessionStorage.removeItem('cq_login_email');
             sessionStorage.removeItem('cq_portal_type');
+            sessionStorage.removeItem('cq_otp_token');
 
             setTimeout(function () {
               window.location.href = result.data.redirectUrl;
@@ -327,6 +332,10 @@ var CQAuth = (function () {
         .then(function (result) {
           resendLink.textContent = 'Resend Code';
           if (result.ok) {
+            // Store new otpToken from resend response
+            if (result.data.otpToken) {
+              sessionStorage.setItem('cq_otp_token', result.data.otpToken);
+            }
             successMsg.textContent = 'A new code has been sent to your email.';
             successMsg.classList.add('visible');
             setTimeout(function () { successMsg.classList.remove('visible'); }, 4000);
